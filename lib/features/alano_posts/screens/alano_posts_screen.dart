@@ -257,9 +257,10 @@ class AlanoPostCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     post.content,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
+                    style: const TextStyle(
+                      fontSize: 18,
+                      color: Colors.white,
+                      height: 1.5,
                     ),
                   ),
                 ],

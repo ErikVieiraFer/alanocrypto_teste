@@ -133,11 +133,24 @@ class UserService {
       final userRef = _firestore.collection('users').doc(user.uid);
       final userDoc = await userRef.get();
 
+      print('📸 DEBUG - photoURL do FirebaseAuth: ${user.photoURL}');
+
       if (userDoc.exists) {
-        // Usuário já existe - atualizar APENAS lastLogin
-        await userRef.update({
+        // Usuário já existe - atualizar lastLogin E photoURL se mudou
+        final currentData = userDoc.data() as Map<String, dynamic>;
+        final currentPhotoURL = currentData['photoURL'] as String?;
+
+        final Map<String, dynamic> updates = {
           'lastLogin': Timestamp.fromDate(DateTime.now()),
-        });
+        };
+
+        // Se a foto mudou, atualizar
+        if (user.photoURL != null && user.photoURL != currentPhotoURL) {
+          updates['photoURL'] = user.photoURL!;
+          print('📸 Atualizando foto do usuário: ${user.photoURL}');
+        }
+
+        await userRef.update(updates);
         print('✅ Usuário existente atualizado: ${user.email}');
       } else {
         // Usuário novo - criar com approved: false
@@ -153,6 +166,7 @@ class UserService {
           'lastLogin': Timestamp.fromDate(DateTime.now()),
         });
         print('✅ Novo usuário criado: ${user.email} - Precisa aprovação');
+        print('📸 Foto do novo usuário: ${user.photoURL}');
       }
     } catch (e) {
       print('❌ Erro ao criar/atualizar usuário: $e');

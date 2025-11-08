@@ -32,7 +32,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const AlanoPostsScreen(),       // 2 - Posts
     const AIChatScreen(),           // 3 - IA
     const SignalsScreen(),          // 4 - Sinais
-    const NotificationsScreen(),    // 5 - Notificações
   ];
 
   @override
@@ -41,17 +40,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       if (args != null && args['initialTab'] != null) {
-        setState(() {
-          _currentIndex = args['initialTab'] as int;
-        });
+        final int initialTab = args['initialTab'] as int;
+        // Garantir que o índice está dentro do range
+        if (initialTab >= 0 && initialTab < _screens.length) {
+          setState(() {
+            _currentIndex = initialTab;
+          });
+        }
       }
     });
   }
 
   void _navigateToNotifications() {
-    setState(() {
-      _currentIndex = 5; // Índice da tela de notificações
-    });
+    // Navegar para tela de notificações como uma nova rota
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+    );
   }
 
   @override

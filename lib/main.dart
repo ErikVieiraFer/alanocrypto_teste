@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -97,6 +98,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Configurar cor da StatusBar do sistema
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent, // Transparente para usar a cor do AppBar
+        statusBarIconBrightness: Brightness.light, // Ícones brancos
+        statusBarBrightness: Brightness.dark, // Para iOS
+        systemNavigationBarColor: Color(0xFF0f0f0f), // Mesma cor da AppBar
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
+
     return MaterialApp(
       title: 'AlanoCryptoFX',
       debugShowCheckedModeBanner: false,
@@ -156,9 +168,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
+          return Scaffold(
+            backgroundColor: AppTheme.backgroundColor,
+            body: const Center(
+              child: CircularProgressIndicator(
+                color: AppTheme.accentGreen,
+              ),
             ),
           );
         }
@@ -168,9 +183,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
             future: userService.isUserApproved(snapshot.data!.uid),
             builder: (context, approvalSnapshot) {
               if (approvalSnapshot.connectionState == ConnectionState.waiting) {
-                return const Scaffold(
-                  body: Center(
-                    child: CircularProgressIndicator(),
+                return Scaffold(
+                  backgroundColor: AppTheme.backgroundColor,
+                  body: const Center(
+                    child: CircularProgressIndicator(
+                      color: AppTheme.accentGreen,
+                    ),
                   ),
                 );
               }

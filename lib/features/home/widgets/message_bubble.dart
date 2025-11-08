@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:intl/intl.dart';
 import '../../../models/message_model.dart';
+import '../../../theme/app_theme.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -10,6 +10,7 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback onSwipe;
   final Function(String emoji) onReactionTap;
   final VoidCallback? onUserTap;
+  final String? currentUserPhotoUrl; // Foto atual do usuário (atualizada)
 
   const MessageBubble({
     super.key,
@@ -19,12 +20,12 @@ class MessageBubble extends StatelessWidget {
     required this.onSwipe,
     required this.onReactionTap,
     this.onUserTap,
+    this.currentUserPhotoUrl, // Foto atual tem prioridade
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Dismissible(
       key: Key(message.id),
@@ -34,79 +35,128 @@ class MessageBubble extends StatelessWidget {
         return false;
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
-          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
+            // Avatar - esquerda para mensagens dos outros
             if (!isMe) ...[
               GestureDetector(
                 onTap: onUserTap,
                 child: _buildAvatar(),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
             ],
+
+            // Bubble da mensagem
             Flexible(
               child: Column(
                 crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
                 children: [
-                  if (!isMe)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 12.0, bottom: 4.0),
-                      child: GestureDetector(
-                        onTap: onUserTap,
-                        child: Text(
-                          message.userName,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: theme.primaryColor,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ),
                   GestureDetector(
                     onLongPress: onLongPress,
                     child: Container(
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: isMe
-                            ? theme.primaryColor
-                            : (isDark ? Colors.grey[800] : Colors.grey[300]),
+                          ? AppTheme.accentGreen.withOpacity(0.15)
+                          : AppTheme.inputBackground,
                         borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(16),
-                          topRight: const Radius.circular(16),
-                          bottomLeft: Radius.circular(isMe ? 16 : 4),
-                          bottomRight: Radius.circular(isMe ? 4 : 16),
+                          topLeft: Radius.circular(isMe ? 20 : 4),
+                          topRight: Radius.circular(isMe ? 4 : 20),
+                          bottomLeft: const Radius.circular(20),
+                          bottomRight: const Radius.circular(20),
                         ),
                       ),
                       constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.7,
+                        maxWidth: MediaQuery.of(context).size.width * 0.65,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (message.replyToText != null) _buildReplySection(theme),
-                          if (message.imageUrl != null) _buildImage(),
-                          if (message.text.isNotEmpty) _buildTextContent(theme),
+                          // Nome do remetente DENTRO da mensagem (só para outros)
+                          if (!isMe) ...[
+                            GestureDetector(
+                              onTap: onUserTap,
+                              child: Text(
+                                message.userName,
+                                style: const TextStyle(
+                                  color: AppTheme.accentGreen,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                          ],
+
+                          // Seção de resposta (se existir)
+                          if (message.replyToText != null) ...[
+                            _buildReplySection(theme),
+                            const SizedBox(height: 8),
+                          ],
+
+                          // Imagem (se existir)
+                          if (message.imageUrl != null) ...[
+                            _buildImage(),
+                            const SizedBox(height: 8),
+                          ],
+
+                          // Texto da mensagem (BRANCO e MAIOR)
+                          if (message.text.isNotEmpty) ...[
+                            Text(
+                              message.text,
+                              style: const TextStyle(
+                                color: Colors.white, // SEMPRE BRANCO
+                                fontSize: 18, // MAIOR (era 15)
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                          ],
+
+                          // Timestamp dentro do bubble
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                            children: [
+                              Text(
+                                _formatTime(message.timestamp),
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.5),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              if (message.isEdited) ...[
+                                const SizedBox(width: 4),
+                                Text(
+                                  '(editado)',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.5),
+                                    fontSize: 11,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ],
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4.0, left: 8.0, right: 8.0),
-                    child: Text(
-                      '${_formatTime(message.timestamp)}${message.isEdited ? " (editado)" : ""}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
-                      ),
-                    ),
-                  ),
+
+                  // Reações abaixo do bubble
                   if (message.reactions.isNotEmpty) _buildReactions(theme),
                 ],
               ),
             ),
+
+            // Avatar - direita para minhas mensagens
+            if (isMe) ...[
+              const SizedBox(width: 12),
+              _buildAvatar(),
+            ],
           ],
         ),
       ),
@@ -114,33 +164,80 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
+    // Usar a foto atual (prioridade) ou a foto salva na mensagem
+    final photoUrl = currentUserPhotoUrl ?? message.userPhotoUrl;
+
+    // Debug: verificar URL da foto
+    if (photoUrl != null && photoUrl.isNotEmpty) {
+      print('🖼️ MessageBubble - Tentando carregar foto: $photoUrl (${currentUserPhotoUrl != null ? "atualizada" : "da mensagem"})');
+    }
+
+    // Se não tem foto ou foto é vazia, mostrar inicial
+    if (photoUrl == null || photoUrl.isEmpty) {
+      print('⚠️ MessageBubble - Sem foto para ${message.userName}, mostrando inicial');
+      return CircleAvatar(
+        radius: 20,
+        backgroundColor: AppTheme.accentGreen,
+        child: Text(
+          message.userName.isNotEmpty ? message.userName[0].toUpperCase() : '?',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
+
+    // Tem foto - tentar carregar com tratamento de erro
     return CircleAvatar(
-      radius: 16,
-      backgroundImage: message.userPhotoUrl != null && message.userPhotoUrl!.isNotEmpty
-          ? CachedNetworkImageProvider(message.userPhotoUrl!)
-          : null,
-      child: message.userPhotoUrl == null || message.userPhotoUrl!.isEmpty
-          ? Text(
+      radius: 20,
+      backgroundColor: AppTheme.accentGreen,
+      child: ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: photoUrl,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          placeholder: (context, url) => const SizedBox(
+            width: 40,
+            height: 40,
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          errorWidget: (context, url, error) {
+            print('❌ MessageBubble - Erro ao carregar foto: $error');
+            return Text(
               message.userName.isNotEmpty ? message.userName[0].toUpperCase() : '?',
-              style: const TextStyle(fontSize: 14),
-            )
-          : null,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
   Widget _buildReplySection(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(8.0),
-      margin: const EdgeInsets.only(bottom: 4.0),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.1),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
-        ),
+        color: Colors.black.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
         border: Border(
           left: BorderSide(
-            color: theme.primaryColor,
+            color: AppTheme.accentGreen,
             width: 3,
           ),
         ),
@@ -150,20 +247,20 @@ class MessageBubble extends StatelessWidget {
         children: [
           Text(
             message.replyToUserName ?? 'Usuário',
-            style: TextStyle(
-              fontSize: 12,
+            style: const TextStyle(
+              fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: theme.primaryColor,
+              color: AppTheme.accentGreen,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             message.replyToText ?? '',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 12,
-              color: isMe ? Colors.white70 : Colors.black54,
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.7),
             ),
           ),
         ],
@@ -179,26 +276,13 @@ class MessageBubble extends StatelessWidget {
         fit: BoxFit.cover,
         placeholder: (context, url) => Container(
           height: 200,
-          color: Colors.grey[300],
+          color: Colors.grey[700],
           child: const Center(child: CircularProgressIndicator()),
         ),
         errorWidget: (context, url, error) => Container(
           height: 200,
-          color: Colors.grey[300],
-          child: const Icon(Icons.error),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTextContent(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: Text(
-        message.text,
-        style: TextStyle(
-          fontSize: 15,
-          color: isMe ? Colors.white : (theme.brightness == Brightness.dark ? Colors.white : Colors.black87),
+          color: Colors.grey[700],
+          child: const Icon(Icons.error, color: Colors.white),
         ),
       ),
     );
@@ -206,35 +290,36 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildReactions(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.only(top: 4.0),
+      padding: const EdgeInsets.only(top: 6),
       child: Wrap(
-        spacing: 4,
+        spacing: 6,
+        runSpacing: 4,
         children: message.reactions.entries.map((entry) {
           final emoji = entry.key;
           final count = entry.value.length;
           return GestureDetector(
             onTap: () => onReactionTap(emoji),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: theme.primaryColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
+                color: AppTheme.accentGreen.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: theme.primaryColor.withOpacity(0.5),
-                  width: 1,
+                  color: AppTheme.accentGreen.withOpacity(0.5),
+                  width: 1.5,
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(emoji, style: const TextStyle(fontSize: 14)),
-                  const SizedBox(width: 4),
+                  Text(emoji, style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 5),
                   Text(
                     '$count',
-                    style: TextStyle(
-                      fontSize: 12,
+                    style: const TextStyle(
+                      fontSize: 13,
                       fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
+                      color: AppTheme.accentGreen,
                     ),
                   ),
                 ],
@@ -247,16 +332,6 @@ class MessageBubble extends StatelessWidget {
   }
 
   String _formatTime(DateTime timestamp) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
-
-    if (messageDate == today) {
-      return DateFormat('HH:mm').format(timestamp);
-    } else if (messageDate == today.subtract(const Duration(days: 1))) {
-      return 'Ontem ${DateFormat('HH:mm').format(timestamp)}';
-    } else {
-      return DateFormat('dd/MM/yyyy HH:mm').format(timestamp);
-    }
+    return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
   }
 }

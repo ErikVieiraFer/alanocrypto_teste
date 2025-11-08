@@ -82,7 +82,40 @@ class PostService {
         createdAt: DateTime.now(),
       );
 
-      await _firestore.collection('posts').add(newPost.toFirestore());
+      final postDocRef = await _firestore.collection('posts').add(newPost.toFirestore());
+
+      // Fan-out Notification Logic - Notificar todos os usuários sobre o novo post
+      final usersSnapshot = await _firestore.collection('users').get();
+      if (usersSnapshot.docs.isEmpty) {
+        return true; // No users to notify
+      }
+
+      final batch = _firestore.batch();
+      final notificationsCollection = _firestore.collection('notifications');
+
+      // Truncar o conteúdo para a notificação
+      final contentPreview = content.length > 50
+          ? '${content.substring(0, 50)}...'
+          : content;
+
+      for (final userDoc in usersSnapshot.docs) {
+        // Não notificar o próprio autor do post
+        if (userDoc.id == user.uid) continue;
+
+        final newNotifRef = notificationsCollection.doc();
+        batch.set(newNotifRef, {
+          'userId': userDoc.id,
+          'type': NotificationType.post.name,
+          'title': 'Novo post de ${user.displayName ?? 'Alano Cripto'}!',
+          'content': contentPreview,
+          'read': false,
+          'relatedId': postDocRef.id,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+
       return true;
     } catch (e) {
       print('Erro ao criar post: $e');

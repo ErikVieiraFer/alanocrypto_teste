@@ -139,7 +139,7 @@ class _SignupScreenState extends State<SignupScreen> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.appBarColor,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),

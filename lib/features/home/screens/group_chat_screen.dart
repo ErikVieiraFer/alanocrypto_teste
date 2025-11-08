@@ -4,6 +4,7 @@ import '../../../models/message_model.dart';
 import '../../../models/notification_model.dart';
 import '../../../services/chat_service.dart';
 import '../../../services/notification_service.dart';
+import '../../../services/user_service.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_input.dart';
 import '../../profile/screens/profile_screen.dart';
@@ -18,10 +19,14 @@ class GroupChatScreen extends StatefulWidget {
 class _GroupChatScreenState extends State<GroupChatScreen> {
   final ChatService _chatService = ChatService();
   final NotificationService _notificationService = NotificationService();
+  final UserService _userService = UserService();
   final ScrollController _scrollController = ScrollController();
   final User? _currentUser = FirebaseAuth.instance.currentUser;
 
   Message? _replyToMessage;
+
+  // Cache de fotos de usuários (userId -> photoURL)
+  final Map<String, String?> _userPhotosCache = {};
 
   @override
   void dispose() {
@@ -39,6 +44,28 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     }
   }
 
+  /// Busca a foto atual do usuário do Firestore (com cache)
+  Future<String?> _getUserCurrentPhoto(String userId) async {
+    // Se já está no cache, retorna do cache
+    if (_userPhotosCache.containsKey(userId)) {
+      return _userPhotosCache[userId];
+    }
+
+    // Busca do Firestore
+    try {
+      final userModel = await _userService.getUser(userId);
+      final photoUrl = userModel?.photoURL;
+
+      // Salva no cache
+      _userPhotosCache[userId] = photoUrl;
+
+      return photoUrl;
+    } catch (e) {
+      print('⚠️ Erro ao buscar foto do usuário $userId: $e');
+      return null;
+    }
+  }
+
   Future<void> _sendMessage(String text, PickedImageFile? image) async {
     if (_currentUser == null) return;
 
@@ -51,11 +78,35 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
       final originalMessage = _replyToMessage;
 
+      // Buscar dados atualizados do usuário do Firestore
+      final userModel = await _userService.getUser(_currentUser!.uid);
+
+      // Usar a foto do Firestore se disponível, caso contrário do FirebaseAuth
+      String? userPhotoUrl = userModel?.photoURL;
+      if (userPhotoUrl == null || userPhotoUrl.isEmpty) {
+        userPhotoUrl = _currentUser!.photoURL;
+
+        // Se o FirebaseAuth tem foto mas o Firestore não, atualizar o Firestore
+        if (userPhotoUrl != null && userPhotoUrl.isNotEmpty) {
+          await _userService.updateUser(
+            userId: _currentUser!.uid,
+            photoURL: userPhotoUrl,
+          );
+        }
+      }
+
+      // Debug: verificar a URL da foto
+      if (userPhotoUrl != null && userPhotoUrl.isNotEmpty) {
+        print('📸 URL da foto do usuário: $userPhotoUrl');
+      } else {
+        print('⚠️ Usuário sem foto de perfil');
+      }
+
       await _chatService.sendMessage(
         text: text,
         userId: _currentUser!.uid,
-        userName: _currentUser!.displayName ?? 'Usuário',
-        userPhotoUrl: _currentUser!.photoURL,
+        userName: userModel?.displayName ?? _currentUser!.displayName ?? 'Usuário',
+        userPhotoUrl: userPhotoUrl,
         imageUrl: imageUrl,
         replyToId: originalMessage?.id,
         replyToText: originalMessage?.text,
@@ -344,22 +395,32 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                     final message = messages[index];
                     final isMe = message.userId == _currentUser?.uid;
 
-                    return MessageBubble(
-                      message: message,
-                      isMe: isMe,
-                      onLongPress: () => _showMessageOptions(message),
-                      onSwipe: () {
-                        setState(() {
-                          _replyToMessage = message;
-                        });
-                      },
-                      onReactionTap: (emoji) => _addReaction(message, emoji),
-                      onUserTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProfileScreen(userId: message.userId),
-                          ),
+                    // Buscar foto atual do usuário
+                    return FutureBuilder<String?>(
+                      future: _getUserCurrentPhoto(message.userId),
+                      builder: (context, photoSnapshot) {
+                        // Usa a foto atualizada se disponível
+                        final currentPhotoUrl = photoSnapshot.data;
+
+                        return MessageBubble(
+                          message: message,
+                          isMe: isMe,
+                          currentUserPhotoUrl: currentPhotoUrl,
+                          onLongPress: () => _showMessageOptions(message),
+                          onSwipe: () {
+                            setState(() {
+                              _replyToMessage = message;
+                            });
+                          },
+                          onReactionTap: (emoji) => _addReaction(message, emoji),
+                          onUserTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProfileScreen(userId: message.userId),
+                              ),
+                            );
+                          },
                         );
                       },
                     );

@@ -28,6 +28,8 @@ class AppTheme {
       // AppBar
       appBarTheme: AppBarTheme(
         backgroundColor: appBarColor,
+        surfaceTintColor: Colors.transparent, // Remove efeito de tint do Material 3
+        scrolledUnderElevation: 0, // Remove mudança de cor ao scrollar
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: textPrimary),
@@ -67,8 +69,14 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: errorRed, width: 2),
         ),
-        hintStyle: TextStyle(color: textSecondary),
-        labelStyle: TextStyle(color: textSecondary),
+        hintStyle: TextStyle(
+          color: Color(0xFFAAAAAA), // Mais claro que textSecondary
+          fontSize: 16, // Maior
+        ),
+        labelStyle: TextStyle(
+          color: Colors.white, // Branco em vez de cinza
+          fontSize: 16,
+        ),
       ),
 
       // Buttons
