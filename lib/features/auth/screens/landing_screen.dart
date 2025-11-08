@@ -93,7 +93,7 @@ class LandingScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 56,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.greenPrimary,
+                          color: AppTheme.accentGreen,
                           shadows: [
                             Shadow(
                               blurRadius: 12,
@@ -158,7 +158,7 @@ class LandingScreen extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () => Navigator.pushNamed(context, '/signup'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.greenPrimary,
+                        backgroundColor: AppTheme.accentGreen,
                         minimumSize: const Size(double.infinity, 56),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),

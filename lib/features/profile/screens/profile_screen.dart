@@ -5,11 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:provider/provider.dart';
 import '../../../models/user_model.dart';
 import '../../../services/user_service.dart';
 import '../../../services/auth_service.dart';
-import '../../../theme/theme_provider.dart';
 import '../../../theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -232,25 +230,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           }
 
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          final startColor = isDark ? AppTheme.greenDark : AppTheme.greenPrimary;
-          final endColor = isDark ? AppTheme.darkBackground : AppTheme.greenDark;
-
           return CustomScrollView(
             slivers: [
               SliverAppBar(
                 expandedHeight: 200,
                 pinned: true,
-                backgroundColor: Colors.transparent,
+                backgroundColor: AppTheme.appBarColor,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [startColor, endColor],
-                        tileMode: TileMode.clamp,
-                      ),
+                      color: AppTheme.appBarColor,
                     ),
                     child: SafeArea(
                       child: Column(
@@ -345,10 +334,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppTheme.getSecondaryBackgroundColor(context),
+                      color: AppTheme.inputBackground,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: AppTheme.getTextColor(context).withValues(alpha: 0.1),
+                        color: AppTheme.textPrimary.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Column(
@@ -362,14 +351,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: AppTheme.getTextColor(context),
+                                color: AppTheme.textPrimary,
                               ),
                             ),
                             if (isOwnProfile)
                               IconButton(
                                 icon: const Icon(Icons.edit, size: 20),
                                 onPressed: () => _showEditBioDialog(context, user),
-                                color: AppTheme.getPrimaryColor(context),
+                                color: AppTheme.accentGreen,
                               ),
                           ],
                         ),
@@ -382,8 +371,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             fontSize: 16,
                             height: 1.6,
                             color: user.bio.isEmpty
-                                ? AppTheme.getTextColor(context).withValues(alpha: 0.4)
-                                : AppTheme.getTextColor(context).withValues(alpha: 0.8),
+                                ? AppTheme.textPrimary.withValues(alpha: 0.4)
+                                : AppTheme.textPrimary.withValues(alpha: 0.8),
                           ),
                         ),
                       ],
@@ -404,10 +393,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.getSecondaryBackgroundColor(context),
+        backgroundColor: AppTheme.inputBackground,
         title: Text(
           'Editar Biografia',
-          style: TextStyle(color: AppTheme.getTextColor(context)),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
         content: TextField(
           controller: bioController,
@@ -416,20 +405,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           decoration: InputDecoration(
             hintText: 'Conte um pouco sobre você...',
             hintStyle: TextStyle(
-              color: AppTheme.getTextColor(context).withValues(alpha: 0.4),
+              color: AppTheme.textPrimary.withValues(alpha: 0.4),
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          style: TextStyle(color: AppTheme.getTextColor(context)),
+          style: TextStyle(color: AppTheme.textPrimary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Cancelar',
-              style: TextStyle(color: AppTheme.getTextColor(context).withValues(alpha: 0.6)),
+              style: TextStyle(color: AppTheme.textPrimary.withValues(alpha: 0.6)),
             ),
           ),
           ElevatedButton(
@@ -449,7 +438,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.greenPrimary,
+              backgroundColor: AppTheme.accentGreen,
             ),
             child: const Text('Salvar', style: TextStyle(color: Colors.white)),
           ),
@@ -464,12 +453,10 @@ class SettingsModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: AppTheme.inputBackground,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
@@ -478,119 +465,39 @@ class SettingsModal extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.settings, size: 28),
+              Icon(Icons.settings, size: 28, color: AppTheme.textPrimary),
               const SizedBox(width: 12),
               Text(
                 'Configurações',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
               ),
             ],
           ),
           const SizedBox(height: 24),
           Text(
-            'Tema do Aplicativo',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 16),
-          _ThemeOption(
-            icon: Icons.wb_sunny,
-            title: 'Claro',
-            isSelected: themeProvider.themeMode == ThemeMode.light,
-            onTap: () => themeProvider.setThemeMode(ThemeMode.light),
-          ),
-          const SizedBox(height: 8),
-          _ThemeOption(
-            icon: Icons.nightlight_round,
-            title: 'Escuro',
-            isSelected: themeProvider.themeMode == ThemeMode.dark,
-            onTap: () => themeProvider.setThemeMode(ThemeMode.dark),
-          ),
-          const SizedBox(height: 8),
-          _ThemeOption(
-            icon: Icons.brightness_auto,
-            title: 'Sistema',
-            isSelected: themeProvider.themeMode == ThemeMode.system,
-            onTap: () => themeProvider.setThemeMode(ThemeMode.system),
+            'Tema fixado em modo escuro',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textPrimary.withValues(alpha: 0.7),
+            ),
           ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Fechar'),
+              child: Text(
+                'Fechar',
+                style: TextStyle(color: AppTheme.accentGreen),
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ThemeOption extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ThemeOption({
-    required this.icon,
-    required this.title,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary.withAlpha(26)
-              : (isDark ? Colors.grey[800] : Colors.grey[100]),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.transparent,
-            width: 2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey[600],
-            ),
-            const SizedBox(width: 16),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : null,
-              ),
-            ),
-            const Spacer(),
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-          ],
-        ),
       ),
     );
   }

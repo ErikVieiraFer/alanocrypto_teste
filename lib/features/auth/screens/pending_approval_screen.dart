@@ -17,7 +17,7 @@ class PendingApprovalScreen extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
+      backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -28,13 +28,13 @@ class PendingApprovalScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppTheme.getPrimaryColor(context).withValues(alpha: 0.1),
+                    color: AppTheme.accentGreen.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.hourglass_empty,
                     size: 80,
-                    color: AppTheme.getPrimaryColor(context),
+                    color: AppTheme.accentGreen,
                   ),
                 ),
 
@@ -45,7 +45,7 @@ class PendingApprovalScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.getTextColor(context),
+                    color: AppTheme.textPrimary,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -56,7 +56,7 @@ class PendingApprovalScreen extends StatelessWidget {
                   'Seu cadastro foi recebido com sucesso!',
                   style: TextStyle(
                     fontSize: 16,
-                    color: AppTheme.getTextColor(context).withValues(alpha: 0.7),
+                    color: AppTheme.textPrimary.withValues(alpha: 0.7),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -68,7 +68,7 @@ class PendingApprovalScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.getPrimaryColor(context),
+                    color: AppTheme.accentGreen,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -78,17 +78,17 @@ class PendingApprovalScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppTheme.getSecondaryBackgroundColor(context),
+                    color: AppTheme.inputBackground,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppTheme.getPrimaryColor(context).withValues(alpha: 0.2),
+                      color: AppTheme.accentGreen.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Column(
                     children: [
                       Icon(
                         Icons.info_outline,
-                        color: AppTheme.getPrimaryColor(context),
+                        color: AppTheme.accentGreen,
                         size: 32,
                       ),
                       const SizedBox(height: 12),
@@ -97,7 +97,7 @@ class PendingApprovalScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.getTextColor(context),
+                          color: AppTheme.textPrimary,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -106,7 +106,7 @@ class PendingApprovalScreen extends StatelessWidget {
                         'Alano irá revisar seu cadastro em breve. Você receberá acesso assim que for aprovado.',
                         style: TextStyle(
                           fontSize: 14,
-                          color: AppTheme.getTextColor(context).withValues(alpha: 0.6),
+                          color: AppTheme.textPrimary.withValues(alpha: 0.6),
                           height: 1.5,
                         ),
                         textAlign: TextAlign.center,
@@ -121,7 +121,7 @@ class PendingApprovalScreen extends StatelessWidget {
                   onPressed: () => _logout(context),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    side: BorderSide(color: AppTheme.getPrimaryColor(context)),
+                    side: BorderSide(color: AppTheme.accentGreen),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -130,7 +130,7 @@ class PendingApprovalScreen extends StatelessWidget {
                     'Sair',
                     style: TextStyle(
                       fontSize: 16,
-                      color: AppTheme.getPrimaryColor(context),
+                      color: AppTheme.accentGreen,
                     ),
                   ),
                 ),

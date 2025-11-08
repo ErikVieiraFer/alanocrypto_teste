@@ -16,7 +16,7 @@ class NotificationPermissionDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: AppTheme.getSecondaryBackgroundColor(context),
+      backgroundColor: AppTheme.inputBackground,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -27,13 +27,13 @@ class NotificationPermissionDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.getPrimaryColor(context).withOpacity(0.1),
+                color: AppTheme.accentGreen.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.notifications_active,
                 size: 48,
-                color: AppTheme.getPrimaryColor(context),
+                color: AppTheme.accentGreen,
               ),
             ),
 
@@ -45,7 +45,7 @@ class NotificationPermissionDialog extends StatelessWidget {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.getTextColor(context),
+                color: AppTheme.textPrimary,
               ),
               textAlign: TextAlign.center,
             ),
@@ -57,7 +57,7 @@ class NotificationPermissionDialog extends StatelessWidget {
               'Seja notificado instantaneamente quando:',
               style: TextStyle(
                 fontSize: 14,
-                color: AppTheme.getTextColor(context).withOpacity(0.7),
+                color: AppTheme.textPrimary.withOpacity(0.7),
               ),
               textAlign: TextAlign.center,
             ),
@@ -68,7 +68,7 @@ class NotificationPermissionDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppTheme.getBackgroundColor(context),
+                color: AppTheme.backgroundColor,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -115,7 +115,7 @@ class NotificationPermissionDialog extends StatelessWidget {
                     child: Text(
                       'Agora Não',
                       style: TextStyle(
-                        color: AppTheme.getTextColor(context).withOpacity(0.7),
+                        color: AppTheme.textPrimary.withOpacity(0.7),
                       ),
                     ),
                   ),
@@ -141,7 +141,7 @@ class NotificationPermissionDialog extends StatelessWidget {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.getPrimaryColor(context),
+                      backgroundColor: AppTheme.accentGreen,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -166,7 +166,7 @@ class NotificationPermissionDialog extends StatelessWidget {
               'Você pode alterar isso nas configurações a qualquer momento',
               style: TextStyle(
                 fontSize: 11,
-                color: AppTheme.getTextColor(context).withOpacity(0.5),
+                color: AppTheme.textPrimary.withOpacity(0.5),
               ),
               textAlign: TextAlign.center,
             ),
@@ -202,7 +202,7 @@ class NotificationPermissionDialog extends StatelessWidget {
             text,
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.getTextColor(context),
+              color: AppTheme.textPrimary,
             ),
           ),
         ),

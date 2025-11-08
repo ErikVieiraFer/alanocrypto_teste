@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:timeago/timeago.dart' as timeago;
-import 'theme/theme_provider.dart';
 import 'theme/app_theme.dart';
 import 'features/auth/screens/landing_screen.dart';
 import 'features/auth/screens/login_screen.dart';
@@ -14,6 +12,7 @@ import 'features/auth/screens/signup_screen.dart';
 // import 'features/auth/screens/email_verification_screen.dart'; // DESABILITADO - Fluxo direto sem verificação
 import 'features/auth/screens/pending_approval_screen.dart';
 import 'features/dashboard/screen/dashboard_screen.dart';
+import 'features/placeholder/under_development_screen.dart';
 import 'services/auth_service.dart';
 import 'services/user_service.dart';
 import 'services/fcm_service.dart';
@@ -98,33 +97,29 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
-      builder: (context, _) {
-        final themeProvider = Provider.of<ThemeProvider>(context);
-
-        return MaterialApp(
-          title: 'AlanoCryptoFX',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: themeProvider.themeMode,
-          home: const AuthWrapper(),
-          routes: {
-            '/landing': (context) => const LandingScreen(),
-            '/login': (context) => const LoginScreen(),
-            '/signup': (context) => const SignupScreen(),
-            // '/email-verification': (context) {
-            //   final args = ModalRoute.of(context)!.settings.arguments as Map;
-            //   return EmailVerificationScreen(
-            //     email: args['email'],
-            //     displayName: args['displayName'],
-            //   );
-            // }, // DESABILITADO - Fluxo direto sem verificação
-            '/pending-approval': (context) => const PendingApprovalScreen(),
-            '/dashboard': (context) => const DashboardScreen(),
-          },
-        );
+    return MaterialApp(
+      title: 'AlanoCryptoFX',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.theme,
+      themeMode: ThemeMode.dark,
+      home: const AuthWrapper(),
+      routes: {
+        '/landing': (context) => const LandingScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/signup': (context) => const SignupScreen(),
+        // '/email-verification': (context) {
+        //   final args = ModalRoute.of(context)!.settings.arguments as Map;
+        //   return EmailVerificationScreen(
+        //     email: args['email'],
+        //     displayName: args['displayName'],
+        //   );
+        // }, // DESABILITADO - Fluxo direto sem verificação
+        '/pending-approval': (context) => const PendingApprovalScreen(),
+        '/dashboard': (context) => const DashboardScreen(),
+        '/under-development': (context) {
+          final pageName = ModalRoute.of(context)?.settings.arguments as String? ?? 'Página';
+          return UnderDevelopmentScreen(pageName: pageName);
+        },
       },
     );
   }

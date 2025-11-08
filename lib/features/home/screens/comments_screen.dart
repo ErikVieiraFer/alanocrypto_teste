@@ -86,25 +86,11 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final startColor = isDark ? AppTheme.greenDark : AppTheme.greenPrimary;
-    final endColor = isDark ? AppTheme.darkBackground : AppTheme.greenDark;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Comentários'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppTheme.appBarColor,
         elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [startColor, endColor],
-              tileMode: TileMode.clamp,
-            ),
-          ),
-        ),
       ),
       body: Column(
         children: [
@@ -183,9 +169,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: isDark
-                                        ? Colors.grey[800]
-                                        : Colors.grey[200],
+                                    color: AppTheme.inputBackground,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Column(
@@ -297,7 +281,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
               color: Theme.of(context).colorScheme.surface,
               border: Border(
                 top: BorderSide(
-                  color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+                  color: AppTheme.textPrimary.withValues(alpha: 0.2),
                 ),
               ),
             ),
@@ -314,7 +298,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                           borderSide: BorderSide.none,
                         ),
                         filled: true,
-                        fillColor: isDark ? Colors.grey[800] : Colors.grey[200],
+                        fillColor: AppTheme.inputBackground,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 10,

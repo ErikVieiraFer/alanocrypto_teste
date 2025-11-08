@@ -137,12 +137,12 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppTheme.getTextColor(context)),
+          icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -160,7 +160,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.getTextColor(context),
+                      color: AppTheme.textPrimary,
                     ),
                   ),
 
@@ -170,7 +170,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     'Preencha seus dados para começar',
                     style: TextStyle(
                       fontSize: 16,
-                      color: AppTheme.getTextColor(context).withValues(alpha: 0.6),
+                      color: AppTheme.textPrimary.withValues(alpha: 0.6),
                     ),
                   ),
 
@@ -274,7 +274,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _signup,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.greenPrimary,
+                        backgroundColor: AppTheme.accentGreen,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -297,7 +297,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       Text(
                         'Já tem conta? ',
                         style: TextStyle(
-                          color: AppTheme.getTextColor(context).withValues(alpha: 0.6),
+                          color: AppTheme.textPrimary.withValues(alpha: 0.6),
                         ),
                       ),
                       TextButton(
@@ -305,7 +305,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         child: Text(
                           'Entre aqui',
                           style: TextStyle(
-                            color: AppTheme.greenPrimary,
+                            color: AppTheme.accentGreen,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

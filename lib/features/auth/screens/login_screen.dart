@@ -233,12 +233,12 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppTheme.getTextColor(context)),
+          icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -256,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.getTextColor(context),
+                      color: AppTheme.textPrimary,
                     ),
                   ),
 
@@ -266,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     'Acesse sua conta',
                     style: TextStyle(
                       fontSize: 16,
-                      color: AppTheme.getTextColor(context).withValues(alpha: 0.6),
+                      color: AppTheme.textPrimary.withValues(alpha: 0.6),
                     ),
                   ),
 
@@ -321,7 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _loginWithEmail,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.greenPrimary,
+                        backgroundColor: AppTheme.accentGreen,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -340,17 +340,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   Row(
                     children: [
-                      Expanded(child: Divider(color: AppTheme.getTextColor(context).withValues(alpha: 0.2))),
+                      Expanded(child: Divider(color: AppTheme.textPrimary.withValues(alpha: 0.2))),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
                           'OU',
                           style: TextStyle(
-                            color: AppTheme.getTextColor(context).withValues(alpha: 0.6),
+                            color: AppTheme.textPrimary.withValues(alpha: 0.6),
                           ),
                         ),
                       ),
-                      Expanded(child: Divider(color: AppTheme.getTextColor(context).withValues(alpha: 0.2))),
+                      Expanded(child: Divider(color: AppTheme.textPrimary.withValues(alpha: 0.2))),
                     ],
                   ),
 
@@ -362,7 +362,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     label: const Text('Continuar com Google'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: AppTheme.getTextColor(context).withValues(alpha: 0.3)),
+                      side: BorderSide(color: AppTheme.textPrimary.withValues(alpha: 0.3)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -377,7 +377,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       Text(
                         'Não tem conta? ',
                         style: TextStyle(
-                          color: AppTheme.getTextColor(context).withValues(alpha: 0.6),
+                          color: AppTheme.textPrimary.withValues(alpha: 0.6),
                         ),
                       ),
                       TextButton(
@@ -385,7 +385,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Text(
                           'Cadastre-se',
                           style: TextStyle(
-                            color: AppTheme.greenPrimary,
+                            color: AppTheme.accentGreen,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

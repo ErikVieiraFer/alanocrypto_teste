@@ -102,7 +102,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             onPressed: () => _notificationService.markAllAsRead(_userId!),
             child: const Text('Marcar todas como lidas'),
             style: TextButton.styleFrom(
-              foregroundColor: AppTheme.getTextColor(context),
+              foregroundColor: AppTheme.textPrimary,
             ),
           ),
         ],
@@ -152,7 +152,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     children: [
                       Icon(
                         _getIconForType(notification.type),
-                        color: isUnread ? AppTheme.getPrimaryColor(context) : Colors.grey,
+                        color: isUnread ? AppTheme.accentGreen : Colors.grey,
                         size: 32,
                       ),
                     ],
@@ -179,7 +179,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           width: 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: AppTheme.getPrimaryColor(context),
+                            color: AppTheme.accentGreen,
                             shape: BoxShape.circle,
                           ),
                         )

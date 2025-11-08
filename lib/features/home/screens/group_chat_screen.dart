@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/message_model.dart';
@@ -312,20 +311,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.group),
-            SizedBox(width: 8),
-            Text('Chat da Comunidade'),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: StreamBuilder<List<Message>>(
+    return Column(
+      children: [
+        Expanded(
+          child: StreamBuilder<List<Message>>(
               stream: _chatService.getMessages(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
@@ -379,18 +368,17 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               },
             ),
           ),
-          MessageInput(
-            onSend: _sendMessage,
-            replyToUserName: _replyToMessage?.userName,
-            replyToText: _replyToMessage?.text,
-            onCancelReply: () {
-              setState(() {
-                _replyToMessage = null;
-              });
-            },
-          ),
-        ],
-      ),
+        MessageInput(
+          onSend: _sendMessage,
+          replyToUserName: _replyToMessage?.userName,
+          replyToText: _replyToMessage?.text,
+          onCancelReply: () {
+            setState(() {
+              _replyToMessage = null;
+            });
+          },
+        ),
+      ],
     );
   }
 }
