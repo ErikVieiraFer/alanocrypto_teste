@@ -29,12 +29,6 @@ class LandingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _launchWhatsApp(context),
-        mini: true,
-        backgroundColor: const Color(0xFF25D366),
-        child: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white),
-      ),
       body: Stack(
         children: [
           Positioned.fill(
@@ -56,6 +50,37 @@ class LandingScreen extends StatelessWidget {
                     Colors.black.withValues(alpha: 0.8),
                   ],
                   stops: const [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 50,
+            right: 16,
+            child: InkWell(
+              onTap: () => _launchWhatsApp(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF25D366),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(80),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  children: [
+                    FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white, size: 20),
+                    SizedBox(width: 8),
+                    Text(
+                      'Suporte',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
                 ),
               ),
             ),

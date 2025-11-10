@@ -34,6 +34,7 @@ class UserService {
     String? bio,
     String? photoURL,
     String? phone,
+    String? telegram,
     Map<String, dynamic>? data,
   }) async {
     try {
@@ -43,6 +44,7 @@ class UserService {
       if (bio != null) updates['bio'] = bio;
       if (photoURL != null) updates['photoURL'] = photoURL;
       if (phone != null) updates['phone'] = phone;
+      if (telegram != null) updates['telegram'] = telegram;
 
       // Adiciona dados customizados se fornecidos
       if (data != null) {
@@ -190,6 +192,9 @@ class UserService {
         'displayName': displayName ?? firebaseUser.displayName ?? '',
         'photoURL': firebaseUser.photoURL ?? '',
         'phone': phone,
+        'telegram': null,
+        'country': 'Brasil',
+        'tier': 'Free',
         'bio': '',
         'approved': false, // Novo usuário precisa aprovação
         'blocked': false,

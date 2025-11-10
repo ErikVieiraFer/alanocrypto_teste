@@ -112,6 +112,16 @@ class SignalService {
     }
   }
 
+  Future<int> getSignalsCount() async {
+    try {
+      final snapshot = await _firestore.collection('signals').get();
+      return snapshot.size;
+    } catch (e) {
+      print('Erro ao contar sinais: $e');
+      return 0;
+    }
+  }
+
   String formatSignalText(Signal signal) {
     final buffer = StringBuffer();
     buffer.writeln('🎯 ${signal.coin}');
