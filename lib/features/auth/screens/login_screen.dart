@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../services/auth_service.dart';
 import '../../../services/user_service.dart';
 import '../../../theme/app_theme.dart';
@@ -27,19 +29,35 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _launchWhatsApp() async {
+    const String phone = '5531988369268';
+    const String message = 'Olá, preciso de ajuda com o meu o meu aplicativo.';
+    final Uri url = Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o WhatsApp.')),
+        );
+      }
+    }
+  }
+
   Future<void> _loginWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      final userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
 
       if (userCredential.user != null) {
-        final isApproved = await _userService.isUserApproved(userCredential.user!.uid);
+        final isApproved = await _userService.isUserApproved(
+          userCredential.user!.uid,
+        );
 
         if (mounted) {
           if (isApproved) {
@@ -81,10 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Expanded(
                   child: Text(
                     message,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                 ),
               ],
@@ -111,10 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Expanded(
                   child: Text(
                     'Erro inesperado: ${e.toString()}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                 ),
               ],
@@ -178,10 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Expanded(
                   child: Text(
                     message,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                 ),
               ],
@@ -207,10 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Expanded(
                   child: Text(
                     'Erro inesperado ao fazer login: ${e.toString()}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                   ),
                 ),
               ],
@@ -241,6 +247,12 @@ class _LoginScreenState extends State<LoginScreen> {
           icon: Icon(Icons.arrow_back, color: AppTheme.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _launchWhatsApp,
+        mini: true,
+        backgroundColor: const Color(0xFF25D366),
+        child: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white),
       ),
       body: SafeArea(
         child: Center(
@@ -299,8 +311,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       labelText: 'Senha',
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        onPressed: () => setState(
+                          () => _obscurePassword = !_obscurePassword,
+                        ),
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -331,7 +349,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
                               'Entrar',
-                              style: TextStyle(fontSize: 18, color: Colors.white),
+                              style: TextStyle(
+                                fontSize: 18,
+                                color: Colors.white,
+                              ),
                             ),
                     ),
                   ),
@@ -340,7 +361,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   Row(
                     children: [
-                      Expanded(child: Divider(color: AppTheme.textPrimary.withValues(alpha: 0.2))),
+                      Expanded(
+                        child: Divider(
+                          color: AppTheme.textPrimary.withValues(alpha: 0.2),
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
@@ -350,7 +375,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      Expanded(child: Divider(color: AppTheme.textPrimary.withValues(alpha: 0.2))),
+                      Expanded(
+                        child: Divider(
+                          color: AppTheme.textPrimary.withValues(alpha: 0.2),
+                        ),
+                      ),
                     ],
                   ),
 
@@ -362,7 +391,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     label: const Text('Continuar com Google'),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: AppTheme.textPrimary.withValues(alpha: 0.3)),
+                      side: BorderSide(
+                        color: AppTheme.textPrimary.withValues(alpha: 0.3),
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -381,7 +412,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       TextButton(
-                        onPressed: () => Navigator.pushNamed(context, '/signup'),
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/signup'),
                         child: Text(
                           'Cadastre-se',
                           style: TextStyle(

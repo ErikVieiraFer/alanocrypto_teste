@@ -38,7 +38,9 @@ void main() {
         error.contains('_testException') ||
         error.contains('ArgumentError')) {
       // Suppress known FlutterFire web interop error
-      debugPrint('Suprimindo erro conhecido do FlutterFire: ${details.exception}');
+      debugPrint(
+        'Suprimindo erro conhecido do FlutterFire: ${details.exception}',
+      );
       return;
     }
     FlutterError.presentError(details);
@@ -65,7 +67,9 @@ void main() {
 
         // Registrar handler para notificações em background (mobile)
         if (!kIsWeb) {
-          FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+          FirebaseMessaging.onBackgroundMessage(
+            _firebaseMessagingBackgroundHandler,
+          );
         }
       } catch (e) {
         if (e.toString().contains('duplicate-app')) {
@@ -84,7 +88,9 @@ void main() {
       if (error.toString().contains('JavaScriptObject') ||
           error.toString().contains('_testException') ||
           error.toString().contains('ArgumentError')) {
-        debugPrint('Suprimindo erro assíncrono conhecido do FlutterFire: $error');
+        debugPrint(
+          'Suprimindo erro assíncrono conhecido do FlutterFire: $error',
+        );
         return;
       }
       debugPrint('Erro não tratado: $error');
@@ -101,7 +107,8 @@ class MyApp extends StatelessWidget {
     // Configurar cor da StatusBar do sistema
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent, // Transparente para usar a cor do AppBar
+        statusBarColor:
+            Colors.transparent, // Transparente para usar a cor do AppBar
         statusBarIconBrightness: Brightness.light, // Ícones brancos
         statusBarBrightness: Brightness.dark, // Para iOS
         systemNavigationBarColor: Color(0xFF0f0f0f), // Mesma cor da AppBar
@@ -129,7 +136,8 @@ class MyApp extends StatelessWidget {
         '/pending-approval': (context) => const PendingApprovalScreen(),
         '/dashboard': (context) => const DashboardScreen(),
         '/under-development': (context) {
-          final pageName = ModalRoute.of(context)?.settings.arguments as String? ?? 'Página';
+          final pageName =
+              ModalRoute.of(context)?.settings.arguments as String? ?? 'Página';
           return UnderDevelopmentScreen(pageName: pageName);
         },
       },
@@ -171,9 +179,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           return Scaffold(
             backgroundColor: AppTheme.backgroundColor,
             body: const Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.accentGreen,
-              ),
+              child: CircularProgressIndicator(color: AppTheme.accentGreen),
             ),
           );
         }

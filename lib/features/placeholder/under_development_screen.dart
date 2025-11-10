@@ -5,10 +5,8 @@ import '../../theme/app_theme.dart';
 class UnderDevelopmentScreen extends StatelessWidget {
   final String pageName;
 
-  const UnderDevelopmentScreen({
-    Key? key,
-    required this.pageName,
-  }) : super(key: key);
+  const UnderDevelopmentScreen({Key? key, required this.pageName})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -36,11 +34,7 @@ class UnderDevelopmentScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.construction,
-                size: 80,
-                color: AppTheme.accentGreen,
-              ),
+              Icon(Icons.construction, size: 80, color: AppTheme.accentGreen),
               SizedBox(height: 24),
               Text(
                 pageName,
@@ -54,19 +48,13 @@ class UnderDevelopmentScreen extends StatelessWidget {
               SizedBox(height: 16),
               Text(
                 'Esta página está em desenvolvimento',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade400,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade400),
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 8),
               Text(
                 'Em breve disponível!',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade500,
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
                 textAlign: TextAlign.center,
               ),
             ],

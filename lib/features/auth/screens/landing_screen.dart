@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../theme/app_theme.dart';
 
@@ -12,9 +13,28 @@ class LandingScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _launchWhatsApp(BuildContext context) async {
+    const String phone = '5531988369268';
+    const String message = 'Olá, preciso de ajuda com o meu aplicativo.';
+    final Uri url = Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o WhatsApp.')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _launchWhatsApp(context),
+        mini: true,
+        backgroundColor: const Color(0xFF25D366),
+        child: const FaIcon(FontAwesomeIcons.whatsapp, color: Colors.white),
+      ),
       body: Stack(
         children: [
           Positioned.fill(
@@ -31,9 +51,9 @@ class LandingScreen extends StatelessWidget {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.8),
+                    Colors.black.withValues(alpha: 0.8),
                     Colors.transparent,
-                    Colors.black.withOpacity(0.8),
+                    Colors.black.withValues(alpha: 0.8),
                   ],
                   stops: const [0.0, 0.5, 1.0],
                 ),
@@ -53,11 +73,11 @@ class LandingScreen extends StatelessWidget {
                       fontSize: 14,
                       letterSpacing: 2,
                       fontWeight: FontWeight.w600,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       shadows: [
                         Shadow(
                           blurRadius: 8,
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                         ),
                       ],
                     ),
@@ -71,11 +91,11 @@ class LandingScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w300,
-                      color: Colors.white.withOpacity(0.95),
+                      color: Colors.white.withValues(alpha: 0.95),
                       shadows: [
                         Shadow(
                           blurRadius: 8,
-                          color: Colors.black.withOpacity(0.7),
+                          color: Colors.black.withValues(alpha: 0.7),
                         ),
                       ],
                     ),
@@ -97,7 +117,7 @@ class LandingScreen extends StatelessWidget {
                           shadows: [
                             Shadow(
                               blurRadius: 12,
-                              color: Colors.black.withOpacity(0.8),
+                              color: Colors.black.withValues(alpha: 0.8),
                             ),
                           ],
                         ),
@@ -111,7 +131,7 @@ class LandingScreen extends StatelessWidget {
                           shadows: [
                             Shadow(
                               blurRadius: 12,
-                              color: Colors.black.withOpacity(0.8),
+                              color: Colors.black.withValues(alpha: 0.8),
                             ),
                           ],
                         ),
@@ -126,7 +146,8 @@ class LandingScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        onPressed: () => _launchURL('https://www.youtube.com/@AlanoCrypto'),
+                        onPressed: () =>
+                            _launchURL('https://www.youtube.com/@AlanoCrypto'),
                         icon: Image.asset(
                           'assets/icons/youtube.png',
                           width: 40,
@@ -137,7 +158,9 @@ class LandingScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 24),
                       IconButton(
-                        onPressed: () => _launchURL('https://www.instagram.com/alanocrypto/'),
+                        onPressed: () => _launchURL(
+                          'https://www.instagram.com/alanocrypto/',
+                        ),
                         icon: Image.asset(
                           'assets/icons/instagram.png',
                           width: 40,
@@ -164,7 +187,7 @@ class LandingScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(30),
                         ),
                         elevation: 8,
-                        shadowColor: Colors.black.withOpacity(0.5),
+                        shadowColor: Colors.black.withValues(alpha: 0.5),
                       ),
                       child: const Text(
                         'Cadastre-se',
@@ -210,11 +233,11 @@ class LandingScreen extends StatelessWidget {
                     'Termos de Uso • Política de Privacidade',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       shadows: [
                         Shadow(
                           blurRadius: 6,
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withValues(alpha: 0.6),
                         ),
                       ],
                     ),

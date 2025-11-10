@@ -13,8 +13,10 @@ class AlanoPostService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => AlanoPost.fromFirestore(doc)).toList();
-    });
+          return snapshot.docs
+              .map((doc) => AlanoPost.fromFirestore(doc))
+              .toList();
+        });
   }
 
   Future<void> toggleLike(String postId) async {
@@ -22,7 +24,9 @@ class AlanoPostService {
       final User? user = _auth.currentUser;
       if (user == null) return;
 
-      final DocumentReference postRef = _firestore.collection('alano_posts').doc(postId);
+      final DocumentReference postRef = _firestore
+          .collection('alano_posts')
+          .doc(postId);
       final DocumentSnapshot postDoc = await postRef.get();
 
       if (!postDoc.exists) return;
@@ -52,7 +56,6 @@ class AlanoPostService {
     }
   }
 
-
   Future<bool> createPost({
     required String title,
     required String content,
@@ -74,7 +77,9 @@ class AlanoPostService {
         createdAt: DateTime.now(),
       );
 
-      final docRef = await _firestore.collection('alano_posts').add(newPost.toFirestore());
+      final docRef = await _firestore
+          .collection('alano_posts')
+          .add(newPost.toFirestore());
       await _createNotificationsForAllUsers(docRef.id, title);
       return true;
     } catch (e) {
@@ -83,7 +88,10 @@ class AlanoPostService {
     }
   }
 
-  Future<void> _createNotificationsForAllUsers(String postId, String title) async {
+  Future<void> _createNotificationsForAllUsers(
+    String postId,
+    String title,
+  ) async {
     try {
       final usersSnapshot = await _firestore.collection('users').get();
       if (usersSnapshot.docs.isEmpty) return;

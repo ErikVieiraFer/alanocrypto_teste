@@ -61,10 +61,7 @@ class Message {
       imageUrl: json['imageUrl'] as String?,
       reactions: Map<String, List<String>>.from(
         (json['reactions'] as Map<String, dynamic>? ?? {}).map(
-          (key, value) => MapEntry(
-            key,
-            List<String>.from(value as List),
-          ),
+          (key, value) => MapEntry(key, List<String>.from(value as List)),
         ),
       ),
       replyToId: json['replyToId'] as String?,

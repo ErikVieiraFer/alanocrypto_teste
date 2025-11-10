@@ -28,7 +28,8 @@ class AppTheme {
       // AppBar
       appBarTheme: AppBarTheme(
         backgroundColor: appBarColor,
-        surfaceTintColor: Colors.transparent, // Remove efeito de tint do Material 3
+        surfaceTintColor:
+            Colors.transparent, // Remove efeito de tint do Material 3
         scrolledUnderElevation: 0, // Remove mudança de cor ao scrollar
         elevation: 0,
         centerTitle: true,
@@ -44,9 +45,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: inputBackground,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
 
       // Input Fields
@@ -89,20 +88,14 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
 
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: accentGreen,
-          textStyle: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -116,31 +109,43 @@ class AppTheme {
       ),
 
       // Drawer
-      drawerTheme: DrawerThemeData(
-        backgroundColor: backgroundColor,
-      ),
+      drawerTheme: DrawerThemeData(backgroundColor: backgroundColor),
 
       // Dialog
       dialogTheme: DialogThemeData(
         backgroundColor: inputBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
 
       // Icon
-      iconTheme: IconThemeData(
-        color: textPrimary,
-      ),
+      iconTheme: IconThemeData(color: textPrimary),
 
       // Text
       textTheme: TextTheme(
-        displayLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
-        displayMedium: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
-        displaySmall: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
-        headlineLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
-        headlineMedium: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
-        headlineSmall: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+        displayLarge: TextStyle(
+          color: textPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        displayMedium: TextStyle(
+          color: textPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        displaySmall: TextStyle(
+          color: textPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        headlineLarge: TextStyle(
+          color: textPrimary,
+          fontWeight: FontWeight.bold,
+        ),
+        headlineMedium: TextStyle(
+          color: textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
+        headlineSmall: TextStyle(
+          color: textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
         titleLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
         titleMedium: TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
         titleSmall: TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
@@ -153,10 +158,7 @@ class AppTheme {
       ),
 
       // Divider
-      dividerTheme: DividerThemeData(
-        color: inputBackground,
-        thickness: 1,
-      ),
+      dividerTheme: DividerThemeData(color: inputBackground, thickness: 1),
 
       // Chip
       chipTheme: ChipThemeData(
@@ -169,9 +171,7 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         backgroundColor: inputBackground,
         contentTextStyle: TextStyle(color: textPrimary),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         behavior: SnackBarBehavior.floating,
       ),
 

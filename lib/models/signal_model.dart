@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 enum SignalType { long, short }
+
 enum SignalStatus { active, completed, stopped }
 
 class Signal {
@@ -51,7 +52,9 @@ class Signal {
         (e) => e.name == data['status'],
         orElse: () => SignalStatus.active,
       ),
-      profit: data['profit'] != null ? (data['profit'] as num).toDouble() : null,
+      profit: data['profit'] != null
+          ? (data['profit'] as num).toDouble()
+          : null,
       confidence: data['confidence'] ?? 0,
       viewedBy: List<String>.from(data['viewedBy'] ?? []),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
@@ -62,23 +65,25 @@ class Signal {
   }
 
   Map<String, dynamic> toFirestore() {
-  return {
-    'coin': coin,
-    'type': type.name,
-    'entry': entry,
-    'targets': targets,
-    'stopLoss': stopLoss,
-    'status': status.name,
-    'profit': profit,
-    'confidence': confidence,
-    'viewedBy': viewedBy,
-    'createdAt': Timestamp.fromDate(createdAt),
-    'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
-  };
-}
+    return {
+      'coin': coin,
+      'type': type.name,
+      'entry': entry,
+      'targets': targets,
+      'stopLoss': stopLoss,
+      'status': status.name,
+      'profit': profit,
+      'confidence': confidence,
+      'viewedBy': viewedBy,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'completedAt': completedAt != null
+          ? Timestamp.fromDate(completedAt!)
+          : null,
+    };
+  }
 
   String get typeLabel => type == SignalType.long ? 'LONG' : 'SHORT';
-  
+
   String get statusLabel {
     switch (status) {
       case SignalStatus.active:
@@ -91,8 +96,8 @@ class Signal {
   }
 
   Color get typeColor {
-    return type == SignalType.long 
-        ? const Color(0xFF4CAF50) 
+    return type == SignalType.long
+        ? const Color(0xFF4CAF50)
         : const Color(0xFFF44336);
   }
 

@@ -33,37 +33,6 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     super.initState();
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -109,7 +78,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
     try {
       if (image != null && image.hasData) {
-        imageUrl = await _chatService.uploadMessageImage(image, _currentUser!.uid);
+        imageUrl = await _chatService.uploadMessageImage(
+          image,
+          _currentUser!.uid,
+        );
       }
 
       final originalMessage = _replyToMessage;
@@ -141,7 +113,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       await _chatService.sendMessage(
         text: text,
         userId: _currentUser!.uid,
-        userName: userModel?.displayName ?? _currentUser!.displayName ?? 'Usuário',
+        userName:
+            userModel?.displayName ?? _currentUser!.displayName ?? 'Usuário',
         userPhotoUrl: userPhotoUrl,
         imageUrl: imageUrl,
         replyToId: originalMessage?.id,
@@ -150,9 +123,11 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       );
 
       // Criar notificação se for uma resposta para a mensagem de outra pessoa
-      if (originalMessage != null && originalMessage.userId != _currentUser!.uid) {
+      if (originalMessage != null &&
+          originalMessage.userId != _currentUser!.uid) {
         await _notificationService.createNotification(
-          userId: originalMessage.userId, // Notifica o autor da mensagem original
+          userId:
+              originalMessage.userId, // Notifica o autor da mensagem original
           type: NotificationType.chatReply,
           title: '${_currentUser!.displayName} respondeu à sua mensagem',
           content: text,
@@ -167,9 +142,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       _scrollToBottom();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao enviar mensagem: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao enviar mensagem: $e')));
       }
     }
   }
@@ -180,7 +155,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: theme.brightness == Brightness.dark ? Colors.grey[900] : Colors.white,
+      backgroundColor: theme.brightness == Brightness.dark
+          ? Colors.grey[900]
+          : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -212,9 +189,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               onTap: () {
                 Navigator.pop(context);
                 // Clipboard.setData(ClipboardData(text: message.text));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Texto copiado')),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Texto copiado')));
               },
             ),
             if (!isMyMessage)
@@ -226,7 +203,8 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ProfileScreen(userId: message.userId),
+                      builder: (context) =>
+                          ProfileScreen(userId: message.userId),
                     ),
                   );
                 },
@@ -242,7 +220,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Deletar', style: TextStyle(color: Colors.red)),
+                title: const Text(
+                  'Deletar',
+                  style: TextStyle(color: Colors.red),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _deleteMessage(message);
@@ -277,10 +258,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 _addReaction(message, emoji);
               },
               child: Center(
-                child: Text(
-                  emoji,
-                  style: const TextStyle(fontSize: 32),
-                ),
+                child: Text(emoji, style: const TextStyle(fontSize: 32)),
               ),
             );
           },
@@ -312,9 +290,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao adicionar reação: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao adicionar reação: $e')));
       }
     }
   }
@@ -362,9 +340,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         title: const Text('Editar mensagem'),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'Digite a nova mensagem',
-          ),
+          decoration: const InputDecoration(hintText: 'Digite a nova mensagem'),
           maxLines: null,
           autofocus: true,
         ),
@@ -383,7 +359,11 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
     if (result != null && result.trim().isNotEmpty && _currentUser != null) {
       try {
-        await _chatService.editMessage(message.id, result.trim(), _currentUser!.uid);
+        await _chatService.editMessage(
+          message.id,
+          result.trim(),
+          _currentUser!.uid,
+        );
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -402,69 +382,72 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
       children: [
         Expanded(
           child: StreamBuilder<List<Message>>(
-              stream: _chatService.getMessages(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text('Erro ao carregar mensagens: ${snapshot.error}'),
-                  );
-                }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final messages = snapshot.data ?? [];
-
-                if (messages.isEmpty) {
-                  return const Center(
-                    child: Text('Nenhuma mensagem ainda.\nSeja o primeiro a enviar!'),
-                  );
-                }
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  reverse: true,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isMe = message.userId == _currentUser?.uid;
-
-                    // Buscar foto atual do usuário
-                    return FutureBuilder<String?>(
-                      future: _getUserCurrentPhoto(message.userId),
-                      builder: (context, photoSnapshot) {
-                        // Usa a foto atualizada se disponível
-                        final currentPhotoUrl = photoSnapshot.data;
-
-                        return MessageBubble(
-                          message: message,
-                          isMe: isMe,
-                          currentUserPhotoUrl: currentPhotoUrl,
-                          onLongPress: () => _showMessageOptions(message),
-                          onSwipe: () {
-                            setState(() {
-                              _replyToMessage = message;
-                            });
-                          },
-                          onReactionTap: (emoji) => _addReaction(message, emoji),
-                          onUserTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProfileScreen(userId: message.userId),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    );
-                  },
+            stream: _chatService.getMessages(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text('Erro ao carregar mensagens: ${snapshot.error}'),
                 );
-              },
-            ),
+              }
+
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final messages = snapshot.data ?? [];
+
+              if (messages.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'Nenhuma mensagem ainda.\nSeja o primeiro a enviar!',
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                controller: _scrollController,
+                reverse: true,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: messages.length,
+                itemBuilder: (context, index) {
+                  final message = messages[index];
+                  final isMe = message.userId == _currentUser?.uid;
+
+                  // Buscar foto atual do usuário
+                  return FutureBuilder<String?>(
+                    future: _getUserCurrentPhoto(message.userId),
+                    builder: (context, photoSnapshot) {
+                      // Usa a foto atualizada se disponível
+                      final currentPhotoUrl = photoSnapshot.data;
+
+                      return MessageBubble(
+                        message: message,
+                        isMe: isMe,
+                        currentUserPhotoUrl: currentPhotoUrl,
+                        onLongPress: () => _showMessageOptions(message),
+                        onSwipe: () {
+                          setState(() {
+                            _replyToMessage = message;
+                          });
+                        },
+                        onReactionTap: (emoji) => _addReaction(message, emoji),
+                        onUserTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ProfileScreen(userId: message.userId),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
+              );
+            },
           ),
+        ),
         MessageInput(
           onSend: _sendMessage,
           replyToUserName: _replyToMessage?.userName,

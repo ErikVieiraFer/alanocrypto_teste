@@ -16,8 +16,10 @@ class CommentService {
         .orderBy('createdAt', descending: false)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => Comment.fromFirestore(doc)).toList();
-    });
+          return snapshot.docs
+              .map((doc) => Comment.fromFirestore(doc))
+              .toList();
+        });
   }
 
   Future<bool> createComment({
@@ -68,15 +70,20 @@ class CommentService {
       return true;
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') {
-        throw Exception('Erro ao comentar: Permissões insuficientes. Verifique suas configurações');
+        throw Exception(
+          'Erro ao comentar: Permissões insuficientes. Verifique suas configurações',
+        );
       } else if (e.code == 'unavailable') {
-        throw Exception('Erro ao comentar: Conexão perdida. Verifique sua internet');
+        throw Exception(
+          'Erro ao comentar: Conexão perdida. Verifique sua internet',
+        );
       } else if (e.code == 'not-found') {
         throw Exception('Erro ao comentar: Post não encontrado');
       }
       throw Exception('Erro ao comentar: ${e.message}');
     } catch (e) {
-      if (e.toString().contains('conectado') || e.toString().contains('vazio')) {
+      if (e.toString().contains('conectado') ||
+          e.toString().contains('vazio')) {
         rethrow;
       }
       throw Exception('Erro ao criar comentário: $e');

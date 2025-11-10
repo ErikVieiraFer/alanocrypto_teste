@@ -12,7 +12,8 @@ class SignalsScreen extends StatefulWidget {
   State<SignalsScreen> createState() => _SignalsScreenState();
 }
 
-class _SignalsScreenState extends State<SignalsScreen> with SingleTickerProviderStateMixin {
+class _SignalsScreenState extends State<SignalsScreen>
+    with SingleTickerProviderStateMixin {
   final SignalService _signalService = SignalService();
   SignalType? _selectedFilter;
   late TabController _tabController;
@@ -22,34 +23,6 @@ class _SignalsScreenState extends State<SignalsScreen> with SingleTickerProvider
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   @override
   void dispose() {
@@ -68,7 +41,9 @@ class _SignalsScreenState extends State<SignalsScreen> with SingleTickerProvider
 
       // Determinar emoji por tipo
       final typeEmoji = signal.type == SignalType.long ? '📈' : '📉';
-      final typeName = signal.type == SignalType.long ? 'LONG (Compra)' : 'SHORT (Venda)';
+      final typeName = signal.type == SignalType.long
+          ? 'LONG (Compra)'
+          : 'SHORT (Venda)';
 
       // Formatar confiança
       String confidenceLevel;
@@ -85,7 +60,8 @@ class _SignalsScreenState extends State<SignalsScreen> with SingleTickerProvider
       }
 
       // Montar mensagem formatada
-      final text = '''
+      final text =
+          '''
 ━━━━━━━━━━━━━━━━━━━━
 $typeEmoji SINAL DE TRADING
 ━━━━━━━━━━━━━━━━━━━━
@@ -107,7 +83,8 @@ Opere por sua conta e risco.
 
 📲 AlanoCryptoFX
 ━━━━━━━━━━━━━━━━━━━━
-      '''.trim();
+      '''
+              .trim();
 
       await Clipboard.setData(ClipboardData(text: text));
 
@@ -181,9 +158,8 @@ Opere por sua conta e risco.
                         const SizedBox(width: 12),
                         Text(
                           'Sinais',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -248,13 +224,17 @@ Opere por sua conta e risco.
               controller: _tabController,
               children: [
                 _SignalsTab(
-                  stream: _signalService.getActiveSignals(filter: _selectedFilter),
+                  stream: _signalService.getActiveSignals(
+                    filter: _selectedFilter,
+                  ),
                   emptyMessage: 'Nenhum sinal ativo',
                   onCopy: _copySignal,
                   formatTimestamp: _formatTimestamp,
                 ),
                 _SignalsTab(
-                  stream: _signalService.getCompletedSignals(filter: _selectedFilter),
+                  stream: _signalService.getCompletedSignals(
+                    filter: _selectedFilter,
+                  ),
                   emptyMessage: 'Nenhum sinal finalizado',
                   onCopy: _copySignal,
                   formatTimestamp: _formatTimestamp,
@@ -339,8 +319,8 @@ class _SignalsTab extends StatelessWidget {
 
         if (snapshot.hasError) {
           final errorMessage = snapshot.error.toString();
-          
-          if (errorMessage.contains('index') || 
+
+          if (errorMessage.contains('index') ||
               errorMessage.contains('FAILED_PRECONDITION')) {
             return Center(
               child: Padding(
@@ -365,10 +345,7 @@ class _SignalsTab extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Aguarde alguns minutos e tente novamente',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
@@ -396,26 +373,16 @@ class _SignalsTab extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red[400],
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
                   const SizedBox(height: 16),
                   const Text(
                     'Erro ao carregar sinais',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     errorMessage,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     textAlign: TextAlign.center,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
@@ -441,10 +408,7 @@ class _SignalsTab extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   emptyMessage,
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
                 ),
               ],
             ),
@@ -491,10 +455,7 @@ class SignalCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? Colors.grey[850] : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: signal.typeColor.withAlpha(77),
-          width: 2,
-        ),
+        border: Border.all(color: signal.typeColor.withAlpha(77), width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withAlpha(13),
@@ -510,12 +471,17 @@ class SignalCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: signal.typeColor.withAlpha(26),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(14),
+              ),
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: signal.typeColor,
                     borderRadius: BorderRadius.circular(12),
@@ -540,7 +506,10 @@ class SignalCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: signal.statusColor,
                     borderRadius: BorderRadius.circular(8),
@@ -601,7 +570,10 @@ class SignalCard extends StatelessWidget {
                   runSpacing: 8,
                   children: signal.targets.asMap().entries.map((entry) {
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.withAlpha(26),
                         borderRadius: BorderRadius.circular(8),
@@ -633,10 +605,7 @@ class SignalCard extends StatelessWidget {
                     const Spacer(),
                     Text(
                       formatTimestamp(signal.createdAt),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -652,15 +621,21 @@ class SignalCard extends StatelessWidget {
                     child: Row(
                       children: [
                         Icon(
-                          signal.profit! >= 0 ? Icons.trending_up : Icons.trending_down,
-                          color: signal.profit! >= 0 ? Colors.green : Colors.red,
+                          signal.profit! >= 0
+                              ? Icons.trending_up
+                              : Icons.trending_down,
+                          color: signal.profit! >= 0
+                              ? Colors.green
+                              : Colors.red,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Lucro: ${signal.profit!.toStringAsFixed(2)}%',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: signal.profit! >= 0 ? Colors.green : Colors.red,
+                            color: signal.profit! >= 0
+                                ? Colors.green
+                                : Colors.red,
                           ),
                         ),
                       ],
@@ -673,13 +648,17 @@ class SignalCard extends StatelessWidget {
           Container(
             decoration: BoxDecoration(
               color: isDark ? Colors.grey[800] : Colors.grey[100],
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(14),
+              ),
             ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => onCopy(signal),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(14),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(12),
                   child: Row(
@@ -734,17 +713,11 @@ class _InfoRow extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
             ),
             Text(
               value,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, color: color),
             ),
           ],
         ),

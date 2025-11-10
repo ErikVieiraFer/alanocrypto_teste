@@ -71,7 +71,9 @@ class SignalService {
         createdAt: DateTime.now(),
       );
 
-      final docRef = await _firestore.collection('signals').add(newSignal.toFirestore());
+      final docRef = await _firestore
+          .collection('signals')
+          .add(newSignal.toFirestore());
       await _createNotificationsForAllUsers(docRef.id, coin);
       return true;
     } catch (e) {
@@ -80,7 +82,10 @@ class SignalService {
     }
   }
 
-  Future<void> _createNotificationsForAllUsers(String signalId, String coin) async {
+  Future<void> _createNotificationsForAllUsers(
+    String signalId,
+    String coin,
+  ) async {
     try {
       final usersSnapshot = await _firestore.collection('users').get();
       if (usersSnapshot.docs.isEmpty) return;
@@ -114,12 +119,13 @@ class SignalService {
     buffer.writeln('💰 Entrada: \${signal.entry.toStringAsFixed(2)}');
     buffer.writeln('🎯 Alvos:');
     for (int i = 0; i < signal.targets.length; i++) {
-      buffer.writeln('   Alvo ${i + 1}: \${signal.targets[i].toStringAsFixed(2)}');
+      buffer.writeln(
+        '   Alvo ${i + 1}: \${signal.targets[i].toStringAsFixed(2)}',
+      );
     }
     buffer.writeln('🛑 Stop Loss: \${signal.stopLoss.toStringAsFixed(2)}');
     buffer.writeln('⚡ Confiança: ${signal.confidence}%');
 
     return buffer.toString();
   }
-
 }

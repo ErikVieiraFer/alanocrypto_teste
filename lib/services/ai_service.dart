@@ -17,16 +17,19 @@ Diretrizes:
 Sempre termine respostas sobre operações com: "⚠️ Lembre-se: isso não é conselho financeiro. Sempre faça sua própria análise."
 ''';
 
-  Future<String> sendMessage(String message, List<Map<String, String>> conversationHistory) async {
+  Future<String> sendMessage(
+    String message,
+    List<Map<String, String>> conversationHistory,
+  ) async {
     await Future.delayed(Duration(seconds: 1));
-    
+
     return '🤖 Chat com IA - Em Desenvolvimento\n\n'
-           'Esta funcionalidade estará disponível em breve!\n\n'
-           'Por enquanto, você pode:\n'
-           '• Ver os posts da comunidade\n'
-           '• Acessar os sinais de trading\n'
-           '• Assistir os vídeos exclusivos do Alano\n\n'
-           '⚠️ Aguarde atualizações!';
+        'Esta funcionalidade estará disponível em breve!\n\n'
+        'Por enquanto, você pode:\n'
+        '• Ver os posts da comunidade\n'
+        '• Acessar os sinais de trading\n'
+        '• Assistir os vídeos exclusivos do Alano\n\n'
+        '⚠️ Aguarde atualizações!';
   }
 
   List<String> getSuggestedQuestions() {
@@ -44,7 +47,7 @@ Sempre termine respostas sobre operações com: "⚠️ Lembre-se: isso não é 
 class TimeoutException implements Exception {
   final String message;
   TimeoutException(this.message);
-  
+
   @override
   String toString() => message;
 }

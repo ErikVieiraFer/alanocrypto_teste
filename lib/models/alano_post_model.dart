@@ -57,7 +57,7 @@ class AlanoPost {
 
   String? get videoId {
     if (videoUrl == null) return null;
-    
+
     final uri = Uri.tryParse(videoUrl!);
     if (uri == null) return null;
 
@@ -66,7 +66,7 @@ class AlanoPost {
     } else if (uri.host.contains('youtu.be')) {
       return uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
     }
-    
+
     return null;
   }
 

@@ -104,7 +104,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text('Erro ao carregar comentários: ${snapshot.error}'),
+                    child: Text(
+                      'Erro ao carregar comentários: ${snapshot.error}',
+                    ),
                   );
                 }
 
@@ -131,9 +133,7 @@ class _CommentsScreenState extends State<CommentsScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Seja o primeiro a comentar!',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                          ),
+                          style: TextStyle(color: Colors.grey[500]),
                         ),
                       ],
                     ),
@@ -155,7 +155,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
                           CircleAvatar(
                             radius: 18,
                             backgroundImage: comment.userPhotoUrl.isNotEmpty
-                                ? CachedNetworkImageProvider(comment.userPhotoUrl)
+                                ? CachedNetworkImageProvider(
+                                    comment.userPhotoUrl,
+                                  )
                                 : null,
                             child: comment.userPhotoUrl.isEmpty
                                 ? Text(comment.userName[0].toUpperCase())
@@ -173,7 +175,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         comment.userName,
@@ -207,32 +210,38 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                           showDialog(
                                             context: context,
                                             builder: (context) => AlertDialog(
-                                              title: const Text('Excluir Comentário'),
+                                              title: const Text(
+                                                'Excluir Comentário',
+                                              ),
                                               content: const Text(
                                                 'Tem certeza que deseja excluir este comentário?',
                                               ),
                                               actions: [
                                                 TextButton(
-                                                  onPressed: () => Navigator.pop(context),
+                                                  onPressed: () =>
+                                                      Navigator.pop(context),
                                                   child: const Text('Cancelar'),
                                                 ),
                                                 TextButton(
                                                   onPressed: () async {
-                                                    final success = await _commentService
-                                                        .deleteComment(
-                                                      comment.id,
-                                                      widget.postId,
-                                                    );
+                                                    final success =
+                                                        await _commentService
+                                                            .deleteComment(
+                                                              comment.id,
+                                                              widget.postId,
+                                                            );
                                                     if (context.mounted) {
                                                       Navigator.pop(context);
                                                       if (!success) {
-                                                        ScaffoldMessenger.of(context)
-                                                            .showSnackBar(
+                                                        ScaffoldMessenger.of(
+                                                          context,
+                                                        ).showSnackBar(
                                                           const SnackBar(
                                                             content: Text(
                                                               'Erro ao excluir comentário',
                                                             ),
-                                                            backgroundColor: Colors.red,
+                                                            backgroundColor:
+                                                                Colors.red,
                                                           ),
                                                         );
                                                       }
@@ -240,7 +249,9 @@ class _CommentsScreenState extends State<CommentsScreen> {
                                                   },
                                                   child: const Text(
                                                     'Excluir',
-                                                    style: TextStyle(color: Colors.red),
+                                                    style: TextStyle(
+                                                      color: Colors.red,
+                                                    ),
                                                   ),
                                                 ),
                                               ],

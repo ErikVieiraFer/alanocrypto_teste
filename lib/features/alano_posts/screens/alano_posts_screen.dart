@@ -22,67 +22,41 @@ class _AlanoPostsScreenState extends State<AlanoPostsScreen> {
     super.initState();
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   Future<void> _openVideo(String? videoUrl) async {
-  if (videoUrl == null || videoUrl.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Link do vídeo não disponível'),
-        backgroundColor: Colors.orange,
-      ),
-    );
-    return;
-  }
+    if (videoUrl == null || videoUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Link do vídeo não disponível'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
 
-  try {
-    final Uri url = Uri.parse(videoUrl);
-    
-    if (!await launchUrl(
-      url,
-      mode: LaunchMode.externalApplication,
-    )) {
+    try {
+      final Uri url = Uri.parse(videoUrl);
+
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Não foi possível abrir: $videoUrl'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Não foi possível abrir: $videoUrl'),
+            content: Text('Erro ao abrir vídeo: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao abrir vídeo: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
   }
-}
 
   String _formatTimestamp(DateTime dateTime) {
     final now = DateTime.now();
@@ -124,8 +98,8 @@ class _AlanoPostsScreenState extends State<AlanoPostsScreen> {
                   Text(
                     'Conteúdo Exclusivo',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -168,9 +142,7 @@ class _AlanoPostsScreenState extends State<AlanoPostsScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Novos vídeos em breve!',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                          ),
+                          style: TextStyle(color: Colors.grey[500]),
                         ),
                       ],
                     ),
@@ -266,10 +238,7 @@ class AlanoPostCard extends StatelessWidget {
                     const Spacer(),
                     Text(
                       formatTimestamp(post.createdAt),
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
                     ),
                   ],
                 ),
@@ -311,9 +280,16 @@ class AlanoPostCard extends StatelessWidget {
                 child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.image_not_supported, size: 64, color: Color.fromRGBO(158, 158, 158, 1.0)),
+                    Icon(
+                      Icons.image_not_supported,
+                      size: 64,
+                      color: Color.fromRGBO(158, 158, 158, 1.0),
+                    ),
                     SizedBox(height: 8),
-                    Text('Erro ao carregar imagem', style: TextStyle(color: Color.fromRGBO(97, 97, 97, 1.0))),
+                    Text(
+                      'Erro ao carregar imagem',
+                      style: TextStyle(color: Color.fromRGBO(97, 97, 97, 1.0)),
+                    ),
                   ],
                 ),
               ),
@@ -381,10 +357,7 @@ class AlanoPostCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         '${post.likedBy.length}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -392,15 +365,15 @@ class AlanoPostCard extends StatelessWidget {
                 const SizedBox(width: 24),
                 Row(
                   children: [
-                    Icon(Icons.visibility_outlined,
-                        color: Colors.grey[600], size: 22),
+                    Icon(
+                      Icons.visibility_outlined,
+                      color: Colors.grey[600],
+                      size: 22,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       '${post.views}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     ),
                   ],
                 ),

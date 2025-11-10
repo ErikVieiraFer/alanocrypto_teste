@@ -9,7 +9,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'comments_screen.dart';
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -65,8 +64,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Feed',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
@@ -149,11 +148,7 @@ class PostCard extends StatelessWidget {
   final Post post;
   final String currentUserId;
 
-  const PostCard({
-    super.key,
-    required this.post,
-    required this.currentUserId,
-  });
+  const PostCard({super.key, required this.post, required this.currentUserId});
 
   String _formatTimestamp(DateTime dateTime) {
     final now = DateTime.now();
@@ -274,10 +269,7 @@ class PostCard extends StatelessWidget {
                 );
               }
             },
-            child: const Text(
-              'Excluir',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -330,10 +322,7 @@ class PostCard extends StatelessWidget {
                       ),
                       Text(
                         _formatTimestamp(post.createdAt),
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       ),
                     ],
                   ),
@@ -349,10 +338,7 @@ class PostCard extends StatelessWidget {
           if (post.content.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                post.content,
-                style: const TextStyle(fontSize: 15),
-              ),
+              child: Text(post.content, style: const TextStyle(fontSize: 15)),
             ),
           if (post.imageUrl != null)
             Padding(
@@ -385,7 +371,9 @@ class PostCard extends StatelessWidget {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(e.toString().replaceAll('Exception: ', '')),
+                            content: Text(
+                              e.toString().replaceAll('Exception: ', ''),
+                            ),
                             backgroundColor: Colors.red,
                             duration: const Duration(seconds: 3),
                           ),
@@ -403,10 +391,7 @@ class PostCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         '${post.likedBy.length}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -423,15 +408,15 @@ class PostCard extends StatelessWidget {
                   },
                   child: Row(
                     children: [
-                      Icon(Icons.comment_outlined,
-                          color: Colors.grey[600], size: 22),
+                      Icon(
+                        Icons.comment_outlined,
+                        color: Colors.grey[600],
+                        size: 22,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         '${post.commentsCount}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                        ),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
                       ),
                     ],
                   ),
@@ -448,10 +433,7 @@ class PostCard extends StatelessWidget {
 class CreatePostModal extends StatefulWidget {
   final VoidCallback onPostCreated;
 
-  const CreatePostModal({
-    super.key,
-    required this.onPostCreated,
-  });
+  const CreatePostModal({super.key, required this.onPostCreated});
 
   @override
   State<CreatePostModal> createState() => _CreatePostModalState();
@@ -460,7 +442,7 @@ class CreatePostModal extends StatefulWidget {
 class _CreatePostModalState extends State<CreatePostModal> {
   final PostService _postService = PostService();
   final TextEditingController _controller = TextEditingController();
-  
+
   File? _selectedImage;
   Uint8List? _webImage;
   bool _isLoading = false;
@@ -489,7 +471,9 @@ class _CreatePostModalState extends State<CreatePostModal> {
   }
 
   Future<void> _createPost() async {
-    if (_controller.text.trim().isEmpty && _selectedImage == null && _webImage == null) {
+    if (_controller.text.trim().isEmpty &&
+        _selectedImage == null &&
+        _webImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Adicione um texto ou imagem'),
@@ -543,9 +527,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.grey[300]!),
-              ),
+              border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
             ),
             child: Row(
               children: [
@@ -556,10 +538,7 @@ class _CreatePostModalState extends State<CreatePostModal> {
                 const Spacer(),
                 const Text(
                   'Criar Post',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 TextButton(

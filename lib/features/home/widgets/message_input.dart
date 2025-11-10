@@ -6,8 +6,8 @@ import 'package:image_picker/image_picker.dart';
 
 // Wrapper class to handle images on both mobile and web
 class PickedImageFile {
-  final File? file;  // For mobile
-  final Uint8List? bytes;  // For web
+  final File? file; // For mobile
+  final Uint8List? bytes; // For web
   final String? name;
 
   PickedImageFile({this.file, this.bytes, this.name});
@@ -59,10 +59,7 @@ class _MessageInputState extends State<MessageInput> {
           // For web: read as bytes
           final bytes = await image.readAsBytes();
           setState(() {
-            _selectedImage = PickedImageFile(
-              bytes: bytes,
-              name: image.name,
-            );
+            _selectedImage = PickedImageFile(bytes: bytes, name: image.name);
           });
         } else {
           // For mobile: use File
@@ -98,9 +95,9 @@ class _MessageInputState extends State<MessageInput> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao enviar mensagem: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao enviar mensagem: $e')));
       }
     } finally {
       if (mounted) {
@@ -135,10 +132,7 @@ class _MessageInputState extends State<MessageInput> {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(
-                    Icons.image,
-                    color: theme.primaryColor,
-                  ),
+                  icon: Icon(Icons.image, color: theme.primaryColor),
                   onPressed: _isSending ? null : _pickImage,
                 ),
                 Expanded(
@@ -177,10 +171,7 @@ class _MessageInputState extends State<MessageInput> {
                         ),
                       )
                     : IconButton(
-                        icon: Icon(
-                          Icons.send,
-                          color: theme.primaryColor,
-                        ),
+                        icon: Icon(Icons.send, color: theme.primaryColor),
                         onPressed: _sendMessage,
                       ),
               ],
@@ -198,12 +189,7 @@ class _MessageInputState extends State<MessageInput> {
       decoration: BoxDecoration(
         color: theme.primaryColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(
-            color: theme.primaryColor,
-            width: 3,
-          ),
-        ),
+        border: Border(left: BorderSide(color: theme.primaryColor, width: 3)),
       ),
       child: Row(
         children: [
@@ -261,10 +247,7 @@ class _MessageInputState extends State<MessageInput> {
       height: 120,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        image: DecorationImage(
-          image: imageProvider,
-          fit: BoxFit.cover,
-        ),
+        image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
       ),
       child: Stack(
         children: [
@@ -278,9 +261,7 @@ class _MessageInputState extends State<MessageInput> {
                   _selectedImage = null;
                 });
               },
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.black54,
-              ),
+              style: IconButton.styleFrom(backgroundColor: Colors.black54),
             ),
           ),
         ],

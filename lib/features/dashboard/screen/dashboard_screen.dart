@@ -32,20 +32,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final ChatService _chatService = ChatService();
   final String? _userId = FirebaseAuth.instance.currentUser?.uid;
 
-
   final List<Widget> _screens = [
-    const GroupChatScreen(),       // 0 - Comunidade
-    const ProfileScreen(),          // 1 - Perfil
-    const AlanoPostsScreen(),       // 2 - Posts
-    const AIChatScreen(),           // 3 - IA
-    const SignalsScreen(),          // 4 - Sinais
+    const GroupChatScreen(), // 0 - Comunidade
+    const ProfileScreen(), // 1 - Perfil
+    const AlanoPostsScreen(), // 2 - Posts
+    const AIChatScreen(), // 3 - IA
+    const SignalsScreen(), // 4 - Sinais
   ];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      final args =
+          ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       if (args != null && args['initialTab'] != null) {
         final int initialTab = args['initialTab'] as int;
         // Garantir que o índice está dentro do range
@@ -64,7 +64,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       MaterialPageRoute(builder: (context) => const NotificationsScreen()),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +107,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           decoration: BoxDecoration(
                             color: Colors.red,
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppTheme.appBarColor, width: 2),
+                            border: Border.all(
+                              color: AppTheme.appBarColor,
+                              width: 2,
+                            ),
                           ),
                           constraints: const BoxConstraints(
                             minWidth: 16,
@@ -132,9 +134,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.only(right: 8),
             child: StreamBuilder<DocumentSnapshot>(
               stream: FirebaseFirestore.instance
-                .collection('users')
-                .doc(_userId)
-                .snapshots(),
+                  .collection('users')
+                  .doc(_userId)
+                  .snapshots(),
               builder: (context, snapshot) {
                 final photoURL = snapshot.data?.get('photoURL') as String?;
 
@@ -148,11 +150,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     radius: 18,
                     backgroundColor: AppTheme.accentGreen,
                     backgroundImage: photoURL != null && photoURL.isNotEmpty
-                      ? NetworkImage(photoURL)
-                      : null,
+                        ? NetworkImage(photoURL)
+                        : null,
                     child: photoURL == null || photoURL.isEmpty
-                      ? const Icon(Icons.person, color: Colors.white, size: 20)
-                      : null,
+                        ? const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 20,
+                          )
+                        : null,
                   ),
                 );
               },
@@ -160,10 +166,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -180,22 +183,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icon(Icons.people),
             label: 'Comunidade',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.article),
-            label: 'Posts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.android),
-            label: 'IA',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Sinais',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
+          BottomNavigationBarItem(icon: Icon(Icons.article), label: 'Posts'),
+          BottomNavigationBarItem(icon: Icon(Icons.android), label: 'IA'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Sinais'),
         ],
       ),
     );

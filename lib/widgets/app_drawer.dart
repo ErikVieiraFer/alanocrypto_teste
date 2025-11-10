@@ -23,7 +23,8 @@ class _AppDrawerState extends State<AppDrawer> {
             _buildDrawerItem(
               icon: Icons.trending_up,
               title: 'Mercados',
-              onTap: () => _navigateTo(context, '/under-development', 'Mercados'),
+              onTap: () =>
+                  _navigateTo(context, '/under-development', 'Mercados'),
             ),
 
             // Comunidade
@@ -45,7 +46,11 @@ class _AppDrawerState extends State<AppDrawer> {
             _buildDrawerItem(
               icon: Icons.calculate,
               title: 'Calculadora Forex',
-              onTap: () => _navigateTo(context, '/under-development', 'Calculadora Forex'),
+              onTap: () => _navigateTo(
+                context,
+                '/under-development',
+                'Calculadora Forex',
+              ),
             ),
 
             // Cursos
@@ -89,14 +94,16 @@ class _AppDrawerState extends State<AppDrawer> {
             _buildDrawerItem(
               icon: Icons.business_center,
               title: 'Portfólio',
-              onTap: () => _navigateTo(context, '/under-development', 'Portfólio'),
+              onTap: () =>
+                  _navigateTo(context, '/under-development', 'Portfólio'),
             ),
 
             // Gerenciamento
             _buildDrawerItem(
               icon: Icons.settings,
               title: 'Gerenciamento',
-              onTap: () => _navigateTo(context, '/under-development', 'Gerenciamento'),
+              onTap: () =>
+                  _navigateTo(context, '/under-development', 'Gerenciamento'),
             ),
 
             // Alano Crypto IA
@@ -118,7 +125,8 @@ class _AppDrawerState extends State<AppDrawer> {
             _buildDrawerItem(
               icon: Icons.star,
               title: 'Watchlist',
-              onTap: () => _navigateTo(context, '/under-development', 'Watchlist'),
+              onTap: () =>
+                  _navigateTo(context, '/under-development', 'Watchlist'),
             ),
 
             Divider(color: Colors.grey.shade800, height: 32),
@@ -127,14 +135,16 @@ class _AppDrawerState extends State<AppDrawer> {
             _buildDrawerItem(
               icon: Icons.link,
               title: 'Links úteis',
-              onTap: () => _navigateTo(context, '/under-development', 'Links úteis'),
+              onTap: () =>
+                  _navigateTo(context, '/under-development', 'Links úteis'),
             ),
 
             // Suporte
             _buildDrawerItem(
               icon: Icons.help_outline,
               title: 'Suporte',
-              onTap: () => _navigateTo(context, '/under-development', 'Suporte'),
+              onTap: () =>
+                  _navigateTo(context, '/under-development', 'Suporte'),
             ),
           ],
         ),
@@ -149,13 +159,7 @@ class _AppDrawerState extends State<AppDrawer> {
   }) {
     return ListTile(
       leading: Icon(icon, color: Colors.white, size: 24),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-        ),
-      ),
+      title: Text(title, style: TextStyle(color: Colors.white, fontSize: 16)),
       onTap: onTap,
       contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 4),
     );

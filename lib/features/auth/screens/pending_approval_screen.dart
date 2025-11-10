@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../theme/app_theme.dart';
 
 class PendingApprovalScreen extends StatelessWidget {
@@ -9,6 +11,24 @@ class PendingApprovalScreen extends StatelessWidget {
     await FirebaseAuth.instance.signOut();
     if (context.mounted) {
       Navigator.pushReplacementNamed(context, '/landing');
+    }
+  }
+
+  Future<void> _launchWhatsApp(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    final String userEmail = user?.email ?? 'Email não informado';
+    
+    const String phone = '5531988369268';
+    final String message = 'Olá, preciso de ajuda com o meu aplicativo. Meu e-mail é: $userEmail';
+    
+    final Uri url = Uri.parse('https://wa.me/$phone?text=${Uri.encodeComponent(message)}');
+
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o WhatsApp.')),
+        );
+      }
     }
   }
 
@@ -117,10 +137,32 @@ class PendingApprovalScreen extends StatelessWidget {
 
                 const SizedBox(height: 32),
 
+                OutlinedButton.icon(
+                  onPressed: () => _launchWhatsApp(context),
+                  icon: const FaIcon(FontAwesomeIcons.whatsapp, size: 20),
+                  label: const Text('Suporte via WhatsApp'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF25D366),
+                    side: const BorderSide(color: Color(0xFF25D366)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
                 OutlinedButton(
                   onPressed: () => _logout(context),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
                     side: BorderSide(color: AppTheme.accentGreen),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -128,10 +170,7 @@ class PendingApprovalScreen extends StatelessWidget {
                   ),
                   child: Text(
                     'Sair',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppTheme.accentGreen,
-                    ),
+                    style: TextStyle(fontSize: 16, color: AppTheme.accentGreen),
                   ),
                 ),
               ],

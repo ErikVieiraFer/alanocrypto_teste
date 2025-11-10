@@ -6,6 +6,7 @@ class UserModel {
   final String displayName;
   final String photoURL;
   final String bio;
+  final String? phone;
   final DateTime createdAt;
   final DateTime lastLogin;
 
@@ -15,6 +16,7 @@ class UserModel {
     required this.displayName,
     required this.photoURL,
     this.bio = '',
+    this.phone,
     required this.createdAt,
     required this.lastLogin,
   });
@@ -27,6 +29,7 @@ class UserModel {
       displayName: data['displayName'] ?? 'Usuário',
       photoURL: data['photoURL'] ?? '',
       bio: data['bio'] ?? '',
+      phone: data['phone'],
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       lastLogin: (data['lastLogin'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -38,6 +41,7 @@ class UserModel {
       'displayName': displayName,
       'photoURL': photoURL,
       'bio': bio,
+      'phone': phone,
       'createdAt': Timestamp.fromDate(createdAt),
       'lastLogin': Timestamp.fromDate(lastLogin),
     };
@@ -49,6 +53,7 @@ class UserModel {
     String? displayName,
     String? photoURL,
     String? bio,
+    String? phone,
     DateTime? createdAt,
     DateTime? lastLogin,
   }) {
@@ -58,6 +63,7 @@ class UserModel {
       displayName: displayName ?? this.displayName,
       photoURL: photoURL ?? this.photoURL,
       bio: bio ?? this.bio,
+      phone: phone ?? this.phone,
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,
     );

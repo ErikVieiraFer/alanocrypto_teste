@@ -55,18 +55,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         // Navega para a tela de sinais
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const SignalsScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const SignalsScreen()),
         );
         break;
       case NotificationType.post:
         // Navega para a tela de posts do Alano
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const AlanoPostsScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const AlanoPostsScreen()),
         );
         break;
       case NotificationType.chatReply:
@@ -74,9 +70,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         // Navega para a tela de chat em grupo
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => const GroupChatScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => const GroupChatScreen()),
         );
         break;
       default:
@@ -84,7 +78,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         break;
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -101,9 +94,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           TextButton(
             onPressed: () => _notificationService.markAllAsRead(_userId!),
             child: const Text('Marcar todas como lidas'),
-            style: TextButton.styleFrom(
-              foregroundColor: AppTheme.textPrimary,
-            ),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.textPrimary),
           ),
         ],
       ),
@@ -119,9 +110,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey),
+                  Icon(
+                    Icons.notifications_off_outlined,
+                    size: 80,
+                    color: Colors.grey,
+                  ),
                   SizedBox(height: 16),
-                  Text('Nenhuma notificação ainda', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                  Text(
+                    'Nenhuma notificação ainda',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
                 ],
               ),
             );
@@ -160,7 +158,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   title: Text(
                     notification.title,
                     style: TextStyle(
-                      fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isUnread
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   subtitle: Column(
@@ -169,7 +169,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       Text(notification.content),
                       const SizedBox(height: 4),
                       Text(
-                        timeago.format(notification.createdAt.toDate(), locale: 'pt_BR'),
+                        timeago.format(
+                          notification.createdAt.toDate(),
+                          locale: 'pt_BR',
+                        ),
                         style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
                     ],
@@ -188,7 +191,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     if (isUnread) {
                       _notificationService.markAsRead(notification.id);
                     }
-                    _navigateToRelatedContent(notification.type, notification.relatedId);
+                    _navigateToRelatedContent(
+                      notification.type,
+                      notification.relatedId,
+                    );
                   },
                 ),
               );

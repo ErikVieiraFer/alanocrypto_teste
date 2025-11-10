@@ -190,20 +190,13 @@ class NotificationPermissionDialog extends StatelessWidget {
             color: iconColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            size: 20,
-            color: iconColor,
-          ),
+          child: Icon(icon, size: 20, color: iconColor),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textPrimary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppTheme.textPrimary),
           ),
         ),
       ],

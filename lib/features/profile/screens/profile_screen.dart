@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../../../models/user_model.dart';
 import '../../../services/user_service.dart';
 import '../../../services/auth_service.dart';
@@ -23,35 +24,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final UserService _userService = UserService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  final _phoneFormatter = MaskTextInputFormatter(
+    mask: '(##) #####-####',
+    filter: {"#": RegExp(r'[0-9]')},
+  );
+
   Future<void> _editProfile(UserModel user) async {
     final nameController = TextEditingController(text: user.displayName);
     final bioController = TextEditingController(text: user.bio);
+
+    // Prepara o valor inicial do telefone
+    final phoneController = TextEditingController();
+    if (user.phone != null && user.phone!.isNotEmpty) {
+      // Remove o +55 para aplicar a máscara
+      final unformattedPhone = user.phone!.replaceAll('+55', '');
+      phoneController.text = _phoneFormatter.maskText(unformattedPhone);
+    }
 
     final result = await showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Editar Perfil'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nome',
-                border: OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nome',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: bioController,
-              maxLines: 3,
-              maxLength: 150,
-              decoration: const InputDecoration(
-                labelText: 'Bio',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: phoneController,
+                keyboardType: TextInputType.phone,
+                inputFormatters: [_phoneFormatter],
+                decoration: const InputDecoration(
+                  labelText: 'Telefone',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value != null &&
+                      _phoneFormatter.getUnmaskedText().length != 11) {
+                    return 'Telefone inválido';
+                  }
+                  return null;
+                },
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+              TextField(
+                controller: bioController,
+                maxLines: 3,
+                maxLength: 150,
+                decoration: const InputDecoration(
+                  labelText: 'Bio',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -60,9 +93,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           TextButton(
             onPressed: () {
+              final unmaskedPhone = _phoneFormatter.getUnmaskedText();
+              final formattedPhone = unmaskedPhone.isNotEmpty
+                  ? '+55$unmaskedPhone'
+                  : '';
+
               Navigator.pop(context, {
                 'displayName': nameController.text.trim(),
                 'bio': bioController.text.trim(),
+                'phone': formattedPhone,
               });
             },
             child: const Text('Salvar'),
@@ -76,6 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         userId: user.uid,
         displayName: result['displayName'],
         bio: result['bio'],
+        phone: result['phone'],
       );
 
       if (mounted) {
@@ -104,9 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
       String? imageUrl;
@@ -186,10 +224,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (confirm == true && mounted) {
       await AuthService().signOut();
       if (mounted) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/login',
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     }
   }
@@ -217,7 +254,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (userSnapshot.hasError) {
             return Scaffold(
               appBar: AppBar(title: const Text('Erro')),
-              body: Center(child: Text('Erro ao carregar perfil: ${userSnapshot.error}')),
+              body: Center(
+                child: Text('Erro ao carregar perfil: ${userSnapshot.error}'),
+              ),
             );
           }
 
@@ -226,7 +265,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (user == null) {
             return Scaffold(
               appBar: AppBar(title: const Text('Não Encontrado')),
-              body: const Center(child: Text('Este usuário não foi encontrado.')),
+              body: const Center(
+                child: Text('Este usuário não foi encontrado.'),
+              ),
             );
           }
 
@@ -238,9 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 backgroundColor: AppTheme.appBarColor,
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.appBarColor,
-                    ),
+                    decoration: BoxDecoration(color: AppTheme.appBarColor),
                     child: SafeArea(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -357,7 +396,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             if (isOwnProfile)
                               IconButton(
                                 icon: const Icon(Icons.edit, size: 20),
-                                onPressed: () => _showEditBioDialog(context, user),
+                                onPressed: () =>
+                                    _showEditBioDialog(context, user),
                                 color: AppTheme.accentGreen,
                               ),
                           ],
@@ -383,7 +423,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           );
         },
-      )
+      ),
     );
   }
 
@@ -407,9 +447,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             hintStyle: TextStyle(
               color: AppTheme.textPrimary.withValues(alpha: 0.4),
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
           style: TextStyle(color: AppTheme.textPrimary),
         ),
@@ -418,7 +456,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Cancelar',
-              style: TextStyle(color: AppTheme.textPrimary.withValues(alpha: 0.6)),
+              style: TextStyle(
+                color: AppTheme.textPrimary.withValues(alpha: 0.6),
+              ),
             ),
           ),
           ElevatedButton(

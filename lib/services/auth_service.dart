@@ -4,8 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'user_service.dart';
 
-
-
 class AuthException implements Exception {
   final String code;
   final String message;
@@ -30,22 +28,21 @@ class AuthService {
   bool _isSigningIn = false;
 
   AuthService._internal() {
-    _googleSignIn = GoogleSignIn(
-      scopes: ['email', 'profile'],
-    );
+    _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
   }
 
   User? get currentUser => _auth.currentUser;
 
-  Stream<User?> get authStateChanges => _auth.authStateChanges().handleError((error) {
-    // Suppress known FlutterFire web interop error
-    if (error.toString().contains('JavaScriptObject') ||
-        error.toString().contains('_testException')) {
-      print('Suprimindo erro conhecido do FlutterFire: $error');
-      return;
-    }
-    throw error;
-  });
+  Stream<User?> get authStateChanges =>
+      _auth.authStateChanges().handleError((error) {
+        // Suppress known FlutterFire web interop error
+        if (error.toString().contains('JavaScriptObject') ||
+            error.toString().contains('_testException')) {
+          print('Suprimindo erro conhecido do FlutterFire: $error');
+          return;
+        }
+        throw error;
+      });
 
   String _getErrorMessage(dynamic error) {
     if (error is FirebaseAuthException) {
@@ -107,7 +104,6 @@ class AuthService {
         }
 
         return user;
-
       } else {
         // Mobile (Android/iOS)
         await _googleSignIn.signOut();
@@ -118,14 +114,17 @@ class AuthService {
           throw AuthException('user-cancelled', 'Login cancelado pelo usuário');
         }
 
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
 
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
 
-        final UserCredential userCredential = await _auth.signInWithCredential(credential);
+        final UserCredential userCredential = await _auth.signInWithCredential(
+          credential,
+        );
 
         if (userCredential.user != null) {
           await _userService.createOrUpdateUser(userCredential.user!);
@@ -141,7 +140,6 @@ class AuthService {
       _isSigningIn = false;
     }
   }
-
 
   Future<void> signOut() async {
     try {
@@ -175,17 +173,17 @@ class AuthService {
       if (user == null) return;
 
       final updates = <String, dynamic>{};
-      
+
       if (displayName != null) {
         updates['displayName'] = displayName;
         await user.updateDisplayName(displayName);
       }
-      
+
       if (photoURL != null) {
         updates['photoURL'] = photoURL;
         await user.updatePhotoURL(photoURL);
       }
-      
+
       if (bio != null) {
         updates['bio'] = bio;
       }

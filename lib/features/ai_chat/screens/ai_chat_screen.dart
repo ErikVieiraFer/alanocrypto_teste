@@ -21,7 +21,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
     super.initState();
     _addMessage(
       ChatMessage(
-        text: 'Olá! Sou seu assistente de trading. Como posso ajudar você hoje?',
+        text:
+            'Olá! Sou seu assistente de trading. Como posso ajudar você hoje?',
         isUser: false,
         isError: false,
       ),
@@ -66,17 +67,18 @@ class _AIChatScreenState extends State<AIChatScreen> {
       _isLoading = false;
     });
 
-    final isError = response.startsWith('❌') || 
-                    response.startsWith('⏱️') || 
-                    response.startsWith('💳') ||
-                    response.startsWith('📡');
+    final isError =
+        response.startsWith('❌') ||
+        response.startsWith('⏱️') ||
+        response.startsWith('💳') ||
+        response.startsWith('📡');
 
     if (!isError) {
       _conversationHistory.add({'role': 'assistant', 'content': response});
     }
 
     final aiMessage = ChatMessage(
-      text: response, 
+      text: response,
       isUser: false,
       isError: isError,
     );
@@ -113,7 +115,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withAlpha(26),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withAlpha(26),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -129,9 +133,8 @@ class _AIChatScreenState extends State<AIChatScreen> {
                       children: [
                         Text(
                           'AI Trading Assistant',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         Text(
                           'Powered by ChatGPT',
@@ -174,10 +177,13 @@ class _AIChatScreenState extends State<AIChatScreen> {
                             spacing: 8,
                             runSpacing: 8,
                             alignment: WrapAlignment.center,
-                            children: _aiService.getSuggestedQuestions().map((question) {
+                            children: _aiService.getSuggestedQuestions().map((
+                              question,
+                            ) {
                               return ActionChip(
                                 label: Text(question),
-                                onPressed: () => _sendSuggestedQuestion(question),
+                                onPressed: () =>
+                                    _sendSuggestedQuestion(question),
                               );
                             }).toList(),
                           ),
@@ -258,7 +264,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   const SizedBox(width: 8),
                   IconButton(
                     icon: const Icon(Icons.send),
-                    onPressed: _isLoading ? null : () => _sendMessage(_controller.text),
+                    onPressed: _isLoading
+                        ? null
+                        : () => _sendMessage(_controller.text),
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ],
@@ -330,10 +338,7 @@ class MessageBubble extends StatelessWidget {
         ),
         child: Text(
           message.text,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 15,
-          ),
+          style: TextStyle(color: textColor, fontSize: 15),
         ),
       ),
     );

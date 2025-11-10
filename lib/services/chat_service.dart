@@ -47,9 +47,13 @@ class ChatService {
   }
 
   // Upload de imagem (suporta Web e Mobile)
-  Future<String> uploadMessageImage(PickedImageFile imageFile, String userId) async {
+  Future<String> uploadMessageImage(
+    PickedImageFile imageFile,
+    String userId,
+  ) async {
     try {
-      final String fileName = '${DateTime.now().millisecondsSinceEpoch}_$userId.jpg';
+      final String fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_$userId.jpg';
       final Reference ref = _storage.ref().child('chat_images').child(fileName);
 
       UploadTask uploadTask;
@@ -82,14 +86,18 @@ class ChatService {
         .limit(_messagesLimit)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => Message.fromJson(doc.data()))
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => Message.fromJson(doc.data()))
+              .toList();
+        });
   }
 
   // Adicionar reação
-  Future<void> addReaction(String messageId, String emoji, String userId) async {
+  Future<void> addReaction(
+    String messageId,
+    String emoji,
+    String userId,
+  ) async {
     try {
       final docRef = _firestore.collection(_messagesCollection).doc(messageId);
       final doc = await docRef.get();
@@ -120,7 +128,11 @@ class ChatService {
   }
 
   // Remover reação
-  Future<void> removeReaction(String messageId, String emoji, String userId) async {
+  Future<void> removeReaction(
+    String messageId,
+    String emoji,
+    String userId,
+  ) async {
     try {
       final docRef = _firestore.collection(_messagesCollection).doc(messageId);
       final doc = await docRef.get();
@@ -174,7 +186,11 @@ class ChatService {
   }
 
   // Editar mensagem
-  Future<void> editMessage(String messageId, String newText, String userId) async {
+  Future<void> editMessage(
+    String messageId,
+    String newText,
+    String userId,
+  ) async {
     try {
       final docRef = _firestore.collection(_messagesCollection).doc(messageId);
       final doc = await docRef.get();
@@ -187,10 +203,7 @@ class ChatService {
         throw Exception('Você só pode editar suas próprias mensagens');
       }
 
-      await docRef.update({
-        'text': newText,
-        'isEdited': true,
-      });
+      await docRef.update({'text': newText, 'isEdited': true});
     } catch (e) {
       throw Exception('Erro ao editar mensagem: $e');
     }
@@ -199,7 +212,10 @@ class ChatService {
   // Obter mensagem por ID
   Future<Message?> getMessageById(String messageId) async {
     try {
-      final doc = await _firestore.collection(_messagesCollection).doc(messageId).get();
+      final doc = await _firestore
+          .collection(_messagesCollection)
+          .doc(messageId)
+          .get();
 
       if (!doc.exists) return null;
 
@@ -208,5 +224,4 @@ class ChatService {
       return null;
     }
   }
-
 }

@@ -2,8 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/notification_model.dart';
 
 class NotificationService {
-  final CollectionReference _notificationsCollection = 
-      FirebaseFirestore.instance.collection('notifications');
+  final CollectionReference _notificationsCollection = FirebaseFirestore
+      .instance
+      .collection('notifications');
 
   // Stream de notificações para um usuário específico
   Stream<List<NotificationModel>> getNotifications(String userId) {
@@ -12,10 +13,10 @@ class NotificationService {
         .orderBy('createdAt', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => NotificationModel.fromFirestore(doc))
-          .toList();
-    });
+          return snapshot.docs
+              .map((doc) => NotificationModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   // Marcar uma notificação como lida

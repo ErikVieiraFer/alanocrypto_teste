@@ -23,8 +23,8 @@ class PostService {
         .limit(50)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => Post.fromFirestore(doc)).toList();
-    });
+          return snapshot.docs.map((doc) => Post.fromFirestore(doc)).toList();
+        });
   }
 
   Future<String?> uploadImage(File? imageFile, Uint8List? imageBytes) async {
@@ -82,7 +82,9 @@ class PostService {
         createdAt: DateTime.now(),
       );
 
-      final postDocRef = await _firestore.collection('posts').add(newPost.toFirestore());
+      final postDocRef = await _firestore
+          .collection('posts')
+          .add(newPost.toFirestore());
 
       // Fan-out Notification Logic - Notificar todos os usuários sobre o novo post
       final usersSnapshot = await _firestore.collection('users').get();
@@ -130,7 +132,9 @@ class PostService {
         throw Exception('Você precisa estar conectado para curtir');
       }
 
-      final DocumentReference postRef = _firestore.collection('posts').doc(postId);
+      final DocumentReference postRef = _firestore
+          .collection('posts')
+          .doc(postId);
       final DocumentSnapshot postDoc = await postRef.get();
 
       if (!postDoc.exists) {
@@ -149,7 +153,9 @@ class PostService {
             userId: post.userId,
             type: NotificationType.like,
             title: '${user.displayName ?? 'Alguém'} curtiu seu post',
-            content: post.content.length > 50 ? '${post.content.substring(0, 50)}...' : post.content,
+            content: post.content.length > 50
+                ? '${post.content.substring(0, 50)}...'
+                : post.content,
             relatedId: postId,
           );
         }
@@ -160,13 +166,18 @@ class PostService {
       await postRef.update({'likedBy': likedBy});
     } on FirebaseException catch (e) {
       if (e.code == 'permission-denied') {
-        throw Exception('Erro ao curtir: Permissões insuficientes. Verifique suas configurações');
+        throw Exception(
+          'Erro ao curtir: Permissões insuficientes. Verifique suas configurações',
+        );
       } else if (e.code == 'unavailable') {
-        throw Exception('Erro ao curtir: Conexão perdida. Verifique sua internet');
+        throw Exception(
+          'Erro ao curtir: Conexão perdida. Verifique sua internet',
+        );
       }
       throw Exception('Erro ao curtir: ${e.message}');
     } catch (e) {
-      if (e.toString().contains('conectado') || e.toString().contains('encontrado')) {
+      if (e.toString().contains('conectado') ||
+          e.toString().contains('encontrado')) {
         rethrow;
       }
       throw Exception('Erro ao curtir post: $e');
@@ -175,11 +186,14 @@ class PostService {
 
   Future<bool> deletePost(String postId) async {
     try {
-      final DocumentSnapshot postDoc = await _firestore.collection('posts').doc(postId).get();
-      
+      final DocumentSnapshot postDoc = await _firestore
+          .collection('posts')
+          .doc(postId)
+          .get();
+
       if (postDoc.exists) {
         final Post post = Post.fromFirestore(postDoc);
-        
+
         if (post.imageUrl != null && post.imageUrl!.isNotEmpty) {
           try {
             final Reference imageRef = _storage.refFromURL(post.imageUrl!);
@@ -189,7 +203,7 @@ class PostService {
           }
         }
       }
-      
+
       await _firestore.collection('posts').doc(postId).delete();
       return true;
     } catch (e) {

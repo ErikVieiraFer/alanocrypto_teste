@@ -38,21 +38,22 @@ class MessageBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          mainAxisAlignment: isMe
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
           children: [
             // Avatar - esquerda para mensagens dos outros
             if (!isMe) ...[
-              GestureDetector(
-                onTap: onUserTap,
-                child: _buildAvatar(),
-              ),
+              GestureDetector(onTap: onUserTap, child: _buildAvatar()),
               const SizedBox(width: 12),
             ],
 
             // Bubble da mensagem
             Flexible(
               child: Column(
-                crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                crossAxisAlignment: isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
                   GestureDetector(
                     onLongPress: onLongPress,
@@ -60,8 +61,8 @@ class MessageBubble extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: isMe
-                          ? AppTheme.accentGreen.withOpacity(0.15)
-                          : AppTheme.inputBackground,
+                            ? AppTheme.accentGreen.withOpacity(0.15)
+                            : AppTheme.inputBackground,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(isMe ? 20 : 4),
                           topRight: Radius.circular(isMe ? 4 : 20),
@@ -119,7 +120,9 @@ class MessageBubble extends StatelessWidget {
                           // Timestamp dentro do bubble
                           Row(
                             mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                            mainAxisAlignment: isMe
+                                ? MainAxisAlignment.end
+                                : MainAxisAlignment.start,
                             children: [
                               Text(
                                 _formatTime(message.timestamp),
@@ -153,10 +156,7 @@ class MessageBubble extends StatelessWidget {
             ),
 
             // Avatar - direita para minhas mensagens
-            if (isMe) ...[
-              const SizedBox(width: 12),
-              _buildAvatar(),
-            ],
+            if (isMe) ...[const SizedBox(width: 12), _buildAvatar()],
           ],
         ),
       ),
@@ -169,12 +169,16 @@ class MessageBubble extends StatelessWidget {
 
     // Debug: verificar URL da foto
     if (photoUrl != null && photoUrl.isNotEmpty) {
-      print('🖼️ MessageBubble - Tentando carregar foto: $photoUrl (${currentUserPhotoUrl != null ? "atualizada" : "da mensagem"})');
+      print(
+        '🖼️ MessageBubble - Tentando carregar foto: $photoUrl (${currentUserPhotoUrl != null ? "atualizada" : "da mensagem"})',
+      );
     }
 
     // Se não tem foto ou foto é vazia, mostrar inicial
     if (photoUrl == null || photoUrl.isEmpty) {
-      print('⚠️ MessageBubble - Sem foto para ${message.userName}, mostrando inicial');
+      print(
+        '⚠️ MessageBubble - Sem foto para ${message.userName}, mostrando inicial',
+      );
       return CircleAvatar(
         radius: 20,
         backgroundColor: AppTheme.accentGreen,
@@ -216,7 +220,9 @@ class MessageBubble extends StatelessWidget {
           errorWidget: (context, url, error) {
             print('❌ MessageBubble - Erro ao carregar foto: $error');
             return Text(
-              message.userName.isNotEmpty ? message.userName[0].toUpperCase() : '?',
+              message.userName.isNotEmpty
+                  ? message.userName[0].toUpperCase()
+                  : '?',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -235,12 +241,7 @@ class MessageBubble extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.15),
         borderRadius: BorderRadius.circular(8),
-        border: Border(
-          left: BorderSide(
-            color: AppTheme.accentGreen,
-            width: 3,
-          ),
-        ),
+        border: Border(left: BorderSide(color: AppTheme.accentGreen, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

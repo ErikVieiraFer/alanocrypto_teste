@@ -33,6 +33,7 @@ class UserService {
     String? displayName,
     String? bio,
     String? photoURL,
+    String? phone,
     Map<String, dynamic>? data,
   }) async {
     try {
@@ -41,6 +42,7 @@ class UserService {
       if (displayName != null) updates['displayName'] = displayName;
       if (bio != null) updates['bio'] = bio;
       if (photoURL != null) updates['photoURL'] = photoURL;
+      if (phone != null) updates['phone'] = phone;
 
       // Adiciona dados customizados se fornecidos
       if (data != null) {
@@ -73,14 +75,16 @@ class UserService {
         // Na web, usar putData() com bytes
         if (imageBytes != null) {
           uploadTask = ref.putData(imageBytes);
-        } else {
+        }
+        else {
           return null;
         }
       } else {
         // No mobile, usar putFile()
         if (imageFile != null) {
           uploadTask = ref.putFile(imageFile);
-        } else {
+        }
+        else {
           return null;
         }
       }
@@ -160,7 +164,7 @@ class UserService {
           'displayName': user.displayName ?? 'Usuário',
           'photoURL': user.photoURL ?? '',
           'bio': '',
-          'approved': false,  // Apenas para usuários novos
+          'approved': false, // Apenas para usuários novos
           'blocked': false,
           'createdAt': Timestamp.fromDate(DateTime.now()),
           'lastLogin': Timestamp.fromDate(DateTime.now()),
@@ -174,15 +178,20 @@ class UserService {
     }
   }
 
-  Future<void> createUser(User firebaseUser, {String? displayName}) async {
+  Future<void> createUser(
+    User firebaseUser, {
+    String? displayName,
+    String? phone,
+  }) async {
     try {
       await _firestore.collection('users').doc(firebaseUser.uid).set({
         'uid': firebaseUser.uid,
         'email': firebaseUser.email,
         'displayName': displayName ?? firebaseUser.displayName ?? '',
         'photoURL': firebaseUser.photoURL ?? '',
+        'phone': phone,
         'bio': '',
-        'approved': false,  // Novo usuário precisa aprovação
+        'approved': false, // Novo usuário precisa aprovação
         'blocked': false,
         'createdAt': FieldValue.serverTimestamp(),
         'lastLogin': FieldValue.serverTimestamp(),

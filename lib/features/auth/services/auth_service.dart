@@ -4,11 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-    ],
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Stream do usuário atual
@@ -22,13 +18,13 @@ class AuthService {
     try {
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      
+
       if (googleUser == null) {
         return null;
       }
 
       //auth details from the request
-      final GoogleSignInAuthentication googleAuth = 
+      final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
       //new credential
@@ -36,8 +32,9 @@ class AuthService {
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(
+        credential,
+      );
 
       await _saveUserData(userCredential.user!);
 
@@ -61,7 +58,7 @@ class AuthService {
           'displayName': user.displayName,
           'photoURL': user.photoURL,
           'bio': '',
-          'approved': false,  // Novo usuário precisa aprovação
+          'approved': false, // Novo usuário precisa aprovação
           'blocked': false,
           'emailVerified': false,
           'role': 'user',
@@ -72,9 +69,7 @@ class AuthService {
         print('✅ Novo usuário criado: ${user.email} - Precisa aprovação');
       } else {
         // USUÁRIO EXISTENTE - atualizar APENAS lastLogin (não mexer em approved)
-        await userDoc.update({
-          'lastLogin': FieldValue.serverTimestamp(),
-        });
+        await userDoc.update({'lastLogin': FieldValue.serverTimestamp()});
         print('✅ Usuário existente atualizado: ${user.email}');
       }
     } catch (e) {
@@ -83,10 +78,7 @@ class AuthService {
   }
 
   Future<void> signOut() async {
-    await Future.wait([
-      _auth.signOut(),
-      _googleSignIn.signOut(),
-    ]);
+    await Future.wait([_auth.signOut(), _googleSignIn.signOut()]);
   }
 
   Future<Map<String, dynamic>?> getUserData(String uid) async {
