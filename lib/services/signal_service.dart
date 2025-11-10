@@ -59,7 +59,7 @@ class SignalService {
   }) async {
     try {
       final newSignal = Signal(
-        id: '', // Firestore will generate it
+        id: '',
         coin: coin,
         type: type,
         entry: entry,
@@ -67,16 +67,23 @@ class SignalService {
         stopLoss: stopLoss,
         confidence: confidence,
         status: SignalStatus.active,
+        viewedBy: [],
         createdAt: DateTime.now(),
       );
 
-      final signalDocRef = await _firestore.collection('signals').add(newSignal.toFirestore());
+      final docRef = await _firestore.collection('signals').add(newSignal.toFirestore());
+      await _createNotificationsForAllUsers(docRef.id, coin);
+      return true;
+    } catch (e) {
+      print('Erro ao criar sinal: $e');
+      return false;
+    }
+  }
 
-      // Fan-out Notification Logic
+  Future<void> _createNotificationsForAllUsers(String signalId, String coin) async {
+    try {
       final usersSnapshot = await _firestore.collection('users').get();
-      if (usersSnapshot.docs.isEmpty) {
-        return true; // No users to notify
-      }
+      if (usersSnapshot.docs.isEmpty) return;
 
       final batch = _firestore.batch();
       final notificationsCollection = _firestore.collection('notifications');
@@ -86,20 +93,17 @@ class SignalService {
         batch.set(newNotifRef, {
           'userId': userDoc.id,
           'type': NotificationType.signal.name,
-          'title': 'Novo sinal para $coin!',
-          'content': 'Entrada: $entry, Alvo 1: ${targets.first}, Stop: $stopLoss',
+          'title': 'Novo Sinal',
+          'content': 'Novo sinal para $coin disponível!',
           'read': false,
-          'relatedId': signalDocRef.id,
+          'relatedId': signalId,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
 
       await batch.commit();
-
-      return true;
     } catch (e) {
-      print('Erro ao criar sinal: $e');
-      return false;
+      print('Erro ao criar notificações: $e');
     }
   }
 
@@ -114,7 +118,8 @@ class SignalService {
     }
     buffer.writeln('🛑 Stop Loss: \${signal.stopLoss.toStringAsFixed(2)}');
     buffer.writeln('⚡ Confiança: ${signal.confidence}%');
-    
+
     return buffer.toString();
   }
+
 }

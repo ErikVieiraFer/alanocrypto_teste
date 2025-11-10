@@ -208,4 +208,5 @@ class ChatService {
       return null;
     }
   }
+
 }

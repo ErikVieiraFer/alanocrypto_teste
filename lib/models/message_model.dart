@@ -13,6 +13,7 @@ class Message {
   final String? replyToText;
   final String? replyToUserName;
   final bool isEdited;
+  final List<String> readBy;
 
   Message({
     required this.id,
@@ -27,7 +28,9 @@ class Message {
     this.replyToText,
     this.replyToUserName,
     this.isEdited = false,
-  }) : reactions = reactions ?? {};
+    List<String>? readBy,
+  }) : reactions = reactions ?? {},
+       readBy = readBy ?? [];
 
   Map<String, dynamic> toJson() {
     return {
@@ -43,6 +46,7 @@ class Message {
       'replyToText': replyToText,
       'replyToUserName': replyToUserName,
       'isEdited': isEdited,
+      'readBy': readBy,
     };
   }
 
@@ -67,6 +71,7 @@ class Message {
       replyToText: json['replyToText'] as String?,
       replyToUserName: json['replyToUserName'] as String?,
       isEdited: json['isEdited'] as bool? ?? false,
+      readBy: List<String>.from(json['readBy'] ?? []),
     );
   }
 
@@ -83,6 +88,7 @@ class Message {
     String? replyToText,
     String? replyToUserName,
     bool? isEdited,
+    List<String>? readBy,
   }) {
     return Message(
       id: id ?? this.id,
@@ -97,6 +103,7 @@ class Message {
       replyToText: replyToText ?? this.replyToText,
       replyToUserName: replyToUserName ?? this.replyToUserName,
       isEdited: isEdited ?? this.isEdited,
+      readBy: readBy ?? this.readBy,
     );
   }
 }

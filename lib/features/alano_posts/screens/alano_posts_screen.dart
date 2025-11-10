@@ -17,6 +17,34 @@ class _AlanoPostsScreenState extends State<AlanoPostsScreen> {
   final AlanoPostService _alanoPostService = AlanoPostService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  @override
+  void initState() {
+    super.initState();
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   Future<void> _openVideo(String? videoUrl) async {
   if (videoUrl == null || videoUrl.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -267,6 +295,29 @@ class AlanoPostCard extends StatelessWidget {
               ],
             ),
           ),
+          if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+            CachedNetworkImage(
+              imageUrl: post.imageUrl!,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                height: 200,
+                color: const Color.fromRGBO(224, 224, 224, 1.0),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+              errorWidget: (context, url, error) => Container(
+                height: 200,
+                color: const Color.fromRGBO(224, 224, 224, 1.0),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.image_not_supported, size: 64, color: Color.fromRGBO(158, 158, 158, 1.0)),
+                    SizedBox(height: 8),
+                    Text('Erro ao carregar imagem', style: TextStyle(color: Color.fromRGBO(97, 97, 97, 1.0))),
+                  ],
+                ),
+              ),
+            ),
           if (post.videoUrl != null && post.videoUrl!.isNotEmpty)
             GestureDetector(
               onTap: () {

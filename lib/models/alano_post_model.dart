@@ -6,7 +6,9 @@ class AlanoPost {
   final String content;
   final String? videoUrl;
   final String? thumbnailUrl;
+  final String? imageUrl;
   final List<String> likedBy;
+  final List<String> viewedBy;
   final int views;
   final DateTime createdAt;
 
@@ -16,7 +18,9 @@ class AlanoPost {
     required this.content,
     this.videoUrl,
     this.thumbnailUrl,
+    this.imageUrl,
     required this.likedBy,
+    required this.viewedBy,
     required this.views,
     required this.createdAt,
   });
@@ -29,7 +33,9 @@ class AlanoPost {
       content: data['content'] ?? '',
       videoUrl: data['videoUrl'],
       thumbnailUrl: data['thumbnailUrl'],
+      imageUrl: data['imageUrl'],
       likedBy: List<String>.from(data['likedBy'] ?? []),
+      viewedBy: List<String>.from(data['viewedBy'] ?? []),
       views: data['views'] ?? 0,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
     );
@@ -41,7 +47,9 @@ class AlanoPost {
       'content': content,
       'videoUrl': videoUrl,
       'thumbnailUrl': thumbnailUrl,
+      'imageUrl': imageUrl,
       'likedBy': likedBy,
+      'viewedBy': viewedBy,
       'views': views,
       'createdAt': Timestamp.fromDate(createdAt),
     };

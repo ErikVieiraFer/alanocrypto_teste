@@ -29,6 +29,42 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   final Map<String, String?> _userPhotosCache = {};
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();

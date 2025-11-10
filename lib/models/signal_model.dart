@@ -14,6 +14,7 @@ class Signal {
   final SignalStatus status;
   final double? profit;
   final int confidence;
+  final List<String> viewedBy;
   final DateTime createdAt;
   final DateTime? completedAt;
 
@@ -27,6 +28,7 @@ class Signal {
     required this.status,
     this.profit,
     required this.confidence,
+    required this.viewedBy,
     required this.createdAt,
     this.completedAt,
   });
@@ -51,6 +53,7 @@ class Signal {
       ),
       profit: data['profit'] != null ? (data['profit'] as num).toDouble() : null,
       confidence: data['confidence'] ?? 0,
+      viewedBy: List<String>.from(data['viewedBy'] ?? []),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       completedAt: data['completedAt'] != null
           ? (data['completedAt'] as Timestamp).toDate()
@@ -68,6 +71,7 @@ class Signal {
     'status': status.name,
     'profit': profit,
     'confidence': confidence,
+    'viewedBy': viewedBy,
     'createdAt': Timestamp.fromDate(createdAt),
     'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
   };

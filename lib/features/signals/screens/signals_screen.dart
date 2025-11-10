@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/signal_model.dart';
 import '../../../services/signal_service.dart';
 
@@ -21,6 +22,34 @@ class _SignalsScreenState extends State<SignalsScreen> with SingleTickerProvider
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   @override
   void dispose() {

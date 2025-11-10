@@ -8,6 +8,9 @@ import 'package:alanoapp/features/ai_chat/screens/ai_chat_screen.dart';
 import 'package:alanoapp/features/signals/screens/signals_screen.dart';
 import 'package:alanoapp/features/notifications/screens/notifications_screen.dart';
 import 'package:alanoapp/services/notification_service.dart';
+import 'package:alanoapp/services/alano_post_service.dart';
+import 'package:alanoapp/services/signal_service.dart';
+import 'package:alanoapp/services/chat_service.dart';
 import '../../../widgets/app_drawer.dart';
 import '../../../widgets/app_logo.dart';
 import '../../../theme/app_theme.dart';
@@ -24,7 +27,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
   final NotificationService _notificationService = NotificationService();
+  final AlanoPostService _alanoPostService = AlanoPostService();
+  final SignalService _signalService = SignalService();
+  final ChatService _chatService = ChatService();
   final String? _userId = FirebaseAuth.instance.currentUser?.uid;
+
 
   final List<Widget> _screens = [
     const GroupChatScreen(),       // 0 - Comunidade
@@ -52,12 +59,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _navigateToNotifications() {
-    // Navegar para tela de notificações como uma nova rota
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const NotificationsScreen()),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
