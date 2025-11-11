@@ -162,89 +162,97 @@ class _MarketScreenState extends State<MarketScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundBlack,
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppTheme.paddingMedium),
-            child: TextField(
-              controller: _searchController,
-              style: AppTheme.bodyMedium,
-              decoration: InputDecoration(
-                hintText: 'Buscar criptomoeda...',
-                hintStyle: AppTheme.bodyMedium.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-                prefixIcon: const Icon(
-                  Icons.search,
-                  color: AppTheme.textSecondary,
-                ),
-                filled: true,
-                fillColor: AppTheme.cardDark,
-                border: OutlineInputBorder(
-                  borderRadius: AppTheme.defaultRadius,
-                  borderSide: BorderSide.none,
+    return Stack(
+      children: [
+        Container(
+          color: AppTheme.backgroundBlack,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppTheme.paddingMedium),
+                child: TextField(
+                  controller: _searchController,
+                  style: AppTheme.bodyMedium,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar criptomoeda...',
+                    hintStyle: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: AppTheme.textSecondary,
+                    ),
+                    filled: true,
+                    fillColor: AppTheme.cardDark,
+                    border: OutlineInputBorder(
+                      borderRadius: AppTheme.defaultRadius,
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppTheme.paddingMedium),
-            child: Row(
-              children: [
-                Text(
-                  _selectedFilter,
-                  style: AppTheme.bodyMedium.copyWith(
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: AppTheme.gapSmall),
-                Text(
-                  '•',
-                  style: AppTheme.bodyMedium.copyWith(
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: AppTheme.gapSmall),
-                Text(
-                  'Ordenado por $_selectedSort',
-                  style: AppTheme.bodyMedium.copyWith(
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppTheme.gapSmall),
-          Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primaryGreen,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.paddingMedium),
+                child: Row(
+                  children: [
+                    Text(
+                      _selectedFilter,
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                  )
-                : RefreshIndicator(
-                    onRefresh: _loadCryptos,
-                    color: AppTheme.primaryGreen,
-                    child: ListView.builder(
-                      padding: const EdgeInsets.all(AppTheme.paddingMedium),
-                      itemCount: _filteredCryptos.length,
-                      itemBuilder: (context, index) {
-                        return _MarketCryptoCard(
-                          crypto: _filteredCryptos[index],
-                        );
-                      },
+                    const SizedBox(width: AppTheme.gapSmall),
+                    Text(
+                      '•',
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: AppTheme.gapSmall),
+                    Text(
+                      'Ordenado por $_selectedSort',
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppTheme.gapSmall),
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppTheme.primaryGreen,
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadCryptos,
+                        color: AppTheme.primaryGreen,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(AppTheme.paddingMedium),
+                          itemCount: _filteredCryptos.length,
+                          itemBuilder: (context, index) {
+                            return _MarketCryptoCard(
+                              crypto: _filteredCryptos[index],
+                            );
+                          },
+                        ),
+                      ),
+              ),
+            ],
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showFilterModal,
-        backgroundColor: AppTheme.primaryGreen,
-        child: const Icon(Icons.filter_list, color: AppTheme.textPrimary),
-      ),
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            onPressed: _showFilterModal,
+            backgroundColor: AppTheme.primaryGreen,
+            child: const Icon(Icons.filter_list, color: AppTheme.textPrimary),
+          ),
+        ),
+      ],
     );
   }
 }

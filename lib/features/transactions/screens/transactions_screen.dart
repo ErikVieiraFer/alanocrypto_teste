@@ -120,76 +120,84 @@ class _TransactionsScreenState extends State<TransactionsScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundBlack,
-      body: Column(
-        children: [
-          Container(
-            color: AppTheme.cardDark,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(AppTheme.paddingMedium, AppTheme.paddingMedium, AppTheme.paddingMedium, AppTheme.gapSmall),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    return Stack(
+      children: [
+        Container(
+          color: AppTheme.backgroundBlack,
+          child: Column(
+            children: [
+              Container(
+                color: AppTheme.cardDark,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(AppTheme.paddingMedium, AppTheme.paddingMedium, AppTheme.paddingMedium, AppTheme.gapSmall),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Saldo Disponível',
-                            style: AppTheme.bodyMedium.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Saldo Disponível',
+                                style: AppTheme.bodyMedium.copyWith(
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: AppTheme.gapSmall),
+                              Text(
+                                '\$${_balance.toStringAsFixed(2)}',
+                                style: AppTheme.heading1,
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: AppTheme.gapSmall),
-                          Text(
-                            '\$${_balance.toStringAsFixed(2)}',
-                            style: AppTheme.heading1,
+                          IconButton(
+                            icon: const Icon(Icons.refresh, color: AppTheme.primaryGreen),
+                            onPressed: _resetPortfolio,
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.refresh, color: AppTheme.primaryGreen),
-                        onPressed: _resetPortfolio,
-                      ),
-                    ],
-                  ),
-                ),
-                TabBar(
-                  controller: _tabController,
-                  indicatorColor: AppTheme.primaryGreen,
-                  indicatorWeight: 3,
-                  labelColor: AppTheme.textPrimary,
-                  unselectedLabelColor: AppTheme.textSecondary,
-                  labelStyle: AppTheme.bodyLarge.copyWith(fontWeight: FontWeight.w600),
-                  tabs: const [
-                    Tab(text: 'Ativas'),
-                    Tab(text: 'Histórico'),
+                    ),
+                    TabBar(
+                      controller: _tabController,
+                      indicatorColor: AppTheme.primaryGreen,
+                      indicatorWeight: 3,
+                      labelColor: AppTheme.textPrimary,
+                      unselectedLabelColor: AppTheme.textSecondary,
+                      labelStyle: AppTheme.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                      tabs: const [
+                        Tab(text: 'Ativas'),
+                        Tab(text: 'Histórico'),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _ActiveTransactionsTab(
-                  currentPrices: _currentPrices,
-                  onTransactionClosed: _loadBalance,
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _ActiveTransactionsTab(
+                      currentPrices: _currentPrices,
+                      onTransactionClosed: _loadBalance,
+                    ),
+                    const _HistoryTransactionsTab(),
+                  ],
                 ),
-                const _HistoryTransactionsTab(),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCreateTransactionModal,
-        backgroundColor: AppTheme.primaryGreen,
-        child: const Icon(Icons.add, color: AppTheme.textPrimary),
-      ),
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            onPressed: _showCreateTransactionModal,
+            backgroundColor: AppTheme.primaryGreen,
+            child: const Icon(Icons.add, color: AppTheme.textPrimary),
+          ),
+        ),
+      ],
     );
   }
 }

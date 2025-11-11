@@ -108,41 +108,49 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundBlack,
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: AppTheme.primaryGreen,
-              ),
-            )
-          : _watchlistCryptos.isEmpty
-              ? EmptyState(
-                  icon: Icons.star_border_rounded,
-                  title: 'Sua watchlist está vazia',
-                  message: 'Adicione criptomoedas aos favoritos',
-                  buttonText: 'Adicionar Criptomoeda',
-                  onButtonPressed: _showAddCryptoModal,
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadWatchlist,
-                  color: AppTheme.primaryGreen,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(AppTheme.paddingMedium),
-                    itemCount: _watchlistCryptos.length,
-                    itemBuilder: (context, index) {
-                      return _WatchlistCryptoCard(
-                        crypto: _watchlistCryptos[index],
-                        onRemove: () => _removeCrypto(_watchlistCryptos[index].id),
-                      );
-                    },
+    return Stack(
+      children: [
+        Container(
+          color: AppTheme.backgroundBlack,
+          child: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: AppTheme.primaryGreen,
                   ),
-                ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddCryptoModal,
-        backgroundColor: AppTheme.primaryGreen,
-        child: const Icon(Icons.add, color: AppTheme.textPrimary),
-      ),
+                )
+              : _watchlistCryptos.isEmpty
+                  ? EmptyState(
+                      icon: Icons.star_border_rounded,
+                      title: 'Sua watchlist está vazia',
+                      message: 'Adicione criptomoedas aos favoritos',
+                      buttonText: 'Adicionar Criptomoeda',
+                      onButtonPressed: _showAddCryptoModal,
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadWatchlist,
+                      color: AppTheme.primaryGreen,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(AppTheme.paddingMedium),
+                        itemCount: _watchlistCryptos.length,
+                        itemBuilder: (context, index) {
+                          return _WatchlistCryptoCard(
+                            crypto: _watchlistCryptos[index],
+                            onRemove: () => _removeCrypto(_watchlistCryptos[index].id),
+                          );
+                        },
+                      ),
+                    ),
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            onPressed: _showAddCryptoModal,
+            backgroundColor: AppTheme.primaryGreen,
+            child: const Icon(Icons.add, color: AppTheme.textPrimary),
+          ),
+        ),
+      ],
     );
   }
 }
