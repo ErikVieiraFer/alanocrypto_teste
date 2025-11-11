@@ -1,20 +1,21 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/message_model.dart';
+import '../models/notification_model.dart';
 import '../features/home/widgets/message_input.dart' show PickedImageFile;
+import 'notification_service.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  final NotificationService _notificationService = NotificationService();
 
   static const String _messagesCollection = 'chat_messages';
   static const int _messagesLimit = 50;
 
   // Enviar mensagem
-  Future<void> sendMessage({
+  Future<String> sendMessage({
     required String text,
     required String userId,
     required String userName,
@@ -23,6 +24,7 @@ class ChatService {
     String? replyToId,
     String? replyToText,
     String? replyToUserName,
+    List<Mention>? mentions,
   }) async {
     try {
       final docRef = _firestore.collection(_messagesCollection).doc();
@@ -38,11 +40,48 @@ class ChatService {
         replyToId: replyToId,
         replyToText: replyToText,
         replyToUserName: replyToUserName,
+        mentions: mentions ?? [],
       );
 
       await docRef.set(message.toJson());
+
+      if (mentions != null && mentions.isNotEmpty) {
+        await _createMentionNotifications(
+          mentions: mentions,
+          messageId: docRef.id,
+          senderName: userName,
+          messageText: text,
+          senderId: userId,
+        );
+      }
+
+      return docRef.id;
     } catch (e) {
       throw Exception('Erro ao enviar mensagem: $e');
+    }
+  }
+
+  Future<void> _createMentionNotifications({
+    required List<Mention> mentions,
+    required String messageId,
+    required String senderName,
+    required String messageText,
+    required String senderId,
+  }) async {
+    for (final mention in mentions) {
+      if (mention.userId == senderId) continue;
+
+      final truncatedText = messageText.length > 50
+          ? '${messageText.substring(0, 50)}...'
+          : messageText;
+
+      await _notificationService.createNotification(
+        userId: mention.userId,
+        type: NotificationType.mention,
+        title: '$senderName mencionou você',
+        content: truncatedText,
+        relatedId: messageId,
+      );
     }
   }
 

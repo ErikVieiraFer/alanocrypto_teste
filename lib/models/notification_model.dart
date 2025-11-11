@@ -5,6 +5,7 @@ enum NotificationType {
   like,
   signal,
   post,
+  mention,
   chatReply,
   chatReaction, // Adicionado para reações no chat
   unknown,
@@ -41,6 +42,8 @@ class NotificationModel {
         return NotificationType.signal;
       case 'post':
         return NotificationType.post;
+      case 'mention':
+        return NotificationType.mention;
       case 'chatReply':
         return NotificationType.chatReply;
       case 'chatReaction':

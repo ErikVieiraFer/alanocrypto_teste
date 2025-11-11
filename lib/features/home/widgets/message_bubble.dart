@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/gestures.dart';
 import '../../../models/message_model.dart';
 import '../../../theme/app_theme.dart';
+import '../../profile/screens/profile_screen.dart';
+import 'full_screen_image_view.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -61,7 +64,7 @@ class MessageBubble extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: isMe
-                            ? AppTheme.accentGreen.withOpacity(0.15)
+                            ? const Color.fromRGBO(79, 211, 101, 0.15)
                             : AppTheme.inputBackground,
                         borderRadius: BorderRadius.only(
                           topLeft: Radius.circular(isMe ? 20 : 4),
@@ -100,20 +103,13 @@ class MessageBubble extends StatelessWidget {
 
                           // Imagem (se existir)
                           if (message.imageUrl != null) ...[
-                            _buildImage(),
+                            _buildImage(context),
                             const SizedBox(height: 8),
                           ],
 
                           // Texto da mensagem (BRANCO e MAIOR)
                           if (message.text.isNotEmpty) ...[
-                            Text(
-                              message.text,
-                              style: const TextStyle(
-                                color: Colors.white, // SEMPRE BRANCO
-                                fontSize: 18, // MAIOR (era 15)
-                                height: 1.4,
-                              ),
-                            ),
+                            _buildMessageText(context),
                             const SizedBox(height: 6),
                           ],
 
@@ -126,8 +122,8 @@ class MessageBubble extends StatelessWidget {
                             children: [
                               Text(
                                 _formatTime(message.timestamp),
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(0.5),
+                                style: const TextStyle(
+                                  color: Color.fromRGBO(255, 255, 255, 0.5),
                                   fontSize: 12,
                                 ),
                               ),
@@ -135,8 +131,8 @@ class MessageBubble extends StatelessWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   '(editado)',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.5),
+                                  style: const TextStyle(
+                                    color: Color.fromRGBO(255, 255, 255, 0.5),
                                     fontSize: 11,
                                     fontStyle: FontStyle.italic,
                                   ),
@@ -239,9 +235,9 @@ class MessageBubble extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.15),
+        color: const Color.fromRGBO(0, 0, 0, 0.15),
         borderRadius: BorderRadius.circular(8),
-        border: Border(left: BorderSide(color: AppTheme.accentGreen, width: 3)),
+        border: const Border(left: BorderSide(color: AppTheme.accentGreen, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -259,9 +255,9 @@ class MessageBubble extends StatelessWidget {
             message.replyToText ?? '',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.7),
+              color: Color.fromRGBO(255, 255, 255, 0.7),
             ),
           ),
         ],
@@ -269,24 +265,93 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildImage() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: CachedNetworkImage(
-        imageUrl: message.imageUrl!,
-        fit: BoxFit.cover,
-        placeholder: (context, url) => Container(
-          height: 200,
-          color: Colors.grey[700],
-          child: const Center(child: CircularProgressIndicator()),
-        ),
-        errorWidget: (context, url, error) => Container(
-          height: 200,
-          color: Colors.grey[700],
-          child: const Icon(Icons.error, color: Colors.white),
+  Widget _buildImage(BuildContext context) {
+    final heroTag = message.imageUrl!;
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          PageRouteBuilder(
+            opaque: false,
+            pageBuilder: (_, __, ___) => FullScreenImageView(
+              imageUrl: message.imageUrl!,
+              heroTag: heroTag,
+            ),
+          ),
+        );
+      },
+      child: Hero(
+        tag: heroTag,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: CachedNetworkImage(
+            imageUrl: message.imageUrl!,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Container(
+              height: 200,
+              color: Colors.grey[700],
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+            errorWidget: (context, url, error) => Container(
+              height: 200,
+              color: Colors.grey[700],
+              child: const Icon(Icons.error, color: Colors.white),
+            ),
+          ),
         ),
       ),
     );
+  }
+
+  Widget _buildMessageText(BuildContext context) {
+    if (message.mentions.isEmpty) {
+      return Text(
+        message.text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          height: 1.4,
+        ),
+      );
+    }
+
+    final List<TextSpan> spans = [];
+    int currentPosition = 0;
+
+    // Ordenar menções pelo índice inicial
+    final sortedMentions = List<Mention>.from(message.mentions)
+      ..sort((a, b) => a.startIndex.compareTo(b.startIndex));
+
+    for (final mention in sortedMentions) {
+      if (mention.startIndex > currentPosition) {
+        spans.add(TextSpan(text: message.text.substring(currentPosition, mention.startIndex)));
+      }
+
+      spans.add(
+        TextSpan(
+          text: message.text.substring(mention.startIndex, mention.startIndex + mention.length),
+          style: const TextStyle(
+            color: Color.fromRGBO(74, 158, 255, 1), // Azul #4A9EFF
+            fontWeight: FontWeight.bold,
+          ),
+          recognizer: TapGestureRecognizer()..onTap = () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfileScreen(userId: mention.userId),
+              ),
+            );
+          },
+        ),
+      );
+      currentPosition = mention.startIndex + mention.length;
+    }
+
+    if (currentPosition < message.text.length) {
+      spans.add(TextSpan(text: message.text.substring(currentPosition)));
+    }
+
+    return RichText(text: TextSpan(style: const TextStyle(color: Colors.white, fontSize: 18, height: 1.4), children: spans));
   }
 
   Widget _buildReactions(ThemeData theme) {
@@ -303,11 +368,13 @@ class MessageBubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: AppTheme.accentGreen.withOpacity(0.2),
+                color: const Color.fromRGBO(79, 211, 101, 0.2),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppTheme.accentGreen.withOpacity(0.5),
-                  width: 1.5,
+                border: const Border(
+                  top: BorderSide(color: Color.fromRGBO(79, 211, 101, 0.5), width: 1.5),
+                  bottom: BorderSide(color: Color.fromRGBO(79, 211, 101, 0.5), width: 1.5),
+                  left: BorderSide(color: Color.fromRGBO(79, 211, 101, 0.5), width: 1.5),
+                  right: BorderSide(color: Color.fromRGBO(79, 211, 101, 0.5), width: 1.5),
                 ),
               ),
               child: Row(

@@ -215,4 +215,62 @@ class UserService {
       return false;
     }
   }
+
+  Future<List<UserModel>> searchApprovedUsers(String query, {int limit = 10}) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('approved', isEqualTo: true)
+          .get();
+
+      List<UserModel> allUsers = snapshot.docs
+          .map((doc) => UserModel.fromFirestore(doc))
+          .toList();
+
+      print('🔍 Total de usuários aprovados: ${allUsers.length}');
+      if (allUsers.isNotEmpty) {
+        print('📋 Usuários: ${allUsers.map((u) => u.displayName).join(", ")}');
+      }
+
+      if (query.isEmpty) {
+        allUsers.sort((a, b) => a.displayName.compareTo(b.displayName));
+        final result = allUsers.take(limit).toList();
+        print('✅ Retornando ${result.length} usuários (sem filtro)');
+        return result;
+      }
+
+      final queryLower = query.toLowerCase().trim();
+      print('🔎 Buscando por: "$query"');
+
+      final filteredUsers = allUsers.where((user) {
+        if (user.displayName.isEmpty && user.email.isEmpty) return false;
+        final nameLower = user.displayName.toLowerCase();
+        final emailLower = user.email.toLowerCase();
+        return nameLower.contains(queryLower) || emailLower.contains(queryLower);
+      }).toList();
+
+      print('✅ Encontrados ${filteredUsers.length} usuários para "$query"');
+      if (filteredUsers.isNotEmpty) {
+        print('📋 Resultados: ${filteredUsers.map((u) => u.displayName).join(", ")}');
+      }
+
+      filteredUsers.sort((a, b) {
+        final aName = a.displayName.toLowerCase();
+        final bName = b.displayName.toLowerCase();
+        final aStarts = aName.startsWith(queryLower);
+        final bStarts = bName.startsWith(queryLower);
+
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        return aName.compareTo(bName);
+      });
+
+      final result = filteredUsers.take(limit).toList();
+      print('📤 Retornando ${result.length} usuários (limitado a $limit)');
+      return result;
+    } catch (e) {
+      print('Erro ao buscar usuários: $e');
+      return [];
+    }
+  }
 }

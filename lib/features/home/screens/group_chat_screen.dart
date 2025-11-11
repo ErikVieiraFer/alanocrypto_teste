@@ -71,7 +71,7 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
     }
   }
 
-  Future<void> _sendMessage(String text, PickedImageFile? image) async {
+  Future<void> _sendMessage(String text, PickedImageFile? image, List<Mention> mentions) async {
     if (_currentUser == null) return;
 
     String? imageUrl;
@@ -120,18 +120,17 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         replyToId: originalMessage?.id,
         replyToText: originalMessage?.text,
         replyToUserName: originalMessage?.userName,
+        mentions: mentions,
       );
 
-      // Criar notificação se for uma resposta para a mensagem de outra pessoa
       if (originalMessage != null &&
           originalMessage.userId != _currentUser!.uid) {
         await _notificationService.createNotification(
-          userId:
-              originalMessage.userId, // Notifica o autor da mensagem original
+          userId: originalMessage.userId,
           type: NotificationType.chatReply,
           title: '${_currentUser!.displayName} respondeu à sua mensagem',
           content: text,
-          relatedId: _currentUser!.uid, // ID do usuário que respondeu
+          relatedId: _currentUser!.uid,
         );
       }
 
@@ -449,7 +448,10 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
           ),
         ),
         MessageInput(
-          onSend: _sendMessage,
+          onSend: (text, image, mentions) {
+            _sendMessage(text, image, mentions);
+          },
+          userService: _userService,
           replyToUserName: _replyToMessage?.userName,
           replyToText: _replyToMessage?.text,
           onCancelReply: () {

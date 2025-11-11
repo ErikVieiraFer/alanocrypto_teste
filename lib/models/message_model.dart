@@ -1,5 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class Mention {
+  final String userId;
+  final String displayName;
+  final int startIndex;
+  final int length;
+
+  Mention({
+    required this.userId,
+    required this.displayName,
+    required this.startIndex,
+    required this.length,
+  });
+
+  Map<String, dynamic> toJson() => {'userId': userId, 'displayName': displayName, 'startIndex': startIndex, 'length': length};
+  factory Mention.fromJson(Map<String, dynamic> json) => Mention(userId: json['userId'], displayName: json['displayName'], startIndex: json['startIndex'], length: json['length']);
+}
+
 class Message {
   final String id;
   final String text;
@@ -13,7 +30,7 @@ class Message {
   final String? replyToText;
   final String? replyToUserName;
   final bool isEdited;
-  final List<String> readBy;
+  final List<Mention> mentions;
 
   Message({
     required this.id,
@@ -28,9 +45,8 @@ class Message {
     this.replyToText,
     this.replyToUserName,
     this.isEdited = false,
-    List<String>? readBy,
-  }) : reactions = reactions ?? {},
-       readBy = readBy ?? [];
+    this.mentions = const [],
+  }) : reactions = reactions ?? {};
 
   Map<String, dynamic> toJson() {
     return {
@@ -46,7 +62,7 @@ class Message {
       'replyToText': replyToText,
       'replyToUserName': replyToUserName,
       'isEdited': isEdited,
-      'readBy': readBy,
+      'mentions': mentions.map((m) => m.toJson()).toList(),
     };
   }
 
@@ -57,7 +73,7 @@ class Message {
       userId: json['userId'] as String,
       userName: json['userName'] as String,
       userPhotoUrl: json['userPhotoUrl'] as String?,
-      timestamp: (json['timestamp'] as Timestamp).toDate(),
+      timestamp: (json['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       imageUrl: json['imageUrl'] as String?,
       reactions: Map<String, List<String>>.from(
         (json['reactions'] as Map<String, dynamic>? ?? {}).map(
@@ -68,39 +84,10 @@ class Message {
       replyToText: json['replyToText'] as String?,
       replyToUserName: json['replyToUserName'] as String?,
       isEdited: json['isEdited'] as bool? ?? false,
-      readBy: List<String>.from(json['readBy'] ?? []),
-    );
-  }
-
-  Message copyWith({
-    String? id,
-    String? text,
-    String? userId,
-    String? userName,
-    String? userPhotoUrl,
-    DateTime? timestamp,
-    String? imageUrl,
-    Map<String, List<String>>? reactions,
-    String? replyToId,
-    String? replyToText,
-    String? replyToUserName,
-    bool? isEdited,
-    List<String>? readBy,
-  }) {
-    return Message(
-      id: id ?? this.id,
-      text: text ?? this.text,
-      userId: userId ?? this.userId,
-      userName: userName ?? this.userName,
-      userPhotoUrl: userPhotoUrl ?? this.userPhotoUrl,
-      timestamp: timestamp ?? this.timestamp,
-      imageUrl: imageUrl ?? this.imageUrl,
-      reactions: reactions ?? this.reactions,
-      replyToId: replyToId ?? this.replyToId,
-      replyToText: replyToText ?? this.replyToText,
-      replyToUserName: replyToUserName ?? this.replyToUserName,
-      isEdited: isEdited ?? this.isEdited,
-      readBy: readBy ?? this.readBy,
+      mentions: (json['mentions'] as List<dynamic>?)
+              ?.map((m) => Mention.fromJson(m as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 }

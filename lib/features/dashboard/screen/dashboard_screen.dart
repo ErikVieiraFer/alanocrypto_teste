@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:alanoapp/features/home/screens/home_screen.dart';
 import 'package:alanoapp/features/home/screens/group_chat_screen.dart';
 import 'package:alanoapp/features/profile/screens/profile_screen.dart';
 import 'package:alanoapp/features/alano_posts/screens/alano_posts_screen.dart';
@@ -33,11 +34,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final String? _userId = FirebaseAuth.instance.currentUser?.uid;
 
   final List<Widget> _screens = [
-    const GroupChatScreen(), // 0 - Comunidade
-    const ProfileScreen(), // 1 - Perfil
+    const HomeScreen(), // 0 - Home (Dashboard)
+    const GroupChatScreen(), // 1 - Comunidade
     const AlanoPostsScreen(), // 2 - Posts
-    const AIChatScreen(), // 3 - IA
-    const SignalsScreen(), // 4 - Sinais
+    const SignalsScreen(), // 3 - Sinais
+    const ProfileScreen(), // 4 - Perfil
   ];
 
   @override
@@ -143,7 +144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      _currentIndex = 1; // Perfil
+                      _currentIndex = 4; // Perfil
                     });
                   },
                   child: CircleAvatar(
@@ -180,13 +181,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.people),
             label: 'Comunidade',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
-          BottomNavigationBarItem(icon: Icon(Icons.article), label: 'Posts'),
-          BottomNavigationBarItem(icon: Icon(Icons.android), label: 'IA'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Sinais'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.article),
+            label: 'Posts',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: 'Sinais',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Perfil',
+          ),
         ],
       ),
     );

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import '../../../services/user_service.dart';
 import '../../../theme/app_theme.dart';
 
@@ -19,11 +18,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _userService = UserService();
-
-  final _phoneFormatter = MaskTextInputFormatter(
-    mask: '(##) #####-####',
-    filter: {"#": RegExp(r'[0-9]')},
-  );
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -56,13 +50,10 @@ class _SignupScreenState extends State<SignupScreen> {
           _nameController.text.trim(),
         );
 
-        final unmaskedPhone = _phoneFormatter.getUnmaskedText();
-        final formattedPhone = '+55$unmaskedPhone';
-
         await _userService.createUser(
           userCredential.user!,
           displayName: _nameController.text.trim(),
-          phone: formattedPhone,
+          phone: _phoneController.text.trim(),
         );
 
         if (mounted) {
@@ -231,20 +222,18 @@ class _SignupScreenState extends State<SignupScreen> {
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
-                    inputFormatters: [_phoneFormatter],
                     decoration: InputDecoration(
-                      labelText: 'Telefone (DDD)',
+                      labelText: 'Telefone (com código do país)',
+                      hintText: 'Ex: +1 555 123 4567',
                       prefixIcon: const Icon(Icons.phone),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
+                      final phone = value?.trim() ?? '';
+                      if (phone.isEmpty) {
                         return 'Digite seu telefone';
-                      }
-                      if (_phoneFormatter.getUnmaskedText().length != 11) {
-                        return 'Telefone inválido (DDD + 9 dígitos)';
                       }
                       return null;
                     },

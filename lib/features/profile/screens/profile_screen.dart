@@ -4,11 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 import '../../../models/user_model.dart';
 import '../../../services/user_service.dart';
-import '../../../services/signal_service.dart';
 import '../../../theme/app_theme.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -129,8 +127,6 @@ class _ProfileView extends StatelessWidget {
               children: [
                 _UserInfoCard(user: user),
                 const SizedBox(height: 24),
-                _StatsSection(user: user),
-                const SizedBox(height: 24),
                 _InfoSection(user: user),
               ],
             ),
@@ -229,78 +225,13 @@ class _StatusBadge extends StatelessWidget {
   }
 }
 
-class _StatsSection extends StatelessWidget {
-  final UserModel user;
-  const _StatsSection({required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    final daysActive = DateTime.now().difference(user.createdAt).inDays;
-
-    return FutureBuilder<int>(
-      future: SignalService().getSignalsCount(),
-      builder: (context, snapshot) {
-        final signalsCount = snapshot.data ?? 0;
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _StatCard(value: daysActive.toString(), label: 'Dias Ativo'),
-            _StatCard(value: signalsCount.toString(), label: 'Sinais Recebidos'),
-            const _StatCard(value: '85,2%', label: 'Taxa de Acerto'),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String value;
-  final String label;
-
-  const _StatCard({required this.value, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 6),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppTheme.inputBackground,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.accentGreen),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _InfoSection extends StatelessWidget {
   final UserModel user;
   const _InfoSection({required this.user});
 
   @override
   Widget build(BuildContext context) {
-    String formattedPhone = 'Não informado';
-    if (user.phone != null && user.phone!.isNotEmpty) {
-      final phoneFormatter =
-          MaskTextInputFormatter(mask: '(##) #####-####', filter: {"#": RegExp(r'[0-9]')});
-      formattedPhone = phoneFormatter.maskText(user.phone!.replaceAll('+55', ''));
-    }
+    final formattedPhone = user.phone != null && user.phone!.isNotEmpty ? user.phone! : 'Não informado';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,7 +254,7 @@ class _InfoSection extends StatelessWidget {
               children: [
                 _InfoTile(icon: Icons.person_outline, label: 'Nome Completo', value: user.displayName),
                 _InfoTile(icon: Icons.email_outlined, label: 'Email', value: user.email, canCopy: true),
-                _InfoTile(icon: Icons.phone_outlined, label: 'Telefone', value: formattedPhone),
+                _InfoTile(icon: Icons.phone_outlined, label: 'Telefone', value: formattedPhone, canCopy: true),
                 _InfoTile(icon: FontAwesomeIcons.telegram, label: 'Telegram', value: user.telegram ?? 'Não informado'),
                 _InfoTile(icon: Icons.flag_outlined, label: 'País', value: user.country),
                 _InfoTile(icon: Icons.star_outline, label: 'Plano', value: user.tier),
@@ -371,7 +302,7 @@ class _InfoTile extends StatelessWidget {
             IconButton(
               icon: const Icon(Icons.copy, size: 18, color: Colors.white70),
               onPressed: () {
-                Clipboard.setData(ClipboardData(text: value));
+                Clipboard.setData(ClipboardData(text: value.replaceAll(RegExp(r'[() -]'), '')));
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Email copiado para a área de transferência!')),
                 );
@@ -396,7 +327,6 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
   late TextEditingController _telegramController;
-  final _phoneFormatter = MaskTextInputFormatter(mask: '(##) #####-####', filter: {"#": RegExp(r'[0-9]')});
   bool _isLoading = false;
 
   @override
@@ -404,24 +334,19 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     super.initState();
     _nameController = TextEditingController(text: widget.user.displayName);
     _telegramController = TextEditingController(text: widget.user.telegram ?? '');
-    _phoneController = TextEditingController();
-    if (widget.user.phone != null) {
-      _phoneController.text = _phoneFormatter.maskText(widget.user.phone!.replaceAll('+55', ''));
-    }
+    _phoneController = TextEditingController(text: widget.user.phone ?? '');
   }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-
-    final unmaskedPhone = _phoneFormatter.getUnmaskedText();
-    final formattedPhone = unmaskedPhone.isNotEmpty ? '+55$unmaskedPhone' : null;
-
+    
+    final phone = _phoneController.text.trim();
     final success = await UserService().updateUser(
       userId: widget.user.uid,
       displayName: _nameController.text.trim(),
-      phone: formattedPhone,
+      phone: phone.isNotEmpty ? phone : null,
       telegram: _telegramController.text.trim(),
     );
 
@@ -462,15 +387,11 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _phoneController,
-                decoration: const InputDecoration(labelText: 'Telefone'),
+                decoration: const InputDecoration(
+                  labelText: 'Telefone (com código do país)',
+                  hintText: 'Ex: +55 11 98765-4321',
+                ),
                 keyboardType: TextInputType.phone,
-                inputFormatters: [_phoneFormatter],
-                validator: (value) {
-                  if (value != null && value.isNotEmpty && _phoneFormatter.getUnmaskedText().length != 11) {
-                    return 'Telefone inválido';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -563,4 +484,3 @@ class _SettingsModal extends StatelessWidget {
     );
   }
 }
-

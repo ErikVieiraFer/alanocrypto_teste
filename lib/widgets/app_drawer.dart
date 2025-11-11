@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:alanoapp/theme/app_theme.dart';
+import '../features/crypto/screens/market_screen.dart';
+import '../features/crypto/screens/watchlist_screen.dart';
+import '../features/transactions/screens/transactions_screen.dart';
+import '../features/forex/screens/forex_calculator_screen.dart';
+import '../features/courses/screens/courses_screen.dart';
+import '../features/portfolio/screens/portfolio_screen.dart';
+import '../features/support/screens/support_screen.dart';
+import '../features/links/screens/useful_links_screen.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({Key? key}) : super(key: key);
@@ -17,17 +25,44 @@ class _AppDrawerState extends State<AppDrawer> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-            // Mercados
             _buildDrawerItem(
               icon: Icons.trending_up,
-              title: 'Mercados',
-              onTap: () =>
-                  _navigateTo(context, '/under-development', 'Mercados'),
+              title: 'Mercado',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MarketScreen()),
+                );
+              },
             ),
 
-            // Comunidade
+            _buildDrawerItem(
+              icon: Icons.star,
+              title: 'Watchlist',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const WatchlistScreen()),
+                );
+              },
+            ),
+
+            _buildDrawerItem(
+              icon: Icons.swap_horiz,
+              title: 'Transações',
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TransactionsScreen()),
+                );
+              },
+            ),
+
             _buildDrawerItem(
               icon: Icons.people,
               title: 'Comunidade',
@@ -37,30 +72,35 @@ class _AppDrawerState extends State<AppDrawer> {
                   context,
                   '/dashboard',
                   (route) => false,
-                  arguments: {'initialTab': 0},
+                  arguments: {'initialTab': 1},
                 );
               },
             ),
 
-            // Calculadora Forex
             _buildDrawerItem(
               icon: Icons.calculate,
               title: 'Calculadora Forex',
-              onTap: () => _navigateTo(
-                context,
-                '/under-development',
-                'Calculadora Forex',
-              ),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ForexCalculatorScreen()),
+                );
+              },
             ),
 
-            // Cursos
             _buildDrawerItem(
               icon: Icons.school,
               title: 'Cursos',
-              onTap: () => _navigateTo(context, '/under-development', 'Cursos'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CoursesScreen()),
+                );
+              },
             ),
 
-            // Sinais
             _buildDrawerItem(
               icon: Icons.bar_chart,
               title: 'Sinais',
@@ -70,12 +110,11 @@ class _AppDrawerState extends State<AppDrawer> {
                   context,
                   '/dashboard',
                   (route) => false,
-                  arguments: {'initialTab': 4},
+                  arguments: {'initialTab': 3},
                 );
               },
             ),
 
-            // Posts do Alano
             _buildDrawerItem(
               icon: Icons.article,
               title: 'Posts do Alano',
@@ -90,23 +129,24 @@ class _AppDrawerState extends State<AppDrawer> {
               },
             ),
 
-            // Portfólio
             _buildDrawerItem(
               icon: Icons.business_center,
               title: 'Portfólio',
-              onTap: () =>
-                  _navigateTo(context, '/under-development', 'Portfólio'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PortfolioScreen()),
+                );
+              },
             ),
 
-            // Gerenciamento
             _buildDrawerItem(
               icon: Icons.settings,
               title: 'Gerenciamento',
-              onTap: () =>
-                  _navigateTo(context, '/under-development', 'Gerenciamento'),
+              onTap: () => _navigateTo(context, '/under-development', 'Gerenciamento'),
             ),
 
-            // Alano Crypto IA
             _buildDrawerItem(
               icon: Icons.android,
               title: 'Alano Crypto IA',
@@ -121,30 +161,30 @@ class _AppDrawerState extends State<AppDrawer> {
               },
             ),
 
-            // Watchlist
-            _buildDrawerItem(
-              icon: Icons.star,
-              title: 'Watchlist',
-              onTap: () =>
-                  _navigateTo(context, '/under-development', 'Watchlist'),
-            ),
-
             Divider(color: Colors.grey.shade800, height: 32),
 
-            // Links úteis
             _buildDrawerItem(
               icon: Icons.link,
               title: 'Links úteis',
-              onTap: () =>
-                  _navigateTo(context, '/under-development', 'Links úteis'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const UsefulLinksScreen()),
+                );
+              },
             ),
 
-            // Suporte
             _buildDrawerItem(
               icon: Icons.help_outline,
               title: 'Suporte',
-              onTap: () =>
-                  _navigateTo(context, '/under-development', 'Suporte'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SupportScreen()),
+                );
+              },
             ),
           ],
         ),
