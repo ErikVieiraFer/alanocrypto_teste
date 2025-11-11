@@ -4,6 +4,7 @@ import '../../../models/transaction_model.dart';
 import '../../../models/crypto_data_model.dart';
 import '../../../services/transaction_service.dart';
 import '../../../services/crypto_market_service.dart';
+import '../../../theme/app_theme.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -73,11 +74,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> with SingleTick
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color.fromRGBO(18, 18, 18, 1),
-        title: const Text('Resetar Portfólio', style: TextStyle(color: Colors.white)),
-        content: const Text(
+        backgroundColor: AppTheme.cardDark,
+        title: Text('Resetar Portfólio', style: AppTheme.heading3),
+        content: Text(
           'Tem certeza que deseja resetar seu portfólio? Todas as transações serão apagadas e o saldo voltará para \$10,000.',
-          style: TextStyle(color: Color.fromRGBO(158, 158, 158, 1)),
+          style: AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondary),
         ),
         actions: [
           TextButton(
@@ -86,7 +87,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> with SingleTick
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Resetar', style: TextStyle(color: Colors.red)),
+            child: const Text('Resetar', style: TextStyle(color: AppTheme.errorRed)),
           ),
         ],
       ),
@@ -100,7 +101,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> with SingleTick
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Portfólio resetado com sucesso'),
-              backgroundColor: Color.fromRGBO(76, 175, 80, 1),
+              backgroundColor: AppTheme.primaryGreen,
             ),
           );
         }
@@ -109,7 +110,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> with SingleTick
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Erro ao resetar portfólio'),
-              backgroundColor: Colors.red,
+              backgroundColor: AppTheme.errorRed,
             ),
           );
         }
@@ -120,75 +121,74 @@ class _TransactionsScreenState extends State<TransactionsScreen> with SingleTick
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: const Color.fromRGBO(18, 18, 18, 1),
-        title: const Text(
-          'Transações',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _resetPortfolio,
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(100),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Saldo Disponível',
-                      style: TextStyle(
-                        color: Color.fromRGBO(158, 158, 158, 1),
-                        fontSize: 14,
+      backgroundColor: AppTheme.backgroundBlack,
+      body: Column(
+        children: [
+          Container(
+            color: AppTheme.cardDark,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(AppTheme.paddingMedium, AppTheme.paddingMedium, AppTheme.paddingMedium, AppTheme.gapSmall),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Saldo Disponível',
+                            style: AppTheme.bodyMedium.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: AppTheme.gapSmall),
+                          Text(
+                            '\$${_balance.toStringAsFixed(2)}',
+                            style: AppTheme.heading1,
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '\$${_balance.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: AppTheme.primaryGreen),
+                        onPressed: _resetPortfolio,
                       ),
-                    ),
+                    ],
+                  ),
+                ),
+                TabBar(
+                  controller: _tabController,
+                  indicatorColor: AppTheme.primaryGreen,
+                  indicatorWeight: 3,
+                  labelColor: AppTheme.textPrimary,
+                  unselectedLabelColor: AppTheme.textSecondary,
+                  labelStyle: AppTheme.bodyLarge.copyWith(fontWeight: FontWeight.w600),
+                  tabs: const [
+                    Tab(text: 'Ativas'),
+                    Tab(text: 'Histórico'),
                   ],
                 ),
-              ),
-              TabBar(
-                controller: _tabController,
-                indicatorColor: const Color.fromRGBO(76, 175, 80, 1),
-                labelColor: Colors.white,
-                unselectedLabelColor: const Color.fromRGBO(158, 158, 158, 1),
-                tabs: const [
-                  Tab(text: 'Ativas'),
-                  Tab(text: 'Histórico'),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _ActiveTransactionsTab(
-            currentPrices: _currentPrices,
-            onTransactionClosed: _loadBalance,
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _ActiveTransactionsTab(
+                  currentPrices: _currentPrices,
+                  onTransactionClosed: _loadBalance,
+                ),
+                const _HistoryTransactionsTab(),
+              ],
+            ),
           ),
-          const _HistoryTransactionsTab(),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateTransactionModal,
-        backgroundColor: const Color.fromRGBO(76, 175, 80, 1),
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: AppTheme.primaryGreen,
+        child: const Icon(Icons.add, color: AppTheme.textPrimary),
       ),
     );
   }
@@ -211,7 +211,7 @@ class _ActiveTransactionsTab extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(
-              color: Color.fromRGBO(76, 175, 80, 1),
+              color: AppTheme.primaryGreen,
             ),
           );
         }
@@ -226,13 +226,13 @@ class _ActiveTransactionsTab extends StatelessWidget {
                 Icon(
                   Icons.trending_up,
                   size: 64,
-                  color: Color.fromRGBO(158, 158, 158, 1),
+                  color: AppTheme.textSecondary,
                 ),
                 SizedBox(height: 16),
                 Text(
                   'Nenhuma transação ativa',
                   style: TextStyle(
-                    color: Color.fromRGBO(158, 158, 158, 1),
+                    color: AppTheme.textSecondary,
                     fontSize: 18,
                   ),
                 ),
@@ -268,7 +268,7 @@ class _HistoryTransactionsTab extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(
-              color: Color.fromRGBO(76, 175, 80, 1),
+              color: AppTheme.primaryGreen,
             ),
           );
         }
@@ -280,7 +280,7 @@ class _HistoryTransactionsTab extends StatelessWidget {
             child: Text(
               'Nenhuma transação no histórico',
               style: TextStyle(
-                color: Color.fromRGBO(158, 158, 158, 1),
+                color: AppTheme.textSecondary,
                 fontSize: 18,
               ),
             ),
@@ -318,7 +318,7 @@ class _TransactionCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Transação fechada'),
-            backgroundColor: Color.fromRGBO(76, 175, 80, 1),
+            backgroundColor: AppTheme.primaryGreen,
           ),
         );
       }
@@ -327,7 +327,7 @@ class _TransactionCard extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorRed,
           ),
         );
       }
@@ -340,17 +340,17 @@ class _TransactionCard extends StatelessWidget {
     final pnlPercentage = transaction.calculatePnLPercentage(currentPrice);
     final isProfitable = pnl >= 0;
     final pnlColor = isProfitable
-        ? const Color.fromRGBO(76, 175, 80, 1)
-        : const Color.fromRGBO(244, 67, 54, 1);
+        ? AppTheme.primaryGreen
+        : AppTheme.errorRed;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppTheme.gapMedium),
+      padding: const EdgeInsets.all(AppTheme.paddingMedium),
       decoration: BoxDecoration(
-        color: const Color.fromRGBO(18, 18, 18, 1),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.cardDark,
+        borderRadius: AppTheme.defaultRadius,
         border: Border.all(
-          color: const Color.fromRGBO(50, 50, 50, 1),
+          color: AppTheme.borderDark,
           width: 1,
         ),
       ),
@@ -363,16 +363,16 @@ class _TransactionCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: transaction.type == TransactionType.buy
-                      ? const Color.fromRGBO(76, 175, 80, 0.2)
-                      : const Color.fromRGBO(244, 67, 54, 0.2),
-                  borderRadius: BorderRadius.circular(4),
+                      ? AppTheme.greenTransparent20
+                      : AppTheme.redTransparent20,
+                  borderRadius: AppTheme.tinyRadius,
                 ),
                 child: Text(
                   transaction.type == TransactionType.buy ? 'COMPRA' : 'VENDA',
                   style: TextStyle(
                     color: transaction.type == TransactionType.buy
-                        ? const Color.fromRGBO(76, 175, 80, 1)
-                        : const Color.fromRGBO(244, 67, 54, 1),
+                        ? AppTheme.primaryGreen
+                        : AppTheme.errorRed,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -381,27 +381,22 @@ class _TransactionCard extends StatelessWidget {
               const Spacer(),
               Text(
                 DateFormat('dd/MM/yyyy HH:mm').format(transaction.createdAt),
-                style: const TextStyle(
-                  color: Color.fromRGBO(158, 158, 158, 1),
-                  fontSize: 12,
-                ),
+                style: AppTheme.bodySmall,
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppTheme.gapMedium),
           Text(
             transaction.cryptoSymbol.toUpperCase(),
-            style: const TextStyle(
-              color: Colors.white,
+            style: AppTheme.bodyLarge.copyWith(
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
           Text(
             transaction.cryptoName,
-            style: const TextStyle(
-              color: Color.fromRGBO(158, 158, 158, 1),
-              fontSize: 14,
+            style: AppTheme.bodyMedium.copyWith(
+              color: AppTheme.textSecondary,
             ),
           ),
           const SizedBox(height: 12),
@@ -411,18 +406,13 @@ class _TransactionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Quantidade',
-                      style: TextStyle(
-                        color: Color.fromRGBO(158, 158, 158, 1),
-                        fontSize: 12,
-                      ),
+                      style: AppTheme.bodySmall,
                     ),
                     Text(
                       transaction.quantity.toStringAsFixed(4),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
+                      style: AppTheme.bodyMedium.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -433,18 +423,13 @@ class _TransactionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Preço Entrada',
-                      style: TextStyle(
-                        color: Color.fromRGBO(158, 158, 158, 1),
-                        fontSize: 12,
-                      ),
+                      style: AppTheme.bodySmall,
                     ),
                     Text(
                       '\$${transaction.entryPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
+                      style: AppTheme.bodyMedium.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -455,18 +440,13 @@ class _TransactionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Preço Atual',
-                      style: TextStyle(
-                        color: Color.fromRGBO(158, 158, 158, 1),
-                        fontSize: 12,
-                      ),
+                      style: AppTheme.bodySmall,
                     ),
                     Text(
                       '\$${currentPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
+                      style: AppTheme.bodyMedium.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -475,14 +455,14 @@ class _TransactionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppTheme.gapMedium),
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppTheme.gapMedium),
             decoration: BoxDecoration(
               color: isProfitable
-                  ? const Color.fromRGBO(76, 175, 80, 0.1)
-                  : const Color.fromRGBO(244, 67, 54, 0.1),
-              borderRadius: BorderRadius.circular(8),
+                  ? AppTheme.greenTransparent10
+                  : AppTheme.redTransparent10,
+              borderRadius: AppTheme.smallRadius,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -490,12 +470,9 @@ class _TransactionCard extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'P&L',
-                      style: TextStyle(
-                        color: Color.fromRGBO(158, 158, 158, 1),
-                        fontSize: 12,
-                      ),
+                      style: AppTheme.bodySmall,
                     ),
                     Text(
                       '${pnl >= 0 ? '+' : ''}\$${pnl.toStringAsFixed(2)}',
@@ -518,15 +495,15 @@ class _TransactionCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppTheme.gapMedium),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () => _closeTransaction(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromRGBO(244, 67, 54, 1),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                backgroundColor: AppTheme.errorRed,
+                foregroundColor: AppTheme.textPrimary,
+                padding: const EdgeInsets.symmetric(vertical: AppTheme.gapMedium),
               ),
               child: const Text('Fechar Posição'),
             ),
@@ -547,17 +524,17 @@ class _HistoryCard extends StatelessWidget {
     final pnl = transaction.calculatePnL(transaction.exitPrice!);
     final isProfitable = pnl >= 0;
     final pnlColor = isProfitable
-        ? const Color.fromRGBO(76, 175, 80, 1)
-        : const Color.fromRGBO(244, 67, 54, 1);
+        ? AppTheme.primaryGreen
+        : AppTheme.errorRed;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppTheme.gapMedium),
+      padding: const EdgeInsets.all(AppTheme.paddingMedium),
       decoration: BoxDecoration(
-        color: const Color.fromRGBO(18, 18, 18, 1),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.cardDark,
+        borderRadius: AppTheme.defaultRadius,
         border: Border.all(
-          color: const Color.fromRGBO(50, 50, 50, 1),
+          color: AppTheme.borderDark,
           width: 1,
         ),
       ),
@@ -568,27 +545,25 @@ class _HistoryCard extends StatelessWidget {
             children: [
               Text(
                 transaction.cryptoSymbol.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
+                style: AppTheme.bodyLarge.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppTheme.gapSmall),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: transaction.type == TransactionType.buy
-                      ? const Color.fromRGBO(76, 175, 80, 0.2)
-                      : const Color.fromRGBO(244, 67, 54, 0.2),
-                  borderRadius: BorderRadius.circular(4),
+                      ? AppTheme.greenTransparent20
+                      : AppTheme.redTransparent20,
+                  borderRadius: AppTheme.tinyRadius,
                 ),
                 child: Text(
                   transaction.type == TransactionType.buy ? 'COMPRA' : 'VENDA',
                   style: TextStyle(
                     color: transaction.type == TransactionType.buy
-                        ? const Color.fromRGBO(76, 175, 80, 1)
-                        : const Color.fromRGBO(244, 67, 54, 1),
+                        ? AppTheme.primaryGreen
+                        : AppTheme.errorRed,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -605,20 +580,14 @@ class _HistoryCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppTheme.gapSmall),
           Text(
             'Aberto: ${DateFormat('dd/MM/yyyy HH:mm').format(transaction.createdAt)}',
-            style: const TextStyle(
-              color: Color.fromRGBO(158, 158, 158, 1),
-              fontSize: 12,
-            ),
+            style: AppTheme.bodySmall,
           ),
           Text(
             'Fechado: ${DateFormat('dd/MM/yyyy HH:mm').format(transaction.closedAt!)}',
-            style: const TextStyle(
-              color: Color.fromRGBO(158, 158, 158, 1),
-              fontSize: 12,
-            ),
+            style: AppTheme.bodySmall,
           ),
         ],
       ),
@@ -678,7 +647,7 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Preencha todos os campos'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppTheme.warningOrange,
         ),
       );
       return;
@@ -689,7 +658,7 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Quantidade inválida'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppTheme.errorRed,
         ),
       );
       return;
@@ -711,7 +680,7 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Transação criada com sucesso'),
-            backgroundColor: Color.fromRGBO(76, 175, 80, 1),
+            backgroundColor: AppTheme.primaryGreen,
           ),
         );
       }
@@ -720,7 +689,7 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorRed,
           ),
         );
       }
@@ -734,34 +703,33 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
-      decoration: const BoxDecoration(
-        color: Color.fromRGBO(18, 18, 18, 1),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppTheme.paddingMedium),
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: Color.fromRGBO(50, 50, 50, 1),
+                  color: AppTheme.borderDark,
                 ),
               ),
             ),
             child: Row(
               children: [
-                const Text(
+                Text(
                   'Nova Transação',
-                  style: TextStyle(
-                    color: Colors.white,
+                  style: AppTheme.bodyLarge.copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
+                  icon: const Icon(Icons.close, color: AppTheme.textPrimary),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -771,23 +739,21 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      color: Color.fromRGBO(76, 175, 80, 1),
+                      color: AppTheme.primaryGreen,
                     ),
                   )
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppTheme.paddingMedium),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Tipo',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
+                          style: AppTheme.bodyLarge.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppTheme.gapSmall),
                         Row(
                           children: [
                             Expanded(
@@ -797,16 +763,16 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
                                 onSelected: (selected) {
                                   setState(() => _selectedType = TransactionType.buy);
                                 },
-                                selectedColor: const Color.fromRGBO(76, 175, 80, 1),
-                                backgroundColor: const Color.fromRGBO(50, 50, 50, 1),
+                                selectedColor: AppTheme.primaryGreen,
+                                backgroundColor: AppTheme.borderDark,
                                 labelStyle: TextStyle(
                                   color: _selectedType == TransactionType.buy
-                                      ? Colors.white
-                                      : const Color.fromRGBO(158, 158, 158, 1),
+                                      ? AppTheme.textPrimary
+                                      : AppTheme.textSecondary,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: AppTheme.gapMedium),
                             Expanded(
                               child: ChoiceChip(
                                 label: const Text('Venda'),
@@ -814,43 +780,41 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
                                 onSelected: (selected) {
                                   setState(() => _selectedType = TransactionType.sell);
                                 },
-                                selectedColor: const Color.fromRGBO(244, 67, 54, 1),
-                                backgroundColor: const Color.fromRGBO(50, 50, 50, 1),
+                                selectedColor: AppTheme.errorRed,
+                                backgroundColor: AppTheme.borderDark,
                                 labelStyle: TextStyle(
                                   color: _selectedType == TransactionType.sell
-                                      ? Colors.white
-                                      : const Color.fromRGBO(158, 158, 158, 1),
+                                      ? AppTheme.textPrimary
+                                      : AppTheme.textSecondary,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
-                        const Text(
+                        const SizedBox(height: AppTheme.gapXLarge),
+                        Text(
                           'Criptomoeda',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
+                          style: AppTheme.bodyLarge.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppTheme.gapSmall),
                         DropdownButtonFormField<CryptoDataModel>(
                           value: _selectedCrypto,
                           decoration: InputDecoration(
                             hintText: 'Selecione uma criptomoeda',
-                            hintStyle: const TextStyle(
-                              color: Color.fromRGBO(158, 158, 158, 1),
+                            hintStyle: AppTheme.bodyMedium.copyWith(
+                              color: AppTheme.textSecondary,
                             ),
                             filled: true,
-                            fillColor: const Color.fromRGBO(18, 18, 18, 1),
+                            fillColor: AppTheme.cardDark,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppTheme.defaultRadius,
                               borderSide: BorderSide.none,
                             ),
                           ),
-                          dropdownColor: const Color.fromRGBO(18, 18, 18, 1),
-                          style: const TextStyle(color: Colors.white),
+                          dropdownColor: AppTheme.cardDark,
+                          style: AppTheme.bodyMedium,
                           items: _cryptos.map((crypto) {
                             return DropdownMenuItem(
                               value: crypto,
@@ -863,76 +827,71 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
                             setState(() => _selectedCrypto = value);
                           },
                         ),
-                        const SizedBox(height: 24),
-                        const Text(
+                        const SizedBox(height: AppTheme.gapXLarge),
+                        Text(
                           'Quantidade',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
+                          style: AppTheme.bodyLarge.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: AppTheme.gapSmall),
                         TextField(
                           controller: _quantityController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: Colors.white),
+                          style: AppTheme.bodyMedium,
                           decoration: InputDecoration(
                             hintText: '0.00',
-                            hintStyle: const TextStyle(
-                              color: Color.fromRGBO(158, 158, 158, 1),
+                            hintStyle: AppTheme.bodyMedium.copyWith(
+                              color: AppTheme.textSecondary,
                             ),
                             filled: true,
-                            fillColor: const Color.fromRGBO(18, 18, 18, 1),
+                            fillColor: AppTheme.cardDark,
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppTheme.defaultRadius,
                               borderSide: BorderSide.none,
                             ),
                           ),
                         ),
                         if (_selectedCrypto != null && _quantityController.text.isNotEmpty) ...[
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppTheme.gapXLarge),
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(AppTheme.paddingMedium),
                             decoration: BoxDecoration(
-                              color: const Color.fromRGBO(18, 18, 18, 1),
-                              borderRadius: BorderRadius.circular(12),
+                              color: AppTheme.cardDark,
+                              borderRadius: AppTheme.defaultRadius,
                             ),
                             child: Column(
                               children: [
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Preço Atual:',
-                                      style: TextStyle(
-                                        color: Color.fromRGBO(158, 158, 158, 1),
+                                      style: AppTheme.bodyMedium.copyWith(
+                                        color: AppTheme.textSecondary,
                                       ),
                                     ),
                                     Text(
                                       '\$${_selectedCrypto!.currentPrice.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: AppTheme.bodyMedium.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: AppTheme.gapSmall),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Total:',
-                                      style: TextStyle(
-                                        color: Color.fromRGBO(158, 158, 158, 1),
-                                        fontSize: 16,
+                                      style: AppTheme.bodyLarge.copyWith(
+                                        color: AppTheme.textSecondary,
                                       ),
                                     ),
                                     Text(
                                       '\$${((double.tryParse(_quantityController.text) ?? 0) * _selectedCrypto!.currentPrice).toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: AppTheme.bodyLarge.copyWith(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -943,17 +902,17 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 24),
+                        const SizedBox(height: AppTheme.gapXLarge),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: _createTransaction,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromRGBO(76, 175, 80, 1),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: AppTheme.primaryGreen,
+                              foregroundColor: AppTheme.textPrimary,
+                              padding: const EdgeInsets.symmetric(vertical: AppTheme.paddingMedium),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: AppTheme.defaultRadius,
                               ),
                             ),
                             child: const Text(

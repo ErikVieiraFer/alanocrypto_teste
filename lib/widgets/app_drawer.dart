@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:alanoapp/theme/app_theme.dart';
-import '../features/crypto/screens/market_screen.dart';
-import '../features/crypto/screens/watchlist_screen.dart';
-import '../features/transactions/screens/transactions_screen.dart';
-import '../features/forex/screens/forex_calculator_screen.dart';
-import '../features/courses/screens/courses_screen.dart';
-import '../features/portfolio/screens/portfolio_screen.dart';
-import '../features/support/screens/support_screen.dart';
-import '../features/links/screens/useful_links_screen.dart';
+import '../features/dashboard/screen/dashboard_screen.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({Key? key}) : super(key: key);
@@ -28,137 +21,75 @@ class _AppDrawerState extends State<AppDrawer> {
             const SizedBox(height: 16),
 
             _buildDrawerItem(
+              icon: Icons.home,
+              title: 'Home',
+              onTap: () => _changeTab(context, 0),
+            ),
+
+            _buildDrawerItem(
               icon: Icons.trending_up,
               title: 'Mercado',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MarketScreen()),
-                );
-              },
+              onTap: () => _changeTab(context, 5),
             ),
 
             _buildDrawerItem(
               icon: Icons.star,
               title: 'Watchlist',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const WatchlistScreen()),
-                );
-              },
+              onTap: () => _changeTab(context, 6),
             ),
 
             _buildDrawerItem(
               icon: Icons.swap_horiz,
               title: 'Transações',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const TransactionsScreen()),
-                );
-              },
+              onTap: () => _changeTab(context, 7),
             ),
 
             _buildDrawerItem(
               icon: Icons.people,
               title: 'Comunidade',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/dashboard',
-                  (route) => false,
-                  arguments: {'initialTab': 1},
-                );
-              },
+              onTap: () => _changeTab(context, 1),
             ),
 
             _buildDrawerItem(
               icon: Icons.calculate,
               title: 'Calculadora Forex',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ForexCalculatorScreen()),
-                );
-              },
+              onTap: () => _changeTab(context, 8),
             ),
 
             _buildDrawerItem(
               icon: Icons.school,
               title: 'Cursos',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CoursesScreen()),
-                );
-              },
+              onTap: () => _changeTab(context, 9),
             ),
 
             _buildDrawerItem(
               icon: Icons.bar_chart,
               title: 'Sinais',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/dashboard',
-                  (route) => false,
-                  arguments: {'initialTab': 3},
-                );
-              },
+              onTap: () => _changeTab(context, 3),
             ),
 
             _buildDrawerItem(
               icon: Icons.article,
               title: 'Posts do Alano',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/dashboard',
-                  (route) => false,
-                  arguments: {'initialTab': 2},
-                );
-              },
+              onTap: () => _changeTab(context, 2),
             ),
 
             _buildDrawerItem(
               icon: Icons.business_center,
               title: 'Portfólio',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PortfolioScreen()),
-                );
-              },
-            ),
-
-            _buildDrawerItem(
-              icon: Icons.settings,
-              title: 'Gerenciamento',
-              onTap: () => _navigateTo(context, '/under-development', 'Gerenciamento'),
+              onTap: () => _changeTab(context, 10),
             ),
 
             _buildDrawerItem(
               icon: Icons.android,
               title: 'Alano Crypto IA',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/dashboard',
-                  (route) => false,
-                  arguments: {'initialTab': 3},
-                );
-              },
+              onTap: () => _changeTab(context, 11),
+            ),
+
+            _buildDrawerItem(
+              icon: Icons.person,
+              title: 'Perfil',
+              onTap: () => _changeTab(context, 4),
             ),
 
             Divider(color: Colors.grey.shade800, height: 32),
@@ -166,25 +97,13 @@ class _AppDrawerState extends State<AppDrawer> {
             _buildDrawerItem(
               icon: Icons.link,
               title: 'Links úteis',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const UsefulLinksScreen()),
-                );
-              },
+              onTap: () => _changeTab(context, 12),
             ),
 
             _buildDrawerItem(
               icon: Icons.help_outline,
               title: 'Suporte',
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SupportScreen()),
-                );
-              },
+              onTap: () => _changeTab(context, 13),
             ),
           ],
         ),
@@ -205,8 +124,9 @@ class _AppDrawerState extends State<AppDrawer> {
     );
   }
 
-  void _navigateTo(BuildContext context, String route, String pageName) {
+  void _changeTab(BuildContext context, int index) {
     Navigator.pop(context);
-    Navigator.pushNamed(context, route, arguments: pageName);
+    final dashboardState = context.findAncestorStateOfType<DashboardScreenState>();
+    dashboardState?.changeTab(index);
   }
 }

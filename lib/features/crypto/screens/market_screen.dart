@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../models/crypto_data_model.dart';
 import '../../../services/crypto_market_service.dart';
+import '../../../theme/app_theme.dart';
 import 'crypto_detail_screen.dart';
 
 class MarketScreen extends StatefulWidget {
@@ -90,27 +91,23 @@ class _MarketScreenState extends State<MarketScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Color.fromRGBO(18, 18, 18, 1),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        padding: const EdgeInsets.all(AppTheme.paddingLarge),
+        decoration: BoxDecoration(
+          color: AppTheme.cardDark,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Filtros',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTheme.heading3,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.gapLarge),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppTheme.gapSmall,
+              runSpacing: AppTheme.gapSmall,
               children: ['Top 100', 'DeFi', 'NFT', 'Metaverse'].map((filter) {
                 return ChoiceChip(
                   label: Text(filter),
@@ -119,29 +116,25 @@ class _MarketScreenState extends State<MarketScreen> {
                     setState(() => _selectedFilter = filter);
                     Navigator.pop(context);
                   },
-                  selectedColor: const Color.fromRGBO(76, 175, 80, 1),
-                  backgroundColor: const Color.fromRGBO(50, 50, 50, 1),
+                  selectedColor: AppTheme.primaryGreen,
+                  backgroundColor: AppTheme.borderDark,
                   labelStyle: TextStyle(
                     color: _selectedFilter == filter
-                        ? Colors.white
-                        : const Color.fromRGBO(158, 158, 158, 1),
+                        ? AppTheme.textPrimary
+                        : AppTheme.textSecondary,
                   ),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 24),
-            const Text(
+            const SizedBox(height: AppTheme.gapXLarge),
+            Text(
               'Ordenar por',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTheme.heading3,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppTheme.gapLarge),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppTheme.gapSmall,
+              runSpacing: AppTheme.gapSmall,
               children: ['Price', '24h%', 'Market Cap', 'Volume'].map((sort) {
                 return ChoiceChip(
                   label: Text(sort),
@@ -151,12 +144,12 @@ class _MarketScreenState extends State<MarketScreen> {
                     _applySorting();
                     Navigator.pop(context);
                   },
-                  selectedColor: const Color.fromRGBO(76, 175, 80, 1),
-                  backgroundColor: const Color.fromRGBO(50, 50, 50, 1),
+                  selectedColor: AppTheme.primaryGreen,
+                  backgroundColor: AppTheme.borderDark,
                   labelStyle: TextStyle(
                     color: _selectedSort == sort
-                        ? Colors.white
-                        : const Color.fromRGBO(158, 158, 158, 1),
+                        ? AppTheme.textPrimary
+                        : AppTheme.textSecondary,
                   ),
                 );
               }).toList(),
@@ -170,88 +163,72 @@ class _MarketScreenState extends State<MarketScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: const Color.fromRGBO(18, 18, 18, 1),
-        title: const Text(
-          'Mercado',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: _showFilterModal,
-          ),
-        ],
-      ),
+      backgroundColor: AppTheme.backgroundBlack,
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppTheme.paddingMedium),
             child: TextField(
               controller: _searchController,
-              style: const TextStyle(color: Colors.white),
+              style: AppTheme.bodyMedium,
               decoration: InputDecoration(
                 hintText: 'Buscar criptomoeda...',
-                hintStyle: const TextStyle(
-                  color: Color.fromRGBO(158, 158, 158, 1),
+                hintStyle: AppTheme.bodyMedium.copyWith(
+                  color: AppTheme.textSecondary,
                 ),
                 prefixIcon: const Icon(
                   Icons.search,
-                  color: Color.fromRGBO(158, 158, 158, 1),
+                  color: AppTheme.textSecondary,
                 ),
                 filled: true,
-                fillColor: const Color.fromRGBO(18, 18, 18, 1),
+                fillColor: AppTheme.cardDark,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppTheme.defaultRadius,
                   borderSide: BorderSide.none,
                 ),
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.paddingMedium),
             child: Row(
               children: [
                 Text(
                   _selectedFilter,
-                  style: const TextStyle(
-                    color: Color.fromRGBO(158, 158, 158, 1),
-                    fontSize: 14,
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.textSecondary,
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Text(
+                const SizedBox(width: AppTheme.gapSmall),
+                Text(
                   '•',
-                  style: TextStyle(
-                    color: Color.fromRGBO(158, 158, 158, 1),
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.textSecondary,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppTheme.gapSmall),
                 Text(
                   'Ordenado por $_selectedSort',
-                  style: const TextStyle(
-                    color: Color.fromRGBO(158, 158, 158, 1),
-                    fontSize: 14,
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppTheme.gapSmall),
           Expanded(
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      color: Color.fromRGBO(76, 175, 80, 1),
+                      color: AppTheme.primaryGreen,
                     ),
                   )
                 : RefreshIndicator(
                     onRefresh: _loadCryptos,
-                    color: const Color.fromRGBO(76, 175, 80, 1),
+                    color: AppTheme.primaryGreen,
                     child: ListView.builder(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppTheme.paddingMedium),
                       itemCount: _filteredCryptos.length,
                       itemBuilder: (context, index) {
                         return _MarketCryptoCard(
@@ -262,6 +239,11 @@ class _MarketScreenState extends State<MarketScreen> {
                   ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showFilterModal,
+        backgroundColor: AppTheme.primaryGreen,
+        child: const Icon(Icons.filter_list, color: AppTheme.textPrimary),
       ),
     );
   }
@@ -288,8 +270,8 @@ class _MarketCryptoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPositive = crypto.isPriceUp;
     final changeColor = isPositive
-        ? const Color.fromRGBO(76, 175, 80, 1)
-        : const Color.fromRGBO(244, 67, 54, 1);
+        ? AppTheme.primaryGreen
+        : AppTheme.errorRed;
 
     return GestureDetector(
       onTap: () {
@@ -301,13 +283,13 @@ class _MarketCryptoCard extends StatelessWidget {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: AppTheme.gapMedium),
+        padding: const EdgeInsets.all(AppTheme.paddingMedium),
         decoration: BoxDecoration(
-          color: const Color.fromRGBO(18, 18, 18, 1),
-          borderRadius: BorderRadius.circular(12),
+          color: AppTheme.cardDark,
+          borderRadius: AppTheme.defaultRadius,
           border: Border.all(
-            color: const Color.fromRGBO(50, 50, 50, 1),
+            color: AppTheme.borderDark,
             width: 1,
           ),
         ),
@@ -317,21 +299,19 @@ class _MarketCryptoCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: const Color.fromRGBO(50, 50, 50, 1),
-                borderRadius: BorderRadius.circular(24),
+                color: AppTheme.cardMedium,
+                borderRadius: AppTheme.smallRadius,
               ),
               child: Center(
                 child: Text(
                   crypto.symbol.toUpperCase().substring(0, 1),
-                  style: const TextStyle(
-                    color: Color.fromRGBO(76, 175, 80, 1),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                  style: AppTheme.heading3.copyWith(
+                    color: AppTheme.primaryGreen,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppTheme.gapMedium),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,13 +320,11 @@ class _MarketCryptoCard extends StatelessWidget {
                     children: [
                       Text(
                         crypto.symbol.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
+                        style: AppTheme.bodyLarge.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppTheme.gapSmall),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
@@ -354,15 +332,14 @@ class _MarketCryptoCard extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isPositive
-                              ? const Color.fromRGBO(76, 175, 80, 0.2)
-                              : const Color.fromRGBO(244, 67, 54, 0.2),
-                          borderRadius: BorderRadius.circular(4),
+                              ? AppTheme.greenTransparent20
+                              : AppTheme.redTransparent20,
+                          borderRadius: AppTheme.tinyRadius,
                         ),
                         child: Text(
                           crypto.formattedPercentage,
-                          style: TextStyle(
+                          style: AppTheme.bodySmall.copyWith(
                             color: changeColor,
-                            fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -372,16 +349,15 @@ class _MarketCryptoCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     crypto.name,
-                    style: const TextStyle(
-                      color: Color.fromRGBO(158, 158, 158, 1),
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.textSecondary,
                       fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Market Cap: ${_formatMarketCap(crypto.marketCap)}',
-                    style: const TextStyle(
-                      color: Color.fromRGBO(158, 158, 158, 1),
+                    style: AppTheme.bodySmall.copyWith(
                       fontSize: 11,
                     ),
                   ),
@@ -393,9 +369,7 @@ class _MarketCryptoCard extends StatelessWidget {
               children: [
                 Text(
                   crypto.formattedPrice,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
+                  style: AppTheme.bodyLarge.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),

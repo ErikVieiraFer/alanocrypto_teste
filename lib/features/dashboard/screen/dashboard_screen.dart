@@ -8,6 +8,14 @@ import 'package:alanoapp/features/alano_posts/screens/alano_posts_screen.dart';
 import 'package:alanoapp/features/ai_chat/screens/ai_chat_screen.dart';
 import 'package:alanoapp/features/signals/screens/signals_screen.dart';
 import 'package:alanoapp/features/notifications/screens/notifications_screen.dart';
+import 'package:alanoapp/features/crypto/screens/market_screen.dart';
+import 'package:alanoapp/features/crypto/screens/watchlist_screen.dart';
+import 'package:alanoapp/features/transactions/screens/transactions_screen.dart';
+import 'package:alanoapp/features/forex/screens/forex_calculator_screen.dart';
+import 'package:alanoapp/features/courses/screens/courses_screen.dart';
+import 'package:alanoapp/features/portfolio/screens/portfolio_screen.dart';
+import 'package:alanoapp/features/links/screens/useful_links_screen.dart';
+import 'package:alanoapp/features/support/screens/support_screen.dart';
 import 'package:alanoapp/services/notification_service.dart';
 import 'package:alanoapp/services/alano_post_service.dart';
 import 'package:alanoapp/services/signal_service.dart';
@@ -20,10 +28,10 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<DashboardScreen> createState() => DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class DashboardScreenState extends State<DashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentIndex = 0;
 
@@ -39,6 +47,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const AlanoPostsScreen(), // 2 - Posts
     const SignalsScreen(), // 3 - Sinais
     const ProfileScreen(), // 4 - Perfil
+    const MarketScreen(), // 5 - Mercado
+    const WatchlistScreen(), // 6 - Watchlist
+    const TransactionsScreen(), // 7 - Transações
+    const ForexCalculatorScreen(), // 8 - Calculadora Forex
+    const CoursesScreen(), // 9 - Cursos
+    const PortfolioScreen(), // 10 - Portfólio
+    const AIChatScreen(), // 11 - Alano IA
+    const UsefulLinksScreen(), // 12 - Links Úteis
+    const SupportScreen(), // 13 - Suporte
   ];
 
   @override
@@ -66,6 +83,51 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Método público para mudar tabs (usado pelo AppDrawer)
+  void changeTab(int index) {
+    if (index >= 0 && index < _screens.length) {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
+  }
+
+  // Retorna o título baseado na tela atual
+  String _getTitle() {
+    switch (_currentIndex) {
+      case 0:
+        return 'AlanoCryptoFX';
+      case 1:
+        return 'Comunidade';
+      case 2:
+        return 'Posts do Alano';
+      case 3:
+        return 'Sinais';
+      case 4:
+        return 'Perfil';
+      case 5:
+        return 'Mercado';
+      case 6:
+        return 'Watchlist';
+      case 7:
+        return 'Transações';
+      case 8:
+        return 'Calculadora Forex';
+      case 9:
+        return 'Cursos';
+      case 10:
+        return 'Portfólio';
+      case 11:
+        return 'Alano IA';
+      case 12:
+        return 'Links Úteis';
+      case 13:
+        return 'Suporte';
+      default:
+        return 'AlanoCryptoFX';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,7 +144,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        title: const AppLogo(fontSize: 20),
+        title: _currentIndex == 0
+            ? const AppLogo(fontSize: 20)
+            : Text(
+                _getTitle(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
         actions: [
           if (_userId != null)
             StreamBuilder<int>(
@@ -169,7 +240,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: _currentIndex <= 4 ? _currentIndex : 0,
         onTap: (index) {
           setState(() {
             _currentIndex = index;

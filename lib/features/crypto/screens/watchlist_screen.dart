@@ -3,6 +3,8 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../models/crypto_data_model.dart';
 import '../../../services/crypto_market_service.dart';
 import '../../../services/watchlist_service.dart';
+import '../../../theme/app_theme.dart';
+import '../../../widgets/common/empty_state.dart';
 
 class WatchlistScreen extends StatefulWidget {
   const WatchlistScreen({super.key});
@@ -88,7 +90,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Removido da watchlist'),
-            backgroundColor: Color.fromRGBO(76, 175, 80, 1),
+            backgroundColor: AppTheme.primaryGreen,
           ),
         );
       }
@@ -97,7 +99,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Erro ao remover da watchlist'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorRed,
           ),
         );
       }
@@ -107,67 +109,26 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: const Color.fromRGBO(18, 18, 18, 1),
-        title: const Text(
-          'Watchlist',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _showAddCryptoModal,
-          ),
-        ],
-      ),
+      backgroundColor: AppTheme.backgroundBlack,
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                color: Color.fromRGBO(76, 175, 80, 1),
+                color: AppTheme.primaryGreen,
               ),
             )
           : _watchlistCryptos.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.star_border,
-                        size: 64,
-                        color: Color.fromRGBO(158, 158, 158, 1),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Sua watchlist está vazia',
-                        style: TextStyle(
-                          color: Color.fromRGBO(158, 158, 158, 1),
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton.icon(
-                        onPressed: _showAddCryptoModal,
-                        icon: const Icon(Icons.add),
-                        label: const Text('Adicionar Criptomoeda'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromRGBO(76, 175, 80, 1),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+              ? EmptyState(
+                  icon: Icons.star_border_rounded,
+                  title: 'Sua watchlist está vazia',
+                  message: 'Adicione criptomoedas aos favoritos',
+                  buttonText: 'Adicionar Criptomoeda',
+                  onButtonPressed: _showAddCryptoModal,
                 )
               : RefreshIndicator(
                   onRefresh: _loadWatchlist,
-                  color: const Color.fromRGBO(76, 175, 80, 1),
+                  color: AppTheme.primaryGreen,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppTheme.paddingMedium),
                     itemCount: _watchlistCryptos.length,
                     itemBuilder: (context, index) {
                       return _WatchlistCryptoCard(
@@ -177,6 +138,11 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
                     },
                   ),
                 ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddCryptoModal,
+        backgroundColor: AppTheme.primaryGreen,
+        child: const Icon(Icons.add, color: AppTheme.textPrimary),
+      ),
     );
   }
 }
@@ -194,17 +160,17 @@ class _WatchlistCryptoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPositive = crypto.isPriceUp;
     final changeColor = isPositive
-        ? const Color.fromRGBO(76, 175, 80, 1)
-        : const Color.fromRGBO(244, 67, 54, 1);
+        ? AppTheme.primaryGreen
+        : AppTheme.errorRed;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppTheme.gapMedium),
+      padding: const EdgeInsets.all(AppTheme.paddingMedium),
       decoration: BoxDecoration(
-        color: const Color.fromRGBO(18, 18, 18, 1),
-        borderRadius: BorderRadius.circular(12),
+        color: AppTheme.cardDark,
+        borderRadius: AppTheme.defaultRadius,
         border: Border.all(
-          color: const Color.fromRGBO(50, 50, 50, 1),
+          color: AppTheme.borderDark,
           width: 1,
         ),
       ),
@@ -214,21 +180,19 @@ class _WatchlistCryptoCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color.fromRGBO(50, 50, 50, 1),
-              borderRadius: BorderRadius.circular(24),
+              color: AppTheme.cardMedium,
+              borderRadius: AppTheme.smallRadius,
             ),
             child: Center(
               child: Text(
                 crypto.symbol.toUpperCase().substring(0, 1),
-                style: const TextStyle(
-                  color: Color.fromRGBO(76, 175, 80, 1),
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                style: AppTheme.heading3.copyWith(
+                  color: AppTheme.primaryGreen,
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppTheme.gapMedium),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,13 +201,11 @@ class _WatchlistCryptoCard extends StatelessWidget {
                   children: [
                     Text(
                       crypto.symbol.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
+                      style: AppTheme.bodyLarge.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppTheme.gapSmall),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -251,15 +213,14 @@ class _WatchlistCryptoCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: isPositive
-                            ? const Color.fromRGBO(76, 175, 80, 0.2)
-                            : const Color.fromRGBO(244, 67, 54, 0.2),
-                        borderRadius: BorderRadius.circular(4),
+                            ? AppTheme.greenTransparent20
+                            : AppTheme.redTransparent20,
+                        borderRadius: AppTheme.tinyRadius,
                       ),
                       child: Text(
                         crypto.formattedPercentage,
-                        style: TextStyle(
+                        style: AppTheme.bodySmall.copyWith(
                           color: changeColor,
-                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -269,9 +230,8 @@ class _WatchlistCryptoCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   crypto.name,
-                  style: const TextStyle(
-                    color: Color.fromRGBO(158, 158, 158, 1),
-                    fontSize: 14,
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.textSecondary,
                   ),
                 ),
               ],
@@ -282,9 +242,7 @@ class _WatchlistCryptoCard extends StatelessWidget {
             children: [
               Text(
                 crypto.formattedPrice,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
+                style: AppTheme.bodyLarge.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -317,11 +275,11 @@ class _WatchlistCryptoCard extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppTheme.gapMedium),
           IconButton(
             icon: const Icon(
               Icons.close,
-              color: Color.fromRGBO(244, 67, 54, 1),
+              color: AppTheme.errorRed,
             ),
             onPressed: onRemove,
           ),
@@ -406,7 +364,7 @@ class _AddCryptoModalState extends State<AddCryptoModal> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Adicionado à watchlist'),
-            backgroundColor: Color.fromRGBO(76, 175, 80, 1),
+            backgroundColor: AppTheme.primaryGreen,
           ),
         );
       }
@@ -415,7 +373,7 @@ class _AddCryptoModalState extends State<AddCryptoModal> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Erro ao adicionar à watchlist'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.errorRed,
           ),
         );
       }
@@ -426,57 +384,59 @@ class _AddCryptoModalState extends State<AddCryptoModal> {
   Widget build(BuildContext context) {
     return Container(
       height: MediaQuery.of(context).size.height * 0.8,
-      decoration: const BoxDecoration(
-        color: Color.fromRGBO(18, 18, 18, 1),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: AppTheme.extraLargeRadius.copyWith(
+          bottomLeft: Radius.zero,
+          bottomRight: Radius.zero,
+        ),
       ),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppTheme.paddingMedium),
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: Color.fromRGBO(50, 50, 50, 1),
+                  color: AppTheme.borderDark,
                 ),
               ),
             ),
             child: Row(
               children: [
-                const Text(
+                Text(
                   'Adicionar Criptomoeda',
-                  style: TextStyle(
-                    color: Colors.white,
+                  style: AppTheme.bodyLarge.copyWith(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const Spacer(),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white),
+                  icon: const Icon(Icons.close, color: AppTheme.textPrimary),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppTheme.paddingMedium),
             child: TextField(
               controller: _searchController,
-              style: const TextStyle(color: Colors.white),
+              style: AppTheme.bodyMedium,
               decoration: InputDecoration(
                 hintText: 'Buscar por nome ou símbolo...',
-                hintStyle: const TextStyle(
-                  color: Color.fromRGBO(158, 158, 158, 1),
+                hintStyle: AppTheme.bodyMedium.copyWith(
+                  color: AppTheme.textSecondary,
                 ),
                 prefixIcon: const Icon(
                   Icons.search,
-                  color: Color.fromRGBO(158, 158, 158, 1),
+                  color: AppTheme.textSecondary,
                 ),
                 filled: true,
-                fillColor: const Color.fromRGBO(18, 18, 18, 1),
+                fillColor: AppTheme.cardDark,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppTheme.defaultRadius,
                   borderSide: BorderSide.none,
                 ),
               ),
@@ -486,29 +446,28 @@ class _AddCryptoModalState extends State<AddCryptoModal> {
             child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
-                      color: Color.fromRGBO(76, 175, 80, 1),
+                      color: AppTheme.primaryGreen,
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.paddingMedium),
                     itemCount: _filteredCryptos.length,
                     itemBuilder: (context, index) {
                       final crypto = _filteredCryptos[index];
                       return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(vertical: AppTheme.gapSmall),
                         leading: Container(
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: const Color.fromRGBO(50, 50, 50, 1),
-                            borderRadius: BorderRadius.circular(20),
+                            color: AppTheme.borderDark,
+                            borderRadius: AppTheme.extraLargeRadius,
                           ),
                           child: Center(
                             child: Text(
                               crypto.symbol.toUpperCase().substring(0, 1),
-                              style: const TextStyle(
-                                color: Color.fromRGBO(76, 175, 80, 1),
-                                fontSize: 16,
+                              style: AppTheme.bodyLarge.copyWith(
+                                color: AppTheme.primaryGreen,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -516,21 +475,20 @@ class _AddCryptoModalState extends State<AddCryptoModal> {
                         ),
                         title: Text(
                           crypto.symbol.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: AppTheme.bodyMedium.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         subtitle: Text(
                           crypto.name,
-                          style: const TextStyle(
-                            color: Color.fromRGBO(158, 158, 158, 1),
+                          style: AppTheme.bodyMedium.copyWith(
+                            color: AppTheme.textSecondary,
                           ),
                         ),
                         trailing: IconButton(
                           icon: const Icon(
                             Icons.add_circle,
-                            color: Color.fromRGBO(76, 175, 80, 1),
+                            color: AppTheme.primaryGreen,
                           ),
                           onPressed: () => _addCrypto(crypto.id),
                         ),
