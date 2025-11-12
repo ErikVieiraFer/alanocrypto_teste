@@ -256,7 +256,7 @@ class _ActiveTransactionsTab extends StatelessWidget {
           itemBuilder: (context, index) {
             return _TransactionCard(
               transaction: transactions[index],
-              currentPrice: currentPrices[transactions[index].cryptoId] ?? 0,
+              currentPrice: currentPrices[transactions[index].forexPair] ?? 0,
               onClosed: onTransactionClosed,
             );
           },
@@ -403,7 +403,7 @@ class _TransactionCard extends StatelessWidget {
             ),
           ),
           Text(
-            transaction.cryptoName,
+            transaction.forexPairName,
             style: AppTheme.bodyMedium.copyWith(
               color: AppTheme.textSecondary,
             ),
@@ -675,9 +675,9 @@ class _CreateTransactionModalState extends State<CreateTransactionModal> {
 
     try {
       await _transactionService.createTransaction(
-        cryptoId: _selectedCrypto!.id,
+        forexPair: _selectedCrypto!.id,
         cryptoSymbol: _selectedCrypto!.symbol,
-        cryptoName: _selectedCrypto!.name,
+        forexPairName: _selectedCrypto!.name,
         type: _selectedType,
         quantity: quantity,
         entryPrice: _selectedCrypto!.currentPrice,

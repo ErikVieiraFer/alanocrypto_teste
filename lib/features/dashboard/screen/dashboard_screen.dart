@@ -10,7 +10,6 @@ import 'package:alanoapp/features/signals/screens/signals_screen.dart';
 import 'package:alanoapp/features/notifications/screens/notifications_screen.dart';
 import 'package:alanoapp/features/crypto/screens/market_screen.dart';
 import 'package:alanoapp/features/crypto/screens/watchlist_screen.dart';
-import 'package:alanoapp/features/transactions/screens/transactions_screen.dart';
 import 'package:alanoapp/features/forex/screens/forex_calculator_screen.dart';
 import 'package:alanoapp/features/courses/screens/courses_screen.dart';
 import 'package:alanoapp/features/portfolio/screens/portfolio_screen.dart';
@@ -49,13 +48,12 @@ class DashboardScreenState extends State<DashboardScreen> {
     const ProfileScreen(), // 4 - Perfil
     const MarketScreen(), // 5 - Mercado
     const WatchlistScreen(), // 6 - Watchlist
-    const TransactionsScreen(), // 7 - Transações
-    const ForexCalculatorScreen(), // 8 - Calculadora Forex
-    const CoursesScreen(), // 9 - Cursos
-    const PortfolioScreen(), // 10 - Portfólio
-    const AIChatScreen(), // 11 - Alano IA
-    const UsefulLinksScreen(), // 12 - Links Úteis
-    const SupportScreen(), // 13 - Suporte
+    const ForexCalculatorScreen(), // 7 - Calculadora Forex
+    const CoursesScreen(), // 8 - Cursos
+    const PortfolioScreen(), // 9 - Portfólio
+    const AIChatScreen(), // 10 - Alano IA
+    const UsefulLinksScreen(), // 11 - Links Úteis
+    const SupportScreen(), // 12 - Suporte
   ];
 
   @override
@@ -110,18 +108,16 @@ class DashboardScreenState extends State<DashboardScreen> {
       case 6:
         return 'Watchlist';
       case 7:
-        return 'Transações';
-      case 8:
         return 'Calculadora Forex';
-      case 9:
+      case 8:
         return 'Cursos';
-      case 10:
+      case 9:
         return 'Portfólio';
-      case 11:
+      case 10:
         return 'Alano IA';
-      case 12:
+      case 11:
         return 'Links Úteis';
-      case 13:
+      case 12:
         return 'Suporte';
       default:
         return 'AlanoCryptoFX';

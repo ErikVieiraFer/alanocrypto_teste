@@ -14,6 +14,26 @@ class TransactionService {
 
   static const double _initialBalance = 10000.0;
 
+  static List<Map<String, String>> getCommonForexPairs() {
+    return [
+      {'symbol': 'EUR/USD', 'name': 'Euro / Dólar Americano'},
+      {'symbol': 'GBP/USD', 'name': 'Libra Esterlina / Dólar Americano'},
+      {'symbol': 'USD/JPY', 'name': 'Dólar Americano / Iene Japonês'},
+      {'symbol': 'AUD/USD', 'name': 'Dólar Australiano / Dólar Americano'},
+      {'symbol': 'USD/CAD', 'name': 'Dólar Americano / Dólar Canadense'},
+      {'symbol': 'NZD/USD', 'name': 'Dólar Neozelandês / Dólar Americano'},
+      {'symbol': 'EUR/GBP', 'name': 'Euro / Libra Esterlina'},
+      {'symbol': 'EUR/JPY', 'name': 'Euro / Iene Japonês'},
+      {'symbol': 'GBP/JPY', 'name': 'Libra Esterlina / Iene Japonês'},
+      {'symbol': 'USD/CHF', 'name': 'Dólar Americano / Franco Suíço'},
+      {'symbol': 'AUD/JPY', 'name': 'Dólar Australiano / Iene Japonês'},
+      {'symbol': 'EUR/AUD', 'name': 'Euro / Dólar Australiano'},
+      {'symbol': 'GBP/AUD', 'name': 'Libra Esterlina / Dólar Australiano'},
+      {'symbol': 'EUR/CAD', 'name': 'Euro / Dólar Canadense'},
+      {'symbol': 'GBP/CAD', 'name': 'Libra Esterlina / Dólar Canadense'},
+    ];
+  }
+
   Stream<List<TransactionModel>> getActiveTransactionsStream() {
     if (_userId == null) {
       return Stream.value([]);
@@ -142,9 +162,9 @@ class TransactionService {
   }
 
   Future<void> createTransaction({
-    required String cryptoId,
+    required String forexPair,
     required String cryptoSymbol,
-    required String cryptoName,
+    required String forexPairName,
     required TransactionType type,
     required double quantity,
     required double entryPrice,
@@ -164,9 +184,9 @@ class TransactionService {
       final transaction = TransactionModel(
         id: '',
         userId: _userId!,
-        cryptoId: cryptoId,
+        forexPair: forexPair,
         cryptoSymbol: cryptoSymbol,
-        cryptoName: cryptoName,
+        forexPairName: forexPairName,
         type: type,
         status: TransactionStatus.active,
         quantity: quantity,

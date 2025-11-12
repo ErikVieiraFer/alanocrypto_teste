@@ -6,9 +6,9 @@ enum TransactionStatus { active, closed }
 class TransactionModel {
   final String id;
   final String userId;
-  final String cryptoId;
+  final String forexPair;
   final String cryptoSymbol;
-  final String cryptoName;
+  final String forexPairName;
   final TransactionType type;
   final TransactionStatus status;
   final double quantity;
@@ -20,9 +20,9 @@ class TransactionModel {
   TransactionModel({
     required this.id,
     required this.userId,
-    required this.cryptoId,
+    required this.forexPair,
     required this.cryptoSymbol,
-    required this.cryptoName,
+    required this.forexPairName,
     required this.type,
     required this.status,
     required this.quantity,
@@ -37,9 +37,9 @@ class TransactionModel {
     return TransactionModel(
       id: doc.id,
       userId: data['userId'] ?? '',
-      cryptoId: data['cryptoId'] ?? '',
+      forexPair: data['forexPair'] ?? data['cryptoId'] ?? '',
       cryptoSymbol: data['cryptoSymbol'] ?? '',
-      cryptoName: data['cryptoName'] ?? '',
+      forexPairName: data['forexPairName'] ?? data['cryptoName'] ?? '',
       type: data['type'] == 'buy' ? TransactionType.buy : TransactionType.sell,
       status: data['status'] == 'active'
           ? TransactionStatus.active
@@ -57,9 +57,9 @@ class TransactionModel {
   Map<String, dynamic> toFirestore() {
     return {
       'userId': userId,
-      'cryptoId': cryptoId,
+      'forexPair': forexPair,
       'cryptoSymbol': cryptoSymbol,
-      'cryptoName': cryptoName,
+      'forexPairName': forexPairName,
       'type': type == TransactionType.buy ? 'buy' : 'sell',
       'status': status == TransactionStatus.active ? 'active' : 'closed',
       'quantity': quantity,

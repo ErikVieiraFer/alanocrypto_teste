@@ -39,12 +39,6 @@ class _AppDrawerState extends State<AppDrawer> {
             ),
 
             _buildDrawerItem(
-              icon: Icons.swap_horiz,
-              title: 'Transações',
-              onTap: () => _changeTab(context, 7),
-            ),
-
-            _buildDrawerItem(
               icon: Icons.people,
               title: 'Comunidade',
               onTap: () => _changeTab(context, 1),
@@ -53,13 +47,13 @@ class _AppDrawerState extends State<AppDrawer> {
             _buildDrawerItem(
               icon: Icons.calculate,
               title: 'Calculadora Forex',
-              onTap: () => _changeTab(context, 8),
+              onTap: () => _changeTab(context, 7),
             ),
 
             _buildDrawerItem(
               icon: Icons.school,
               title: 'Cursos',
-              onTap: () => _changeTab(context, 9),
+              onTap: () => _changeTab(context, 8),
             ),
 
             _buildDrawerItem(
@@ -77,13 +71,13 @@ class _AppDrawerState extends State<AppDrawer> {
             _buildDrawerItem(
               icon: Icons.business_center,
               title: 'Portfólio',
-              onTap: () => _changeTab(context, 10),
+              onTap: () => _changeTab(context, 9),
             ),
 
             _buildDrawerItem(
               icon: Icons.android,
               title: 'Alano Crypto IA',
-              onTap: () => _changeTab(context, 11),
+              onTap: () => _changeTab(context, 10),
             ),
 
             _buildDrawerItem(
@@ -97,13 +91,13 @@ class _AppDrawerState extends State<AppDrawer> {
             _buildDrawerItem(
               icon: Icons.link,
               title: 'Links úteis',
-              onTap: () => _changeTab(context, 12),
+              onTap: () => _changeTab(context, 11),
             ),
 
             _buildDrawerItem(
               icon: Icons.help_outline,
               title: 'Suporte',
-              onTap: () => _changeTab(context, 13),
+              onTap: () => _changeTab(context, 12),
             ),
           ],
         ),
