@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -61,12 +62,14 @@ class _MessageInputState extends State<MessageInput> {
   bool _showMentionList = false;
   List<UserModel> _mentionUsers = [];
   List<Mention> _mentions = [];
+  StreamSubscription<String>? _mentionSubscription;
 
   @override
   void dispose() {
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
     _focusNode.dispose();
+    _mentionSubscription?.cancel();
     _mentionQueryController.close();
     super.dispose();
   }
@@ -75,7 +78,7 @@ class _MessageInputState extends State<MessageInput> {
   void initState() {
     super.initState();
     _textController.addListener(_onTextChanged);
-    _mentionQueryController
+    _mentionSubscription = _mentionQueryController
         .debounceTime(const Duration(milliseconds: 300))
         .distinct()
         .listen(_searchUsers);

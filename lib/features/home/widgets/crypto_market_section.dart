@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../models/crypto_data_model.dart';
 import '../../../services/crypto_market_service.dart';
+import '../../../theme/app_theme.dart';
 
 class CryptoMarketSection extends StatefulWidget {
   const CryptoMarketSection({super.key});
@@ -14,13 +16,14 @@ class _CryptoMarketSectionState extends State<CryptoMarketSection> {
   final CryptoMarketService _cryptoService = CryptoMarketService();
   List<CryptoDataModel> _cryptos = [];
   bool _isLoading = true;
+  StreamSubscription<List<CryptoDataModel>>? _streamSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadCryptos();
     _cryptoService.startAutoUpdate();
-    _cryptoService.cryptoStream.listen((cryptos) {
+    _streamSubscription = _cryptoService.cryptoStream.listen((cryptos) {
       if (mounted) {
         setState(() {
           _cryptos = cryptos;
@@ -48,6 +51,7 @@ class _CryptoMarketSectionState extends State<CryptoMarketSection> {
 
   @override
   void dispose() {
+    _streamSubscription?.cancel();
     _cryptoService.stopAutoUpdate();
     super.dispose();
   }
@@ -57,34 +61,55 @@ class _CryptoMarketSectionState extends State<CryptoMarketSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppTheme.mobileHorizontalPadding),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.trending_up, color: Color.fromRGBO(76, 175, 80, 1), size: 24),
-              SizedBox(width: 8),
-              Text(
-                'Mercado',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Row(
+                children: [
+                  Icon(Icons.trending_up, color: AppTheme.primaryGreen, size: 24),
+                  const SizedBox(width: 8),
+                  Text('Mercado Cripto', style: AppTheme.heading2),
+                ],
+              ),
+              TextButton(
+                onPressed: () {
+                  // TODO: Navegar para tela de mercado completo
+                },
+                child: Row(
+                  children: [
+                    Text(
+                      'Ver todos',
+                      style: TextStyle(color: AppTheme.primaryGreen, fontSize: 14),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 14,
+                      color: AppTheme.primaryGreen,
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
+        const SizedBox(height: AppTheme.gapMedium),
         SizedBox(
-          height: 190,
+          height: 200,
           child: _isLoading
-              ? const Center(
+              ? Center(
                   child: CircularProgressIndicator(
-                    color: Color.fromRGBO(76, 175, 80, 1),
+                    color: AppTheme.primaryGreen,
                   ),
                 )
               : ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.only(
+                    left: AppTheme.mobileHorizontalPadding,
+                    right: AppTheme.mobileHorizontalPadding,
+                  ),
                   itemCount: _cryptos.length,
                   itemBuilder: (context, index) {
                     return _CryptoCard(crypto: _cryptos[index]);
@@ -105,24 +130,19 @@ class _CryptoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPositive = crypto.isPriceUp;
     final changeColor = isPositive
-        ? const Color.fromRGBO(76, 175, 80, 1)
-        : const Color.fromRGBO(244, 67, 54, 1);
+        ? AppTheme.primaryGreen
+        : AppTheme.errorRed;
 
     return Container(
       width: 160,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color.fromRGBO(18, 18, 18, 1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color.fromRGBO(50, 50, 50, 1),
-          width: 1,
-        ),
+      margin: const EdgeInsets.only(right: AppTheme.mobileCardSpacing),
+      padding: const EdgeInsets.all(AppTheme.paddingMedium),
+      decoration: AppTheme.cardDecoration(
+        hasGlow: isPositive,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
@@ -130,14 +150,14 @@ class _CryptoCard extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: const Color.fromRGBO(50, 50, 50, 1),
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppTheme.cardMedium,
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
                   child: Text(
                     crypto.symbol.toUpperCase().substring(0, 1),
-                    style: const TextStyle(
-                      color: Color.fromRGBO(76, 175, 80, 1),
+                    style: TextStyle(
+                      color: AppTheme.primaryGreen,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -149,8 +169,8 @@ class _CryptoCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isPositive
-                      ? const Color.fromRGBO(76, 175, 80, 0.2)
-                      : const Color.fromRGBO(244, 67, 54, 0.2),
+                      ? AppTheme.greenTransparent20
+                      : AppTheme.redTransparent20,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -164,37 +184,31 @@ class _CryptoCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             crypto.symbol.toUpperCase(),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
+            style: AppTheme.bodyLarge.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           Text(
             crypto.name,
-            style: const TextStyle(
-              color: Color.fromRGBO(158, 158, 158, 1),
-              fontSize: 11,
-            ),
+            style: AppTheme.bodySmall,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             crypto.formattedPrice,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
+            style: AppTheme.bodyLarge.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           if (crypto.sparklineData.isNotEmpty)
-            SizedBox(
-              height: 40,
-              child: LineChart(
+            Flexible(
+              child: SizedBox(
+                height: 40,
+                child: LineChart(
                 LineChartData(
                   gridData: const FlGridData(show: false),
                   titlesData: const FlTitlesData(show: false),
@@ -213,14 +227,15 @@ class _CryptoCard extends StatelessWidget {
                       belowBarData: BarAreaData(
                         show: true,
                         color: isPositive
-                            ? const Color.fromRGBO(76, 175, 80, 0.1)
-                            : const Color.fromRGBO(244, 67, 54, 0.1),
+                            ? AppTheme.greenTransparent10
+                            : AppTheme.redTransparent10,
                       ),
                     ),
                   ],
                   lineTouchData: const LineTouchData(enabled: false),
                 ),
               ),
+            ),
             ),
         ],
       ),

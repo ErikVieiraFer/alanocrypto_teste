@@ -90,39 +90,63 @@ class DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Retorna o título baseado na tela atual
-  String _getTitle() {
-    switch (_currentIndex) {
-      case 0:
-        return 'AlanoCryptoFX';
-      case 1:
-        return 'Comunidade';
-      case 2:
-        return 'Posts do Alano';
-      case 3:
-        return 'Sinais';
-      case 4:
-        return 'Perfil';
-      case 5:
-        return 'Mercado';
-      case 6:
-        return 'Watchlist';
-      case 7:
-        return 'Calculadora Forex';
-      case 8:
-        return 'Cursos';
-      case 9:
-        return 'Portfólio';
-      case 10:
-        return 'Alano IA';
-      case 11:
-        return 'Links Úteis';
-      case 12:
-        return 'Suporte';
-      default:
-        return 'AlanoCryptoFX';
-    }
+  Widget _buildFloatingHomeButton() {
+    final isSelected = _currentIndex == 0;
+
+    return FloatingActionButton(
+      onPressed: () => setState(() => _currentIndex = 0),
+      backgroundColor: AppTheme.primaryGreen,
+      elevation: isSelected ? 8 : 6,
+      child: Icon(
+        Icons.home_rounded,
+        color: Colors.white,
+        size: 28,
+      ),
+    );
   }
+
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    final isSelected = _currentIndex == index;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _currentIndex = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.primaryGreen.withOpacity(0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
+                size: 22,
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
+                  fontSize: 9,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -140,16 +164,7 @@ class DashboardScreenState extends State<DashboardScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        title: _currentIndex == 0
-            ? const AppLogo(fontSize: 20)
-            : Text(
-                _getTitle(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+        title: const AppLogo(fontSize: 20),
         actions: [
           if (_userId != null)
             StreamBuilder<int>(
@@ -235,39 +250,40 @@ class DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: IndexedStack(index: _currentIndex, children: _screens),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex <= 4 ? _currentIndex : 0,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        backgroundColor: AppTheme.backgroundColor,
-        selectedItemColor: AppTheme.accentGreen,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
+      floatingActionButton: _buildFloatingHomeButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.cardDark,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Comunidade',
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: SizedBox(
+            height: 65,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                children: [
+                  _buildNavItem(3, Icons.show_chart_rounded, 'Sinais'),
+                  _buildNavItem(1, Icons.chat_bubble_rounded, 'Chat'),
+                  const SizedBox(width: 60), // Espaço para o botão flutuante
+                  _buildNavItem(2, Icons.article_rounded, 'Posts'),
+                  _buildNavItem(4, Icons.person_rounded, 'Perfil'),
+                ],
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.article),
-            label: 'Posts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bar_chart),
-            label: 'Sinais',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
-          ),
-        ],
+        ),
       ),
     );
   }

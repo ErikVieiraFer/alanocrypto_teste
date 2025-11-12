@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../../models/intro_video_model.dart';
+import '../../../theme/app_theme.dart';
 
 class IntroVideoSection extends StatefulWidget {
   const IntroVideoSection({super.key});
@@ -70,14 +71,11 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
     if (_isLoading) {
       return Container(
         height: 250,
-        margin: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color.fromRGBO(18, 18, 18, 1),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(
+        margin: const EdgeInsets.symmetric(horizontal: AppTheme.mobileHorizontalPadding),
+        decoration: AppTheme.cardDecoration(),
+        child: Center(
           child: CircularProgressIndicator(
-            color: Color.fromRGBO(76, 175, 80, 1),
+            color: AppTheme.primaryGreen,
           ),
         ),
       );
@@ -88,11 +86,8 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
     }
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color.fromRGBO(18, 18, 18, 1),
-        borderRadius: BorderRadius.circular(16),
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: AppTheme.mobileHorizontalPadding),
+      decoration: AppTheme.gradientCardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -101,29 +96,24 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
             child: YoutubePlayer(
               controller: _controller!,
               showVideoProgressIndicator: true,
-              progressIndicatorColor: const Color.fromRGBO(76, 175, 80, 1),
+              progressIndicatorColor: AppTheme.primaryGreen,
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppTheme.paddingMedium),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   _videoData!.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppTheme.heading3,
                 ),
                 if (_videoData!.description.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppTheme.gapSmall),
                   Text(
                     _videoData!.description,
-                    style: const TextStyle(
-                      color: Color.fromRGBO(158, 158, 158, 1),
-                      fontSize: 14,
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.textSecondary,
                     ),
                   ),
                 ],

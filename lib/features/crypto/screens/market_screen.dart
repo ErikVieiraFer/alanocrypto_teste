@@ -162,11 +162,11 @@ class _MarketScreenState extends State<MarketScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          color: AppTheme.backgroundBlack,
-          child: Column(
+    return Container(
+      color: AppTheme.backgroundColor,
+      child: Stack(
+        children: [
+          Column(
             children: [
               Padding(
                 padding: const EdgeInsets.all(AppTheme.paddingMedium),
@@ -242,18 +242,18 @@ class _MarketScreenState extends State<MarketScreen> {
               ),
             ],
           ),
-        ),
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: FloatingActionButton(
-            heroTag: 'market_fab',
-            onPressed: _showFilterModal,
-            backgroundColor: AppTheme.primaryGreen,
-            child: const Icon(Icons.filter_list, color: AppTheme.textPrimary),
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: FloatingActionButton(
+              heroTag: 'market_fab',
+              onPressed: _showFilterModal,
+              backgroundColor: AppTheme.primaryGreen,
+              child: const Icon(Icons.filter_list, color: AppTheme.textPrimary),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -282,136 +282,143 @@ class _MarketCryptoCard extends StatelessWidget {
         ? AppTheme.primaryGreen
         : AppTheme.errorRed;
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CryptoDetailScreen(cryptoId: crypto.id),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppTheme.gapMedium),
-        padding: const EdgeInsets.all(AppTheme.paddingMedium),
-        decoration: BoxDecoration(
-          color: AppTheme.cardDark,
-          borderRadius: AppTheme.defaultRadius,
-          border: Border.all(
-            color: AppTheme.borderDark,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppTheme.cardMedium,
-                borderRadius: AppTheme.smallRadius,
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppTheme.gapMedium),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CryptoDetailScreen(cryptoId: crypto.id),
               ),
-              child: Center(
-                child: Text(
-                  crypto.symbol.toUpperCase().substring(0, 1),
-                  style: AppTheme.heading3.copyWith(
-                    color: AppTheme.primaryGreen,
-                  ),
-                ),
+            );
+          },
+          borderRadius: AppTheme.defaultRadius,
+          splashColor: AppTheme.primaryGreen.withOpacity(0.1),
+          child: Ink(
+            padding: const EdgeInsets.all(AppTheme.paddingMedium),
+            decoration: BoxDecoration(
+              color: AppTheme.cardDark,
+              borderRadius: AppTheme.defaultRadius,
+              border: Border.all(
+                color: AppTheme.borderDark,
+                width: 1,
               ),
             ),
-            const SizedBox(width: AppTheme.gapMedium),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardMedium,
+                    borderRadius: AppTheme.smallRadius,
+                  ),
+                  child: Center(
+                    child: Text(
+                      crypto.symbol.toUpperCase().substring(0, 1),
+                      style: AppTheme.heading3.copyWith(
+                        color: AppTheme.primaryGreen,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppTheme.gapMedium),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Row(
+                        children: [
+                          Text(
+                            crypto.symbol.toUpperCase(),
+                            style: AppTheme.bodyLarge.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: AppTheme.gapSmall),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isPositive
+                                  ? AppTheme.greenTransparent20
+                                  : AppTheme.redTransparent20,
+                              borderRadius: AppTheme.tinyRadius,
+                            ),
+                            child: Text(
+                              crypto.formattedPercentage,
+                              style: AppTheme.bodySmall.copyWith(
+                                color: changeColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
                       Text(
-                        crypto.symbol.toUpperCase(),
-                        style: AppTheme.bodyLarge.copyWith(
-                          fontWeight: FontWeight.bold,
+                        crypto.name,
+                        style: AppTheme.bodyMedium.copyWith(
+                          color: AppTheme.textSecondary,
+                          fontSize: 13,
                         ),
                       ),
-                      const SizedBox(width: AppTheme.gapSmall),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isPositive
-                              ? AppTheme.greenTransparent20
-                              : AppTheme.redTransparent20,
-                          borderRadius: AppTheme.tinyRadius,
-                        ),
-                        child: Text(
-                          crypto.formattedPercentage,
-                          style: AppTheme.bodySmall.copyWith(
-                            color: changeColor,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Market Cap: ${_formatMarketCap(crypto.marketCap)}',
+                        style: AppTheme.bodySmall.copyWith(
+                          fontSize: 11,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    crypto.name,
-                    style: AppTheme.bodyMedium.copyWith(
-                      color: AppTheme.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Market Cap: ${_formatMarketCap(crypto.marketCap)}',
-                    style: AppTheme.bodySmall.copyWith(
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  crypto.formattedPrice,
-                  style: AppTheme.bodyLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
                 ),
-                const SizedBox(height: 4),
-                if (crypto.sparklineData.isNotEmpty)
-                  SizedBox(
-                    width: 80,
-                    height: 30,
-                    child: LineChart(
-                      LineChartData(
-                        gridData: const FlGridData(show: false),
-                        titlesData: const FlTitlesData(show: false),
-                        borderData: FlBorderData(show: false),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: crypto.sparklineData
-                                .asMap()
-                                .entries
-                                .map((e) => FlSpot(e.key.toDouble(), e.value))
-                                .toList(),
-                            isCurved: true,
-                            color: changeColor,
-                            barWidth: 2,
-                            dotData: const FlDotData(show: false),
-                          ),
-                        ],
-                        lineTouchData: const LineTouchData(enabled: false),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      crypto.formattedPrice,
+                      style: AppTheme.bodyLarge.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    if (crypto.sparklineData.isNotEmpty)
+                      SizedBox(
+                        width: 80,
+                        height: 30,
+                        child: LineChart(
+                          LineChartData(
+                            gridData: const FlGridData(show: false),
+                            titlesData: const FlTitlesData(show: false),
+                            borderData: FlBorderData(show: false),
+                            lineBarsData: [
+                              LineChartBarData(
+                                spots: crypto.sparklineData
+                                    .asMap()
+                                    .entries
+                                    .map((e) => FlSpot(e.key.toDouble(), e.value))
+                                    .toList(),
+                                isCurved: true,
+                                color: changeColor,
+                                barWidth: 2,
+                                dotData: const FlDotData(show: false),
+                              ),
+                            ],
+                            lineTouchData: const LineTouchData(enabled: false),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

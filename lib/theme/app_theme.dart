@@ -49,11 +49,11 @@ class AppTheme {
     offset: Offset(0, 10),
   );
 
-  static BorderRadius defaultRadius = BorderRadius.circular(12);
-  static BorderRadius largeRadius = BorderRadius.circular(16);
-  static BorderRadius smallRadius = BorderRadius.circular(8);
-  static BorderRadius tinyRadius = BorderRadius.circular(4);
-  static BorderRadius extraLargeRadius = BorderRadius.circular(20);
+  static BorderRadius defaultRadius = BorderRadius.circular(16);
+  static BorderRadius largeRadius = BorderRadius.circular(20);
+  static BorderRadius smallRadius = BorderRadius.circular(12);
+  static BorderRadius tinyRadius = BorderRadius.circular(8);
+  static BorderRadius extraLargeRadius = BorderRadius.circular(28);
 
   static const double paddingSmall = 8;
   static const double paddingMedium = 16;
@@ -64,6 +64,16 @@ class AppTheme {
   static const double gapMedium = 12;
   static const double gapLarge = 16;
   static const double gapXLarge = 24;
+
+  // Espaçamentos para mobile
+  static const double mobileHorizontalPadding = 16;
+  static const double mobileVerticalPadding = 12;
+  static const double mobileCardSpacing = 12;
+  static const double mobileSectionSpacing = 24;
+
+  // Safe area (evitar notch/barra de navegação)
+  static const double topSafeArea = 8;
+  static const double bottomSafeArea = 16;
 
   static TextStyle get heading1 => const TextStyle(
         fontSize: 32,
@@ -108,6 +118,54 @@ class AppTheme {
         fontWeight: FontWeight.w600,
         color: textPrimary,
       );
+
+  // Decorações de cards
+  static BoxDecoration cardDecoration({
+    Color? color,
+    Color? borderColor,
+    bool hasGlow = false,
+  }) {
+    return BoxDecoration(
+      color: color ?? cardDark,
+      borderRadius: largeRadius,
+      border: borderColor != null
+        ? Border.all(color: borderColor, width: 1)
+        : null,
+      boxShadow: hasGlow
+        ? [
+            cardShadow,
+            BoxShadow(
+              color: primaryGreen.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ]
+        : [cardShadow],
+    );
+  }
+
+  static BoxDecoration get gradientCardDecoration => BoxDecoration(
+    gradient: const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        cardDark,
+        Color.fromRGBO(31, 41, 55, 1),
+      ],
+    ),
+    borderRadius: largeRadius,
+    boxShadow: [cardShadow],
+  );
+
+  static BoxDecoration get glassCardDecoration => BoxDecoration(
+    color: cardDark.withOpacity(0.7),
+    borderRadius: largeRadius,
+    border: Border.all(
+      color: borderDark.withOpacity(0.5),
+      width: 1,
+    ),
+    boxShadow: [cardShadow],
+  );
 
   static ButtonStyle get primaryButton => ElevatedButton.styleFrom(
         backgroundColor: primaryGreen,
