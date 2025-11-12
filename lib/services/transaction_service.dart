@@ -46,7 +46,16 @@ class TransactionService {
         .where('status', isEqualTo: 'active')
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
+        .handleError((error) {
+      print('=== ERRO NO STREAM DE TRANSAÇÕES ATIVAS ===');
+      print('Erro: $error');
+      print('UserID: $_userId');
+      if (error.toString().contains('index')) {
+        print('CRIAR INDEX NO FIRESTORE:');
+        print(error.toString());
+      }
+      print('==========================================');
+    }).map((snapshot) => snapshot.docs
             .map((doc) => TransactionModel.fromFirestore(doc))
             .toList());
   }
@@ -63,7 +72,16 @@ class TransactionService {
         .where('status', isEqualTo: 'closed')
         .orderBy('closedAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
+        .handleError((error) {
+      print('=== ERRO NO STREAM DE TRANSAÇÕES FECHADAS ===');
+      print('Erro: $error');
+      print('UserID: $_userId');
+      if (error.toString().contains('index')) {
+        print('CRIAR INDEX NO FIRESTORE:');
+        print(error.toString());
+      }
+      print('============================================');
+    }).map((snapshot) => snapshot.docs
             .map((doc) => TransactionModel.fromFirestore(doc))
             .toList());
   }
@@ -174,10 +192,20 @@ class TransactionService {
     }
 
     try {
+      print('=== CRIANDO TRANSAÇÃO ===');
+      print('Par: $forexPair');
+      print('Tipo: ${type == TransactionType.buy ? "BUY" : "SELL"}');
+      print('Quantidade: $quantity');
+      print('Preço entrada: $entryPrice');
+
       final totalCost = quantity * entryPrice;
       final currentBalance = await getCurrentBalance();
 
+      print('Total: $totalCost');
+      print('Saldo atual: $currentBalance');
+
       if (type == TransactionType.buy && totalCost > currentBalance) {
+        print('ERRO: Saldo insuficiente');
         throw Exception('Saldo insuficiente');
       }
 
@@ -194,18 +222,28 @@ class TransactionService {
         createdAt: DateTime.now(),
       );
 
-      await _firestore
+      print('Salvando no Firestore...');
+      final docRef = await _firestore
           .collection('users')
           .doc(_userId)
           .collection('transactions')
           .add(transaction.toFirestore());
 
+      print('Transação salva com ID: ${docRef.id}');
+
       final newBalance = type == TransactionType.buy
           ? currentBalance - totalCost
           : currentBalance + totalCost;
 
+      print('Atualizando saldo para: $newBalance');
       await setBalance(newBalance);
+
+      print('Transação criada com sucesso!');
+      print('========================');
     } catch (e) {
+      print('=== ERRO AO CRIAR TRANSAÇÃO ===');
+      print('Erro: $e');
+      print('================================');
       throw Exception('Error creating transaction: $e');
     }
   }

@@ -95,44 +95,41 @@ class _ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      slivers: [
-        SliverAppBar(
-          backgroundColor: AppTheme.appBarColor,
-          pinned: true,
-          elevation: 1,
-          title: const Text('Perfil', style: TextStyle(fontWeight: FontWeight.bold)),
-          centerTitle: true,
-          actions: [
-            if (isOwnProfile) ...[
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => _showEditProfileModal(context, user),
-              ),
-              IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: () => _showSettings(context),
-              ),
-              IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () => _logout(context),
-              ),
-            ]
-          ],
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                _UserInfoCard(user: user),
-                const SizedBox(height: 24),
-                _InfoSection(user: user),
-              ],
-            ),
+    return Container(
+      color: AppTheme.backgroundColor,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              if (isOwnProfile)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, color: AppTheme.accentGreen),
+                        onPressed: () => _showEditProfileModal(context, user),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.settings_outlined, color: AppTheme.accentGreen),
+                        onPressed: () => _showSettings(context),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.logout, color: AppTheme.accentGreen),
+                        onPressed: () => _logout(context),
+                      ),
+                    ],
+                  ),
+                ),
+              _UserInfoCard(user: user),
+              const SizedBox(height: 24),
+              _InfoSection(user: user),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
