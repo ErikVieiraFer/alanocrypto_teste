@@ -192,6 +192,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> with SingleTick
           right: 16,
           bottom: 16,
           child: FloatingActionButton(
+            heroTag: 'transactions_fab',
             onPressed: _showCreateTransactionModal,
             backgroundColor: AppTheme.primaryGreen,
             child: const Icon(Icons.add, color: AppTheme.textPrimary),

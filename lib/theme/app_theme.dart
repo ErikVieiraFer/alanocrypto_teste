@@ -5,18 +5,21 @@ class AppTheme {
   static const Color secondaryGreen = Color.fromRGBO(129, 199, 132, 1);
   static const Color darkGreen = Color.fromRGBO(56, 142, 60, 1);
 
-  static const Color backgroundBlack = Colors.black;
-  static const Color cardDark = Color.fromRGBO(18, 18, 18, 1);
-  static const Color cardMedium = Color.fromRGBO(30, 30, 30, 1);
-  static const Color cardLight = Color.fromRGBO(40, 40, 40, 1);
+  // Backgrounds (tons azuis escuros)
+  static const Color backgroundBlack = Color.fromRGBO(11, 15, 25, 1);      // Azul escuro quase preto
+  static const Color cardDark = Color.fromRGBO(21, 27, 39, 1);             // Azul escuro
+  static const Color cardMedium = Color.fromRGBO(31, 41, 55, 1);           // Azul médio escuro
+  static const Color cardLight = Color.fromRGBO(51, 61, 75, 1);            // Azul claro escuro
 
-  static const Color borderDark = Color.fromRGBO(50, 50, 50, 1);
-  static const Color borderMedium = Color.fromRGBO(80, 80, 80, 1);
+  // Borders
+  static const Color borderDark = Color.fromRGBO(71, 81, 95, 1);           // Border mais visível
+  static const Color borderMedium = Color.fromRGBO(91, 101, 115, 1);       // Border médio
 
-  static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Color.fromRGBO(158, 158, 158, 1);
-  static const Color textTertiary = Color.fromRGBO(117, 117, 117, 1);
-  static const Color textDisabled = Color.fromRGBO(80, 80, 80, 1);
+  // Textos
+  static const Color textPrimary = Color.fromRGBO(248, 250, 252, 1);      // Branco suave
+  static const Color textSecondary = Color.fromRGBO(148, 163, 184, 1);    // Cinza azulado
+  static const Color textTertiary = Color.fromRGBO(100, 116, 139, 1);     // Cinza azulado escuro
+  static const Color textDisabled = Color.fromRGBO(71, 85, 105, 1);       // Cinza muito escuro
 
   static const Color errorRed = Color.fromRGBO(244, 67, 54, 1);
   static const Color warningOrange = Color.fromRGBO(255, 152, 0, 1);

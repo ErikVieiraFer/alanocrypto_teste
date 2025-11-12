@@ -145,6 +145,7 @@ class _WatchlistScreenState extends State<WatchlistScreen> {
           right: 16,
           bottom: 16,
           child: FloatingActionButton(
+            heroTag: 'watchlist_fab',
             onPressed: _showAddCryptoModal,
             backgroundColor: AppTheme.primaryGreen,
             child: const Icon(Icons.add, color: AppTheme.textPrimary),

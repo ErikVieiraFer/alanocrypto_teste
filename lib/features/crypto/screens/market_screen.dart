@@ -247,6 +247,7 @@ class _MarketScreenState extends State<MarketScreen> {
           right: 16,
           bottom: 16,
           child: FloatingActionButton(
+            heroTag: 'market_fab',
             onPressed: _showFilterModal,
             backgroundColor: AppTheme.primaryGreen,
             child: const Icon(Icons.filter_list, color: AppTheme.textPrimary),
