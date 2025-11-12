@@ -88,7 +88,7 @@ class _NewsSectionState extends State<NewsSection> {
           child: Text(
             'Fique por dentro das últimas tendências do mercado cripto, novidades sobre NFTs e oportunidades de investimento',
             style: AppTheme.bodyMedium.copyWith(
-              color: AppTheme.textSecondary,
+              color: Colors.white.withOpacity(0.9),
             ),
           ),
         ),
@@ -110,7 +110,7 @@ class _NewsSectionState extends State<NewsSection> {
                       child: Text(
                         'Nenhuma notícia disponível',
                         style: AppTheme.bodyMedium.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: Colors.white.withOpacity(0.9),
                         ),
                       ),
                     )

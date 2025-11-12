@@ -15,13 +15,14 @@ import 'package:alanoapp/features/courses/screens/courses_screen.dart';
 import 'package:alanoapp/features/portfolio/screens/portfolio_screen.dart';
 import 'package:alanoapp/features/links/screens/useful_links_screen.dart';
 import 'package:alanoapp/features/support/screens/support_screen.dart';
+import 'package:alanoapp/features/cupula/screens/cupula_coming_soon_screen.dart';
 import 'package:alanoapp/services/notification_service.dart';
 import 'package:alanoapp/services/alano_post_service.dart';
 import 'package:alanoapp/services/signal_service.dart';
 import 'package:alanoapp/services/chat_service.dart';
-import 'package:alanoapp/services/badge_service.dart';
 import '../../../widgets/app_drawer.dart';
 import '../../../widgets/app_logo.dart';
+import '../../../widgets/welcome_notification_dialog.dart';
 import '../../../theme/app_theme.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -39,13 +40,7 @@ class DashboardScreenState extends State<DashboardScreen> {
   final AlanoPostService _alanoPostService = AlanoPostService();
   final SignalService _signalService = SignalService();
   final ChatService _chatService = ChatService();
-  final BadgeService _badgeService = BadgeService();
   final String? _userId = FirebaseAuth.instance.currentUser?.uid;
-
-  // Streams para badges (criados uma vez)
-  late final Stream<bool> _newSignalsStream;
-  late final Stream<bool> _unreadMessagesStream;
-  late final Stream<bool> _newPostsStream;
 
   final List<Widget> _screens = [
     const HomeScreen(), // 0 - Home (Dashboard)
@@ -61,16 +56,12 @@ class DashboardScreenState extends State<DashboardScreen> {
     const AIChatScreen(), // 10 - Alano IA
     const UsefulLinksScreen(), // 11 - Links Úteis
     const SupportScreen(), // 12 - Suporte
+    const CupulaComingSoonScreen(), // 13 - A Cúpula
   ];
 
   @override
   void initState() {
     super.initState();
-
-    // Inicializar streams uma única vez como broadcast
-    _newSignalsStream = _badgeService.hasNewSignals().asBroadcastStream();
-    _unreadMessagesStream = _badgeService.hasUnreadMessages().asBroadcastStream();
-    _newPostsStream = _badgeService.hasNewPosts().asBroadcastStream();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args =
@@ -84,6 +75,9 @@ class DashboardScreenState extends State<DashboardScreen> {
           });
         }
       }
+
+      // Mostra o diálogo de boas-vindas se for a primeira vez
+      WelcomeNotificationDialog.showIfNeeded(context);
     });
   }
 
@@ -100,20 +94,6 @@ class DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _currentIndex = index;
       });
-      _markAsViewed(index);
-    }
-  }
-
-  // Marca conteúdo como visualizado ao trocar de tab
-  void _markAsViewed(int index) {
-    if (index == 1) {
-      // Chat - não precisa marcar, já gerenciado pelo ChatService
-    } else if (index == 2) {
-      // Posts
-      _badgeService.markPostsAsViewed();
-    } else if (index == 3) {
-      // Sinais
-      _badgeService.markSignalsAsViewed();
     }
   }
 
@@ -132,61 +112,12 @@ class DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label, {Stream<bool>? badgeStream}) {
+  Widget _buildNavItem(int index, IconData icon, String label) {
     final isSelected = _currentIndex == index;
-
-    Widget iconWidget;
-
-    // Se há um stream de badge, envolve o ícone em um Stack com badge
-    if (badgeStream != null) {
-      iconWidget = StreamBuilder<bool>(
-        stream: badgeStream,
-        initialData: false,
-        builder: (context, snapshot) {
-          final showBadge = snapshot.data ?? false;
-          return SizedBox(
-            width: 22,
-            height: 22,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(
-                  icon,
-                  color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
-                  size: 22,
-                ),
-                if (showBadge)
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
-      );
-    } else {
-      iconWidget = Icon(
-        icon,
-        color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
-        size: 22,
-      );
-    }
 
     return Expanded(
       child: GestureDetector(
-        onTap: () {
-          setState(() => _currentIndex = index);
-          _markAsViewed(index);
-        },
+        onTap: () => setState(() => _currentIndex = index),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           decoration: BoxDecoration(
@@ -199,7 +130,11 @@ class DashboardScreenState extends State<DashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              iconWidget,
+              Icon(
+                icon,
+                color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
+                size: 22,
+              ),
               const SizedBox(height: 3),
               Text(
                 label,
@@ -331,13 +266,10 @@ class DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
                 children: [
-                  _buildNavItem(3, Icons.show_chart_rounded, 'Sinais',
-                    badgeStream: _newSignalsStream),
-                  _buildNavItem(1, Icons.chat_bubble_rounded, 'Chat',
-                    badgeStream: _unreadMessagesStream),
+                  _buildNavItem(3, Icons.show_chart_rounded, 'Sinais'),
+                  _buildNavItem(1, Icons.chat_bubble_rounded, 'Chat'),
                   const SizedBox(width: 60), // Espaço para o botão flutuante
-                  _buildNavItem(2, Icons.article_rounded, 'Posts',
-                    badgeStream: _newPostsStream),
+                  _buildNavItem(2, Icons.article_rounded, 'Posts'),
                   _buildNavItem(4, Icons.person_rounded, 'Perfil'),
                 ],
               ),
