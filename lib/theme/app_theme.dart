@@ -158,14 +158,128 @@ class AppTheme {
   );
 
   static BoxDecoration get glassCardDecoration => BoxDecoration(
-    color: cardDark.withOpacity(0.7),
-    borderRadius: largeRadius,
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        cardDark,
+        cardDark.withOpacity(0.95),
+      ],
+    ),
+    borderRadius: BorderRadius.circular(18),
     border: Border.all(
-      color: borderDark.withOpacity(0.5),
+      color: borderDark.withOpacity(0.3),
       width: 1,
     ),
-    boxShadow: [cardShadow],
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.12),
+        blurRadius: 8,
+        offset: const Offset(0, 4),
+      ),
+      BoxShadow(
+        color: Colors.black.withOpacity(0.08),
+        blurRadius: 16,
+        offset: const Offset(0, 8),
+      ),
+      BoxShadow(
+        color: Colors.blue.withOpacity(0.05),
+        blurRadius: 24,
+        spreadRadius: -4,
+        offset: const Offset(0, 12),
+      ),
+    ],
   );
+
+  // Card moderno padrão
+  static BoxDecoration modernCard({Color? backgroundColor, Color? glowColor}) {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          backgroundColor ?? cardDark,
+          (backgroundColor ?? cardDark).withOpacity(0.95),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: borderDark.withOpacity(0.3),
+        width: 1,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.12),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
+        BoxShadow(
+          color: Colors.black.withOpacity(0.08),
+          blurRadius: 16,
+          offset: const Offset(0, 8),
+        ),
+        if (glowColor != null)
+          BoxShadow(
+            color: glowColor.withOpacity(0.05),
+            blurRadius: 24,
+            spreadRadius: -4,
+            offset: const Offset(0, 12),
+          ),
+      ],
+    );
+  }
+
+  // Card de sinal (com indicador lateral)
+  static BoxDecoration signalCard({required bool isLong}) {
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          cardDark,
+          isLong
+              ? const Color(0xFF0a1a0a)
+              : const Color(0xFF1a0a0a),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(16),
+      border: Border(
+        top: BorderSide(
+          color: borderDark.withOpacity(0.3),
+          width: 1,
+        ),
+        right: BorderSide(
+          color: borderDark.withOpacity(0.3),
+          width: 1,
+        ),
+        bottom: BorderSide(
+          color: borderDark.withOpacity(0.3),
+          width: 1,
+        ),
+        left: BorderSide(
+          color: isLong ? successGreen : errorRed,
+          width: 4,
+        ),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.12),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
+        BoxShadow(
+          color: Colors.black.withOpacity(0.08),
+          blurRadius: 16,
+          offset: const Offset(0, 8),
+        ),
+        BoxShadow(
+          color: (isLong ? successGreen : errorRed).withOpacity(0.03),
+          blurRadius: 24,
+          offset: const Offset(0, 0),
+        ),
+      ],
+    );
+  }
 
   static ButtonStyle get primaryButton => ElevatedButton.styleFrom(
         backgroundColor: primaryGreen,

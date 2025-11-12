@@ -19,6 +19,7 @@ import 'package:alanoapp/services/notification_service.dart';
 import 'package:alanoapp/services/alano_post_service.dart';
 import 'package:alanoapp/services/signal_service.dart';
 import 'package:alanoapp/services/chat_service.dart';
+import 'package:alanoapp/services/badge_service.dart';
 import '../../../widgets/app_drawer.dart';
 import '../../../widgets/app_logo.dart';
 import '../../../theme/app_theme.dart';
@@ -38,7 +39,13 @@ class DashboardScreenState extends State<DashboardScreen> {
   final AlanoPostService _alanoPostService = AlanoPostService();
   final SignalService _signalService = SignalService();
   final ChatService _chatService = ChatService();
+  final BadgeService _badgeService = BadgeService();
   final String? _userId = FirebaseAuth.instance.currentUser?.uid;
+
+  // Streams para badges (criados uma vez)
+  late final Stream<bool> _newSignalsStream;
+  late final Stream<bool> _unreadMessagesStream;
+  late final Stream<bool> _newPostsStream;
 
   final List<Widget> _screens = [
     const HomeScreen(), // 0 - Home (Dashboard)
@@ -59,6 +66,12 @@ class DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Inicializar streams uma única vez como broadcast
+    _newSignalsStream = _badgeService.hasNewSignals().asBroadcastStream();
+    _unreadMessagesStream = _badgeService.hasUnreadMessages().asBroadcastStream();
+    _newPostsStream = _badgeService.hasNewPosts().asBroadcastStream();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args =
           ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -87,6 +100,20 @@ class DashboardScreenState extends State<DashboardScreen> {
       setState(() {
         _currentIndex = index;
       });
+      _markAsViewed(index);
+    }
+  }
+
+  // Marca conteúdo como visualizado ao trocar de tab
+  void _markAsViewed(int index) {
+    if (index == 1) {
+      // Chat - não precisa marcar, já gerenciado pelo ChatService
+    } else if (index == 2) {
+      // Posts
+      _badgeService.markPostsAsViewed();
+    } else if (index == 3) {
+      // Sinais
+      _badgeService.markSignalsAsViewed();
     }
   }
 
@@ -105,12 +132,61 @@ class DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
+  Widget _buildNavItem(int index, IconData icon, String label, {Stream<bool>? badgeStream}) {
     final isSelected = _currentIndex == index;
+
+    Widget iconWidget;
+
+    // Se há um stream de badge, envolve o ícone em um Stack com badge
+    if (badgeStream != null) {
+      iconWidget = StreamBuilder<bool>(
+        stream: badgeStream,
+        initialData: false,
+        builder: (context, snapshot) {
+          final showBadge = snapshot.data ?? false;
+          return SizedBox(
+            width: 22,
+            height: 22,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
+                  size: 22,
+                ),
+                if (showBadge)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      );
+    } else {
+      iconWidget = Icon(
+        icon,
+        color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
+        size: 22,
+      );
+    }
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _currentIndex = index),
+        onTap: () {
+          setState(() => _currentIndex = index);
+          _markAsViewed(index);
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           decoration: BoxDecoration(
@@ -123,11 +199,7 @@ class DashboardScreenState extends State<DashboardScreen> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
-                size: 22,
-              ),
+              iconWidget,
               const SizedBox(height: 3),
               Text(
                 label,
@@ -186,26 +258,11 @@ class DashboardScreenState extends State<DashboardScreen> {
                         top: 8,
                         right: 8,
                         child: Container(
-                          padding: const EdgeInsets.all(2),
+                          width: 10,
+                          height: 10,
                           decoration: BoxDecoration(
                             color: Colors.red,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppTheme.appBarColor,
-                              width: 2,
-                            ),
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            '$unreadCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                            ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
@@ -274,10 +331,13 @@ class DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               child: Row(
                 children: [
-                  _buildNavItem(3, Icons.show_chart_rounded, 'Sinais'),
-                  _buildNavItem(1, Icons.chat_bubble_rounded, 'Chat'),
+                  _buildNavItem(3, Icons.show_chart_rounded, 'Sinais',
+                    badgeStream: _newSignalsStream),
+                  _buildNavItem(1, Icons.chat_bubble_rounded, 'Chat',
+                    badgeStream: _unreadMessagesStream),
                   const SizedBox(width: 60), // Espaço para o botão flutuante
-                  _buildNavItem(2, Icons.article_rounded, 'Posts'),
+                  _buildNavItem(2, Icons.article_rounded, 'Posts',
+                    badgeStream: _newPostsStream),
                   _buildNavItem(4, Icons.person_rounded, 'Perfil'),
                 ],
               ),

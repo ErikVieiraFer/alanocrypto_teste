@@ -283,16 +283,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        maxLength: 100,
                         decoration: InputDecoration(
                           labelText: 'Email',
                           prefixIcon: const Icon(Icons.email),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          counterText: '',
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Digite seu email';
+                          }
+                          if (value.length > 100) {
+                            return 'Email deve ter no máximo 100 caracteres';
                           }
                           return null;
                         },
@@ -303,6 +308,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
+                        maxLength: 50,
                         decoration: InputDecoration(
                           labelText: 'Senha',
                           prefixIcon: const Icon(Icons.lock),
@@ -319,10 +325,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
+                          counterText: '',
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Digite sua senha';
+                          }
+                          if (value.length > 50) {
+                            return 'Senha deve ter no máximo 50 caracteres';
                           }
                           return null;
                         },

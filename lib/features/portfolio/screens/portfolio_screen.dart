@@ -358,22 +358,30 @@ class _PortfolioScreenState extends State<PortfolioScreen> with SingleTickerProv
 
     return Container(
       margin: const EdgeInsets.only(bottom: AppTheme.gapMedium),
-      decoration: BoxDecoration(
-        color: AppTheme.cardDark,
-        borderRadius: AppTheme.defaultRadius,
-        border: Border.all(
-          color: isProfit ? AppTheme.primaryGreen : AppTheme.errorRed,
-          width: 1,
-        ),
+      decoration: AppTheme.modernCard(
+        glowColor: isProfit ? AppTheme.primaryGreen : AppTheme.errorRed,
       ),
-      padding: const EdgeInsets.all(AppTheme.paddingMedium),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isProfit ? AppTheme.primaryGreen : AppTheme.errorRed,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(transaction.forexPair, style: AppTheme.heading3),
+              Text(
+                transaction.forexPair,
+                style: AppTheme.heading2.copyWith(fontWeight: FontWeight.bold),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppTheme.paddingSmall,
@@ -418,11 +426,22 @@ class _PortfolioScreenState extends State<PortfolioScreen> with SingleTickerProv
                     'P&L',
                     style: AppTheme.bodySmall.copyWith(color: AppTheme.textSecondary),
                   ),
-                  Text(
-                    '${pnl >= 0 ? '+' : ''}\$${pnl.toStringAsFixed(2)}',
-                    style: AppTheme.heading3.copyWith(
-                      color: isProfit ? AppTheme.primaryGreen : AppTheme.errorRed,
-                    ),
+                  Row(
+                    children: [
+                      Icon(
+                        isProfit ? Icons.arrow_upward : Icons.arrow_downward,
+                        size: 18,
+                        color: isProfit ? AppTheme.primaryGreen : AppTheme.errorRed,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${pnl >= 0 ? '+' : ''}\$${pnl.toStringAsFixed(2)}',
+                        style: AppTheme.heading3.copyWith(
+                          color: isProfit ? AppTheme.primaryGreen : AppTheme.errorRed,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -441,6 +460,8 @@ class _PortfolioScreenState extends State<PortfolioScreen> with SingleTickerProv
             ],
           ),
         ],
+        ),
+      ),
       ),
     );
   }

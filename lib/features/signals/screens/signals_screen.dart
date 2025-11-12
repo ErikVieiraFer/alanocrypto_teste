@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/signal_model.dart';
 import '../../../services/signal_service.dart';
+import '../../../theme/app_theme.dart';
+import '../../../widgets/shimmer_loading.dart';
+import '../../../widgets/haptic_button.dart';
 
 class SignalsScreen extends StatefulWidget {
   const SignalsScreen({super.key});
@@ -314,7 +317,11 @@ class _SignalsTab extends StatelessWidget {
       stream: stream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: 5,
+            itemBuilder: (context, index) => const SignalShimmer(),
+          );
         }
 
         if (snapshot.hasError) {
@@ -449,26 +456,18 @@ class SignalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLong = signal.type == SignalType.long;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[850] : Colors.white,
+      decoration: AppTheme.signalCard(isLong: isLong),
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: signal.typeColor.withAlpha(77), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(13),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: signal.typeColor.withAlpha(26),
               borderRadius: const BorderRadius.vertical(
@@ -527,7 +526,7 @@ class SignalCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -652,38 +651,21 @@ class SignalCard extends StatelessWidget {
                 bottom: Radius.circular(14),
               ),
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => onCopy(signal),
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(14),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.copy,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Copiar Sinal',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ],
-                  ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: ActionButton(
+                  onPressed: () => onCopy(signal),
+                  label: 'Copiar Sinal',
+                  icon: Icons.copy,
+                  backgroundColor: Colors.transparent,
+                  textColor: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ),
           ),
         ],
+        ),
       ),
     );
   }

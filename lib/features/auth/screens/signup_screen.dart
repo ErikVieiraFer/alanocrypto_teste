@@ -179,16 +179,21 @@ class _SignupScreenState extends State<SignupScreen> {
 
                   TextFormField(
                     controller: _nameController,
+                    maxLength: 100,
                     decoration: InputDecoration(
                       labelText: 'Nome Completo',
                       prefixIcon: const Icon(Icons.person),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      counterText: '',
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Digite seu nome';
+                      }
+                      if (value.length > 100) {
+                        return 'Nome deve ter no máximo 100 caracteres';
                       }
                       return null;
                     },
@@ -199,12 +204,14 @@ class _SignupScreenState extends State<SignupScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    maxLength: 100,
                     decoration: InputDecoration(
                       labelText: 'Email',
                       prefixIcon: const Icon(Icons.email),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      counterText: '',
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -212,6 +219,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       }
                       if (!value.contains('@')) {
                         return 'Email inválido';
+                      }
+                      if (value.length > 100) {
+                        return 'Email deve ter no máximo 100 caracteres';
                       }
                       return null;
                     },
@@ -222,6 +232,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
+                    maxLength: 20,
                     decoration: InputDecoration(
                       labelText: 'Telefone (com código do país)',
                       hintText: 'Ex: +1 555 123 4567',
@@ -229,11 +240,15 @@ class _SignupScreenState extends State<SignupScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      counterText: '',
                     ),
                     validator: (value) {
                       final phone = value?.trim() ?? '';
                       if (phone.isEmpty) {
                         return 'Digite seu telefone';
+                      }
+                      if (phone.length > 20) {
+                        return 'Telefone deve ter no máximo 20 caracteres';
                       }
                       return null;
                     },
@@ -244,6 +259,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
+                    maxLength: 50,
                     decoration: InputDecoration(
                       labelText: 'Senha',
                       prefixIcon: const Icon(Icons.lock),
@@ -260,6 +276,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      counterText: '',
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -267,6 +284,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       }
                       if (value.length < 6) {
                         return 'Senha deve ter no mínimo 6 caracteres';
+                      }
+                      if (value.length > 50) {
+                        return 'Senha deve ter no máximo 50 caracteres';
                       }
                       return null;
                     },
@@ -277,6 +297,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   TextFormField(
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
+                    maxLength: 50,
                     decoration: InputDecoration(
                       labelText: 'Confirmar Senha',
                       prefixIcon: const Icon(Icons.lock_outline),
@@ -294,8 +315,18 @@ class _SignupScreenState extends State<SignupScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      counterText: '',
                     ),
                     validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Confirme sua senha';
+                      }
+                      if (value.length < 6) {
+                        return 'Senha deve ter no mínimo 6 caracteres';
+                      }
+                      if (value.length > 50) {
+                        return 'Senha deve ter no máximo 50 caracteres';
+                      }
                       if (value != _passwordController.text) {
                         return 'Senhas não conferem';
                       }

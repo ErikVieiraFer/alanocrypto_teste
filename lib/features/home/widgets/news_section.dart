@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../models/news_article_model.dart';
 import '../../../services/news_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../widgets/shimmer_loading.dart';
 
 class NewsSection extends StatefulWidget {
   const NewsSection({super.key});
@@ -95,10 +96,14 @@ class _NewsSectionState extends State<NewsSection> {
         SizedBox(
           height: 340,
           child: _isLoading
-              ? Center(
-                  child: CircularProgressIndicator(
-                    color: AppTheme.primaryGreen,
+              ? ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(
+                    left: AppTheme.mobileHorizontalPadding,
+                    right: AppTheme.mobileHorizontalPadding,
                   ),
+                  itemCount: 3,
+                  itemBuilder: (context, index) => const NewsCardShimmer(),
                 )
               : _news.isEmpty
                   ? Center(

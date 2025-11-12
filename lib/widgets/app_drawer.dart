@@ -163,10 +163,20 @@ class _AppDrawerState extends State<AppDrawer> {
               color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.account_balance_wallet_rounded,
-              color: Colors.white,
-              size: 28,
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/logo.jpeg',
+                width: 56,
+                height: 56,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(
+                    Icons.account_balance_wallet_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  );
+                },
+              ),
             ),
           ),
           const SizedBox(width: 16),

@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
 import '../../../models/alano_post_model.dart';
 import '../../../services/alano_post_service.dart';
+import '../../../widgets/haptic_button.dart';
 
 class AlanoPostsScreen extends StatefulWidget {
   const AlanoPostsScreen({super.key});
@@ -198,20 +199,47 @@ class AlanoPostCard extends StatelessWidget {
     final isLiked = post.likedBy.contains(currentUserId);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-          ),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).colorScheme.surface,
+            Theme.of(context).colorScheme.surface.withOpacity(0.95),
+          ],
         ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? Colors.grey[800]!.withOpacity(0.3) : Colors.grey[300]!.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.05),
+            blurRadius: 24,
+            spreadRadius: -4,
+            offset: const Offset(0, 12),
+          ),
+        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -345,22 +373,10 @@ class AlanoPostCard extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                InkWell(
-                  onTap: () => AlanoPostService().toggleLike(post.id),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isLiked ? Icons.favorite : Icons.favorite_border,
-                        color: isLiked ? Colors.red : Colors.grey[600],
-                        size: 22,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${post.likedBy.length}',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                    ],
-                  ),
+                LikeButton(
+                  isLiked: isLiked,
+                  likeCount: post.likedBy.length,
+                  onPressed: () => AlanoPostService().toggleLike(post.id),
                 ),
                 const SizedBox(width: 24),
                 Row(
@@ -381,6 +397,7 @@ class AlanoPostCard extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

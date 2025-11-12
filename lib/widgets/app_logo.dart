@@ -8,26 +8,46 @@ class AppLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'AlanoCrypto',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGreen.withOpacity(0.3),
+            blurRadius: 20,
+            spreadRadius: 5,
+            offset: const Offset(0, 0),
           ),
-        ),
-        Text(
-          'FX',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.accentGreen,
+          BoxShadow(
+            color: AppTheme.primaryGreen.withOpacity(0.2),
+            blurRadius: 40,
+            spreadRadius: 10,
+            offset: const Offset(0, 0),
           ),
-        ),
-      ],
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'AlanoCrypto',
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          Text(
+            'FX',
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.accentGreen,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
