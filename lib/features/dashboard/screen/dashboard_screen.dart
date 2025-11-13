@@ -23,6 +23,7 @@ import 'package:alanoapp/services/chat_service.dart';
 import '../../../widgets/app_drawer.dart';
 import '../../../widgets/app_logo.dart';
 import '../../../widgets/welcome_notification_dialog.dart';
+import '../../../widgets/install_pwa_dialog.dart';
 import '../../../theme/app_theme.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -76,9 +77,19 @@ class DashboardScreenState extends State<DashboardScreen> {
         }
       }
 
-      // Mostra o diálogo de boas-vindas se for a primeira vez
-      WelcomeNotificationDialog.showIfNeeded(context);
+      // Mostra os diálogos de primeira vez em sequência
+      _showFirstTimeDialogs(context);
     });
+  }
+
+  Future<void> _showFirstTimeDialogs(BuildContext context) async {
+    // Primeiro mostra o diálogo de boas-vindas/notificações
+    await WelcomeNotificationDialog.showIfNeeded(context);
+
+    // Depois mostra o diálogo de instalação PWA
+    if (context.mounted) {
+      await InstallPwaDialog.showIfNeeded(context);
+    }
   }
 
   void _navigateToNotifications() {
@@ -97,17 +108,48 @@ class DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Widget _buildFloatingHomeButton() {
+  Widget _buildHomeButton() {
     final isSelected = _currentIndex == 0;
 
-    return FloatingActionButton(
-      onPressed: () => setState(() => _currentIndex = 0),
-      backgroundColor: AppTheme.primaryGreen,
-      elevation: isSelected ? 8 : 6,
-      child: Icon(
-        Icons.home_rounded,
-        color: Colors.white,
-        size: 28,
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _currentIndex = 0),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.primaryGreen,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryGreen.withOpacity(0.4),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 0),
+                    ),
+                    BoxShadow(
+                      color: AppTheme.primaryGreen.withOpacity(0.3),
+                      blurRadius: 40,
+                      spreadRadius: 5,
+                      offset: const Offset(0, 0),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.home_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -242,9 +284,8 @@ class DashboardScreenState extends State<DashboardScreen> {
         ],
       ),
       body: IndexedStack(index: _currentIndex, children: _screens),
-      floatingActionButton: _buildFloatingHomeButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: Container(
+        height: 70,
         decoration: BoxDecoration(
           color: AppTheme.cardDark,
           borderRadius: const BorderRadius.only(
@@ -260,19 +301,17 @@ class DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         child: SafeArea(
-          child: SizedBox(
-            height: 65,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  _buildNavItem(3, Icons.show_chart_rounded, 'Sinais'),
-                  _buildNavItem(1, Icons.chat_bubble_rounded, 'Chat'),
-                  const SizedBox(width: 60), // Espaço para o botão flutuante
-                  _buildNavItem(2, Icons.article_rounded, 'Posts'),
-                  _buildNavItem(4, Icons.person_rounded, 'Perfil'),
-                ],
-              ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildNavItem(3, Icons.show_chart_rounded, 'Sinais'),
+                _buildNavItem(1, Icons.chat_bubble_rounded, 'Chat'),
+                _buildHomeButton(), // Botão Home no centro
+                _buildNavItem(2, Icons.article_rounded, 'Posts'),
+                _buildNavItem(4, Icons.person_rounded, 'Perfil'),
+              ],
             ),
           ),
         ),

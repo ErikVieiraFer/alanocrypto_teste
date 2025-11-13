@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 
-class WelcomeNotificationDialog extends StatelessWidget {
-  const WelcomeNotificationDialog({Key? key}) : super(key: key);
+class InstallPwaDialog extends StatelessWidget {
+  const InstallPwaDialog({Key? key}) : super(key: key);
 
-  static const String _keyShownBefore = 'welcome_notification_dialog_shown';
+  static const String _keyShownBefore = 'install_pwa_dialog_shown';
 
   /// Verifica se o diálogo já foi mostrado antes
   static Future<bool> shouldShow() async {
@@ -28,7 +28,7 @@ class WelcomeNotificationDialog extends StatelessWidget {
         await showDialog(
           context: context,
           barrierDismissible: true, // Permite fechar clicando fora
-          builder: (context) => const WelcomeNotificationDialog(),
+          builder: (context) => const InstallPwaDialog(),
         );
       }
     } else {
@@ -99,7 +99,7 @@ class WelcomeNotificationDialog extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.notifications_active_rounded,
+                    Icons.install_mobile_rounded,
                     color: Colors.white,
                     size: 48,
                   ),
@@ -114,7 +114,7 @@ class WelcomeNotificationDialog extends StatelessWidget {
                 children: [
                   // Título
                   const Text(
-                    'Seja Notificado!',
+                    'Instale o App!',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -127,7 +127,7 @@ class WelcomeNotificationDialog extends StatelessWidget {
 
                   // Descrição
                   const Text(
-                    'Ative as notificações para receber alertas instantâneos sobre:',
+                    'Acesse o Alano CryptoFX diretamente da sua tela inicial:',
                     style: TextStyle(
                       fontSize: 15,
                       color: Colors.white,
@@ -138,16 +138,32 @@ class WelcomeNotificationDialog extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  // Lista de benefícios
-                  _buildBenefit(Icons.show_chart_rounded, 'Novos sinais de trading'),
+                  // Instruções para Android/Mobile
+                  _buildInstruction(
+                    Icons.phone_android_rounded,
+                    'No Celular (Android)',
+                    'Toque no menu (⋮) do navegador e selecione "Adicionar à tela inicial"',
+                  ),
                   const SizedBox(height: 12),
-                  _buildBenefit(Icons.article_rounded, 'Posts exclusivos do Alano'),
+
+                  // Instruções para iOS
+                  _buildInstruction(
+                    Icons.phone_iphone_rounded,
+                    'No iPhone (iOS)',
+                    'Toque no ícone de compartilhar (□↑) e selecione "Adicionar à Tela de Início"',
+                  ),
                   const SizedBox(height: 12),
-                  _buildBenefit(Icons.chat_bubble_rounded, 'Mensagens importantes'),
+
+                  // Instruções para Desktop
+                  _buildInstruction(
+                    Icons.desktop_windows_rounded,
+                    'No Computador',
+                    'Clique no ícone de instalação (⊕) na barra de endereço do navegador',
+                  ),
 
                   const SizedBox(height: 24),
 
-                  // Mensagem de suporte
+                  // Mensagem de benefício
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -161,14 +177,14 @@ class WelcomeNotificationDialog extends StatelessWidget {
                     child: Row(
                       children: [
                         Icon(
-                          Icons.support_agent_rounded,
+                          Icons.star_rounded,
                           color: AppTheme.primaryGreen,
                           size: 20,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Dúvidas? Entre em contato com nosso canal de suporte!',
+                            'Acesso rápido, sem ocupar espaço no seu dispositivo!',
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.white.withOpacity(0.9),
@@ -241,8 +257,9 @@ class WelcomeNotificationDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildBenefit(IconData icon, String text) {
+  Widget _buildInstruction(IconData icon, String platform, String instruction) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(8),
@@ -258,13 +275,27 @@ class WelcomeNotificationDialog extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.white,
-              fontWeight: FontWeight.w500,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                platform,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                instruction,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withOpacity(0.8),
+                  height: 1.4,
+                ),
+              ),
+            ],
           ),
         ),
       ],
