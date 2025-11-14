@@ -35,6 +35,8 @@ class UserService {
     String? photoURL,
     String? phone,
     String? telegram,
+    String? accountId,
+    String? broker,
     Map<String, dynamic>? data,
   }) async {
     try {
@@ -45,6 +47,8 @@ class UserService {
       if (photoURL != null) updates['photoURL'] = photoURL;
       if (phone != null) updates['phone'] = phone;
       if (telegram != null) updates['telegram'] = telegram;
+      if (accountId != null) updates['accountId'] = accountId;
+      if (broker != null) updates['broker'] = broker;
 
       // Adiciona dados customizados se fornecidos
       if (data != null) {
@@ -184,6 +188,8 @@ class UserService {
     User firebaseUser, {
     String? displayName,
     String? phone,
+    String? accountId,
+    String? broker,
   }) async {
     try {
       await _firestore.collection('users').doc(firebaseUser.uid).set({
@@ -200,6 +206,8 @@ class UserService {
         'blocked': false,
         'createdAt': FieldValue.serverTimestamp(),
         'lastLogin': FieldValue.serverTimestamp(),
+        'accountId': accountId,
+        'broker': broker,
       }, SetOptions(merge: true));
     } catch (e) {
       print('Erro ao criar usuário: $e');

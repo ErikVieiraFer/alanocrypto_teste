@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../models/crypto_data_model.dart';
 import '../../../services/crypto_market_service.dart';
+import '../../../services/forex_api_service.dart';
+import '../../../services/stocks_api_service.dart';
 import '../../../theme/app_theme.dart';
 import 'crypto_detail_screen.dart';
 
@@ -12,45 +15,98 @@ class MarketScreen extends StatefulWidget {
   State<MarketScreen> createState() => _MarketScreenState();
 }
 
-class _MarketScreenState extends State<MarketScreen> {
-  final CryptoMarketService _cryptoService = CryptoMarketService();
+class _MarketScreenState extends State<MarketScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late CryptoMarketService _cryptoService;
+  late ForexApiService _forexService;
+  late StocksApiService _stocksService;
+
   final TextEditingController _searchController = TextEditingController();
 
   List<CryptoDataModel> _allCryptos = [];
   List<CryptoDataModel> _filteredCryptos = [];
-  bool _isLoading = true;
+  List<ForexPair>? _forexPairs;
+  List<Stock>? _stocks;
+
+  bool _isLoadingCrypto = true;
+  bool _isLoadingForex = false;
+  bool _isLoadingStocks = false;
+
   String _selectedFilter = 'Top 100';
   String _selectedSort = 'Market Cap';
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
+
+    _cryptoService = CryptoMarketService();
+
+    // Carregar API keys do arquivo .env
+    final alphaVantageKey = dotenv.env['ALPHA_VANTAGE_API_KEY'] ?? '';
+    final fcsKey = dotenv.env['FCS_API_KEY'] ?? '';
+
+    _forexService = ForexApiService(apiKey: fcsKey);
+    _stocksService = StocksApiService(apiKey: alphaVantageKey);
+
     _loadCryptos();
     _searchController.addListener(_filterCryptos);
+  }
+
+  void _onTabChanged() {
+    if (_tabController.index == 1 && _forexPairs == null) {
+      _loadForex();
+    } else if (_tabController.index == 2 && _stocks == null) {
+      _loadStocks();
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
   Future<void> _loadCryptos() async {
-    setState(() => _isLoading = true);
+    setState(() => _isLoadingCrypto = true);
     try {
       final cryptos = await _cryptoService.searchCryptos('');
       if (mounted) {
         setState(() {
           _allCryptos = cryptos;
           _filteredCryptos = cryptos;
-          _isLoading = false;
+          _isLoadingCrypto = false;
         });
         _applySorting();
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isLoadingCrypto = false);
       }
+    }
+  }
+
+  Future<void> _loadForex() async {
+    setState(() => _isLoadingForex = true);
+    final data = await _forexService.getForexPairs();
+    if (mounted) {
+      setState(() {
+        _forexPairs = data;
+        _isLoadingForex = false;
+      });
+    }
+  }
+
+  Future<void> _loadStocks() async {
+    setState(() => _isLoadingStocks = true);
+    final data = await _stocksService.getTopStocks();
+    if (mounted) {
+      setState(() {
+        _stocks = data;
+        _isLoadingStocks = false;
+      });
     }
   }
 
@@ -162,95 +218,356 @@ class _MarketScreenState extends State<MarketScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: AppTheme.backgroundColor,
-      child: Stack(
-        children: [
-          Column(
+    return Column(
+      children: [
+        // TabBar como header
+        Container(
+          color: AppTheme.cardDark,
+          child: TabBar(
+            controller: _tabController,
+            indicatorColor: AppTheme.primaryGreen,
+            labelColor: AppTheme.primaryGreen,
+            unselectedLabelColor: AppTheme.textSecondary,
+            tabs: const [
+              Tab(text: 'Crypto'),
+              Tab(text: 'Forex'),
+              Tab(text: 'Ações'),
+            ],
+          ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(AppTheme.paddingMedium),
-                child: TextField(
-                  controller: _searchController,
-                  style: AppTheme.bodyMedium,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar criptomoeda...',
-                    hintStyle: AppTheme.bodyMedium.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: AppTheme.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.cardDark,
-                    border: OutlineInputBorder(
-                      borderRadius: AppTheme.defaultRadius,
-                      borderSide: BorderSide.none,
-                    ),
+              _buildCryptoTab(),
+              _buildForexTab(),
+              _buildStocksTab(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCryptoTab() {
+    return Stack(
+      children: [
+        Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(AppTheme.paddingMedium),
+              child: TextField(
+                controller: _searchController,
+                style: AppTheme.bodyMedium,
+                decoration: InputDecoration(
+                  hintText: 'Buscar criptomoeda...',
+                  hintStyle: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppTheme.textSecondary,
+                  ),
+                  filled: true,
+                  fillColor: AppTheme.cardDark,
+                  border: OutlineInputBorder(
+                    borderRadius: AppTheme.defaultRadius,
+                    borderSide: BorderSide.none,
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppTheme.paddingMedium),
-                child: Row(
-                  children: [
-                    Text(
-                      _selectedFilter,
-                      style: AppTheme.bodyMedium.copyWith(
-                        color: AppTheme.textSecondary,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppTheme.paddingMedium),
+              child: Row(
+                children: [
+                  Text(
+                    _selectedFilter,
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.gapSmall),
+                  Text(
+                    '•',
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.gapSmall),
+                  Text(
+                    'Ordenado por $_selectedSort',
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppTheme.gapSmall),
+            Expanded(
+              child: _isLoadingCrypto
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: AppTheme.primaryGreen,
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadCryptos,
+                      color: AppTheme.primaryGreen,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(AppTheme.paddingMedium),
+                        itemCount: _filteredCryptos.length,
+                        itemBuilder: (context, index) {
+                          return _MarketCryptoCard(
+                            crypto: _filteredCryptos[index],
+                          );
+                        },
                       ),
                     ),
-                    const SizedBox(width: AppTheme.gapSmall),
-                    Text(
-                      '•',
-                      style: AppTheme.bodyMedium.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(width: AppTheme.gapSmall),
-                    Text(
-                      'Ordenado por $_selectedSort',
-                      style: AppTheme.bodyMedium.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
+            ),
+          ],
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton(
+            heroTag: 'market_fab',
+            onPressed: _showFilterModal,
+            backgroundColor: AppTheme.primaryGreen,
+            child: const Icon(Icons.filter_list, color: AppTheme.textPrimary),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildForexTab() {
+    if (_isLoadingForex) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+      );
+    }
+
+    if (_forexPairs == null || _forexPairs!.isEmpty) {
+      return const Center(
+        child: Text(
+          'Nenhum par forex disponível',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadForex,
+      color: AppTheme.primaryGreen,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(AppTheme.paddingMedium),
+        itemCount: _forexPairs!.length,
+        itemBuilder: (context, index) {
+          final pair = _forexPairs![index];
+          return _buildForexItem(pair);
+        },
+      ),
+    );
+  }
+
+  Widget _buildStocksTab() {
+    if (_isLoadingStocks) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+      );
+    }
+
+    if (_stocks == null || _stocks!.isEmpty) {
+      return const Center(
+        child: Text(
+          'Nenhuma ação disponível',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadStocks,
+      color: AppTheme.primaryGreen,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(AppTheme.paddingMedium),
+        itemCount: _stocks!.length,
+        itemBuilder: (context, index) {
+          final stock = _stocks![index];
+          return _buildStockItem(stock);
+        },
+      ),
+    );
+  }
+
+  Widget _buildForexItem(ForexPair pair) {
+    final isPositive = pair.change >= 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppTheme.gapMedium),
+      padding: const EdgeInsets.all(AppTheme.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: AppTheme.defaultRadius,
+        border: Border.all(
+          color: AppTheme.borderDark,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppTheme.cardMedium,
+              borderRadius: AppTheme.smallRadius,
+            ),
+            child: const Icon(
+              Icons.currency_exchange,
+              color: AppTheme.primaryGreen,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppTheme.gapMedium),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  pair.symbol,
+                  style: AppTheme.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  pair.price.toStringAsFixed(5),
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: isPositive
+                      ? AppTheme.greenTransparent20
+                      : AppTheme.redTransparent20,
+                  borderRadius: AppTheme.tinyRadius,
+                ),
+                child: Text(
+                  '${isPositive ? '+' : ''}${pair.changePercent.toStringAsFixed(2)}%',
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: isPositive ? AppTheme.successGreen : AppTheme.errorRed,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const SizedBox(height: AppTheme.gapSmall),
-              Expanded(
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                          color: AppTheme.primaryGreen,
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadCryptos,
-                        color: AppTheme.primaryGreen,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(AppTheme.paddingMedium),
-                          itemCount: _filteredCryptos.length,
-                          itemBuilder: (context, index) {
-                            return _MarketCryptoCard(
-                              crypto: _filteredCryptos[index],
-                            );
-                          },
-                        ),
-                      ),
+              const SizedBox(height: 4),
+              Text(
+                '${isPositive ? '+' : ''}${pair.change.toStringAsFixed(5)}',
+                style: AppTheme.bodySmall.copyWith(
+                  color: isPositive ? AppTheme.successGreen : AppTheme.errorRed,
+                ),
               ),
             ],
           ),
-          Positioned(
-            right: 16,
-            bottom: 16,
-            child: FloatingActionButton(
-              heroTag: 'market_fab',
-              onPressed: _showFilterModal,
-              backgroundColor: AppTheme.primaryGreen,
-              child: const Icon(Icons.filter_list, color: AppTheme.textPrimary),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStockItem(Stock stock) {
+    final isPositive = stock.change >= 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppTheme.gapMedium),
+      padding: const EdgeInsets.all(AppTheme.paddingMedium),
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: AppTheme.defaultRadius,
+        border: Border.all(
+          color: AppTheme.borderDark,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppTheme.cardMedium,
+              borderRadius: AppTheme.smallRadius,
             ),
+            child: const Icon(
+              Icons.trending_up,
+              color: AppTheme.primaryGreen,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: AppTheme.gapMedium),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  stock.symbol,
+                  style: AppTheme.bodyLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '\$${stock.price.toStringAsFixed(2)}',
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: isPositive
+                      ? AppTheme.greenTransparent20
+                      : AppTheme.redTransparent20,
+                  borderRadius: AppTheme.tinyRadius,
+                ),
+                child: Text(
+                  '${isPositive ? '+' : ''}${stock.changePercent.toStringAsFixed(2)}%',
+                  style: AppTheme.bodyMedium.copyWith(
+                    color: isPositive ? AppTheme.successGreen : AppTheme.errorRed,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${isPositive ? '+' : ''}\$${stock.change.toStringAsFixed(2)}',
+                style: AppTheme.bodySmall.copyWith(
+                  color: isPositive ? AppTheme.successGreen : AppTheme.errorRed,
+                ),
+              ),
+            ],
           ),
         ],
       ),

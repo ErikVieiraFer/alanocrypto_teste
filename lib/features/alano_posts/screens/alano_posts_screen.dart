@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../models/alano_post_model.dart';
 import '../../../services/alano_post_service.dart';
 import '../../../widgets/haptic_button.dart';
+import '../../../theme/app_theme.dart';
 
 class AlanoPostsScreen extends StatefulWidget {
   const AlanoPostsScreen({super.key});
@@ -155,15 +156,18 @@ class _AlanoPostsScreenState extends State<AlanoPostsScreen> {
                     setState(() {});
                   },
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.all(16),
                     itemCount: posts.length,
                     itemBuilder: (context, index) {
-                      return AlanoPostCard(
-                        post: posts[index],
-                        currentUserId: _auth.currentUser?.uid ?? '',
-                        onVideoTap: _openVideo,
-                        onViewIncrement: _alanoPostService.incrementViews,
-                        formatTimestamp: _formatTimestamp,
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: AlanoPostCard(
+                          post: posts[index],
+                          currentUserId: _auth.currentUser?.uid ?? '',
+                          onVideoTap: _openVideo,
+                          onViewIncrement: _alanoPostService.incrementViews,
+                          formatTimestamp: _formatTimestamp,
+                        ),
                       );
                     },
                   ),
@@ -199,34 +203,29 @@ class AlanoPostCard extends StatelessWidget {
     final isLiked = post.likedBy.contains(currentUserId);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
             Theme.of(context).colorScheme.surface,
-            Theme.of(context).colorScheme.surface.withOpacity(0.95),
+            Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
           ],
         ),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark ? Colors.grey[800]!.withOpacity(0.3) : Colors.grey[300]!.withOpacity(0.3),
-          width: 1,
-        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.blue.withOpacity(0.05),
+            color: AppTheme.primaryGreen.withValues(alpha: 0.1),
             blurRadius: 24,
             spreadRadius: -4,
             offset: const Offset(0, 12),
@@ -235,169 +234,249 @@ class AlanoPostCard extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'EXCLUSIVO',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      formatTimestamp(post.createdAt),
-                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  post.title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (post.content.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    post.content,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      color: Colors.white,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
-              ],
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: AppTheme.primaryGreen,
+                width: 4,
+              ),
             ),
           ),
-          if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
-            CachedNetworkImage(
-              imageUrl: post.imageUrl!,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                height: 200,
-                color: const Color.fromRGBO(224, 224, 224, 1.0),
-                child: const Center(child: CircularProgressIndicator()),
-              ),
-              errorWidget: (context, url, error) => Container(
-                height: 200,
-                color: const Color.fromRGBO(224, 224, 224, 1.0),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.image_not_supported,
-                      size: 64,
-                      color: Color.fromRGBO(158, 158, 158, 1.0),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'EXCLUSIVO',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          formatTimestamp(post.createdAt),
+                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
-                      'Erro ao carregar imagem',
-                      style: TextStyle(color: Color.fromRGBO(97, 97, 97, 1.0)),
+                      post.title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
+                    if (post.content.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        post.content,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.white,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-            ),
-          if (post.videoUrl != null && post.videoUrl!.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                onVideoTap(post.videoUrl);
-                onViewIncrement(post.id);
-              },
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CachedNetworkImage(
-                    imageUrl: post.autoThumbnailUrl ?? '',
+              if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => _FullScreenImageViewer(
+                          imageUrl: post.imageUrl!,
+                        ),
+                      ),
+                    );
+                  },
+                  child: CachedNetworkImage(
+                    imageUrl: post.imageUrl!,
                     width: double.infinity,
-                    height: 200,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     placeholder: (context, url) => Container(
                       height: 200,
-                      color: Colors.grey[300],
+                      color: const Color.fromRGBO(224, 224, 224, 1.0),
                       child: const Center(child: CircularProgressIndicator()),
                     ),
                     errorWidget: (context, url, error) => Container(
                       height: 200,
-                      color: Colors.grey[300],
+                      color: const Color.fromRGBO(224, 224, 224, 1.0),
                       child: const Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.play_circle_outline, size: 64),
+                          Icon(
+                            Icons.image_not_supported,
+                            size: 64,
+                            color: Color.fromRGBO(158, 158, 158, 1.0),
+                          ),
                           SizedBox(height: 8),
-                          Text('Assistir no YouTube'),
+                          Text(
+                            'Erro ao carregar imagem',
+                            style: TextStyle(color: Color.fromRGBO(97, 97, 97, 1.0)),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(153),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow,
-                      color: Colors.white,
-                      size: 48,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                LikeButton(
-                  isLiked: isLiked,
-                  likeCount: post.likedBy.length,
-                  onPressed: () => AlanoPostService().toggleLike(post.id),
                 ),
-                const SizedBox(width: 24),
-                Row(
+              if (post.videoUrl != null && post.videoUrl!.isNotEmpty)
+                GestureDetector(
+                  onTap: () {
+                    onVideoTap(post.videoUrl);
+                    onViewIncrement(post.id);
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: post.autoThumbnailUrl ?? '',
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          height: 200,
+                          color: Colors.grey[300],
+                          child: const Center(child: CircularProgressIndicator()),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          height: 200,
+                          color: Colors.grey[300],
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.play_circle_outline, size: 64),
+                              SizedBox(height: 8),
+                              Text('Assistir no YouTube'),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 48,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   children: [
-                    Icon(
-                      Icons.visibility_outlined,
-                      color: Colors.grey[600],
-                      size: 22,
+                    LikeButton(
+                      isLiked: isLiked,
+                      likeCount: post.likedBy.length,
+                      onPressed: () => AlanoPostService().toggleLike(post.id),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${post.views}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    const SizedBox(width: 24),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.visibility_outlined,
+                          color: Colors.grey[600],
+                          size: 22,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${post.views}',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Visualizador de imagem em tela cheia (estilo WhatsApp)
+class _FullScreenImageViewer extends StatelessWidget {
+  final String imageUrl;
+
+  const _FullScreenImageViewer({required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Imagem centralizada com zoom
+          Center(
+            child: InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4.0,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                  ),
+                ),
+                errorWidget: (context, url, error) => const Center(
+                  child: Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                    size: 64,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Botão de fechar
+          SafeArea(
+            child: Positioned(
+              top: 16,
+              left: 16,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
             ),
           ),
         ],
-        ),
       ),
     );
   }

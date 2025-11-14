@@ -17,11 +17,21 @@ class _SignupScreenState extends State<SignupScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _accountIdController = TextEditingController();
   final _userService = UserService();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String? _selectedBroker;
+
+  final List<String> _brokers = [
+    'Vantage',
+    'Hantech',
+    'XM',
+    'Pocket Option',
+    'TV Markets',
+  ];
 
   @override
   void dispose() {
@@ -30,6 +40,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _accountIdController.dispose();
     super.dispose();
   }
 
@@ -54,6 +65,8 @@ class _SignupScreenState extends State<SignupScreen> {
           userCredential.user!,
           displayName: _nameController.text.trim(),
           phone: _phoneController.text.trim(),
+          accountId: _accountIdController.text.trim(),
+          broker: _selectedBroker,
         );
 
         if (mounted) {
@@ -249,6 +262,61 @@ class _SignupScreenState extends State<SignupScreen> {
                       }
                       if (phone.length > 20) {
                         return 'Telefone deve ter no máximo 20 caracteres';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  TextFormField(
+                    controller: _accountIdController,
+                    maxLength: 50,
+                    decoration: InputDecoration(
+                      labelText: 'ID da Conta',
+                      hintText: 'Digite o ID/número da sua conta',
+                      prefixIcon: const Icon(Icons.numbers),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      counterText: '',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Digite o ID da sua conta';
+                      }
+                      if (value.length > 50) {
+                        return 'ID deve ter no máximo 50 caracteres';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  DropdownButtonFormField<String>(
+                    value: _selectedBroker,
+                    decoration: InputDecoration(
+                      labelText: 'Corretora',
+                      prefixIcon: const Icon(Icons.business),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: _brokers.map((broker) {
+                      return DropdownMenuItem(
+                        value: broker,
+                        child: Text(broker),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedBroker = value;
+                      });
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Selecione uma corretora';
                       }
                       return null;
                     },

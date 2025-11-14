@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../models/news_article_model.dart';
-import '../../../services/news_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../../services/news_api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/shimmer_loading.dart';
 
@@ -14,26 +14,36 @@ class NewsSection extends StatefulWidget {
 }
 
 class _NewsSectionState extends State<NewsSection> {
-  final NewsService _newsService = NewsService();
-  List<NewsArticleModel> _news = [];
+  late final NewsApiService _newsService;
+  List<NewsArticle> _news = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    final apiKey = dotenv.env['ALPHA_VANTAGE_API_KEY'] ?? '';
+    print('📰 NewsSection iniciado');
+    print('🔑 API Key carregada: ${apiKey.isNotEmpty}');
+    _newsService = NewsApiService(apiKey: apiKey);
     _loadNews();
   }
 
   Future<void> _loadNews() async {
+    print('📰 _loadNews() chamado');
+    setState(() => _isLoading = true);
+
     try {
-      final news = await _newsService.getNews(limit: 6);
+      final articles = await _newsService.getFinancialNews();
+      print('📊 Artigos recebidos no NewsSection: ${articles.length}');
+
       if (mounted) {
         setState(() {
-          _news = news;
+          _news = articles;
           _isLoading = false;
         });
       }
     } catch (e) {
+      print('❌ Erro ao carregar notícias no NewsSection: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -132,7 +142,7 @@ class _NewsSectionState extends State<NewsSection> {
 }
 
 class _NewsCard extends StatelessWidget {
-  final NewsArticleModel article;
+  final NewsArticle article;
 
   const _NewsCard({required this.article});
 
@@ -163,60 +173,66 @@ class _NewsCard extends StatelessWidget {
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                      child: CachedNetworkImage(
-                        imageUrl: article.imageUrl,
-                        width: double.infinity,
-                        height: 160,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: AppTheme.cardMedium,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: AppTheme.primaryGreen,
+                      child: article.imageUrl != null
+                          ? CachedNetworkImage(
+                              imageUrl: article.imageUrl!,
+                              width: double.infinity,
+                              height: 160,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: AppTheme.cardMedium,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppTheme.primaryGreen,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: AppTheme.cardMedium,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: AppTheme.textSecondary,
+                                    size: 48,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Container(
+                              width: double.infinity,
+                              height: 160,
+                              color: AppTheme.cardMedium,
+                              child: Center(
+                                child: Icon(
+                                  Icons.article,
+                                  color: AppTheme.textSecondary,
+                                  size: 48,
+                                ),
+                              ),
                             ),
-                          ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                        errorWidget: (context, url, error) => Container(
-                          color: AppTheme.cardMedium,
-                          child: Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              color: AppTheme.textSecondary,
-                              size: 48,
-                            ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryGreen.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          article.source,
+                          style: AppTheme.bodySmall.copyWith(
+                            color: AppTheme.primaryGreen,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
-                    if (article.tags.isNotEmpty)
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: Wrap(
-                          spacing: 4,
-                          runSpacing: 4,
-                          children: article.tags.take(3).map((tag) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryGreen.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                tag,
-                                style: AppTheme.bodySmall.copyWith(
-                                  color: AppTheme.primaryGreen,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
                   ],
                 ),
                 Expanded(

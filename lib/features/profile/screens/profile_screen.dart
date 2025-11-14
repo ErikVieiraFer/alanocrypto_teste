@@ -24,24 +24,39 @@ class ProfileScreen extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: StreamBuilder<UserModel?>(
-        stream: UserService().getUserStream(effectiveUserId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-            return Center(child: Text('Erro ao carregar perfil: ${snapshot.error}'));
-          }
+    return StreamBuilder<UserModel?>(
+      stream: UserService().getUserStream(effectiveUserId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: AppTheme.backgroundColor,
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+          return Scaffold(
+            backgroundColor: AppTheme.backgroundColor,
+            body: Center(child: Text('Erro ao carregar perfil: ${snapshot.error}')),
+          );
+        }
 
-          final user = snapshot.data!;
-          final isOwnProfile = user.uid == FirebaseAuth.instance.currentUser?.uid;
+        final user = snapshot.data!;
+        final isOwnProfile = user.uid == FirebaseAuth.instance.currentUser?.uid;
 
-          return _ProfileView(user: user, isOwnProfile: isOwnProfile);
-        },
-      ),
+        return Scaffold(
+          backgroundColor: AppTheme.backgroundColor,
+          appBar: !isOwnProfile ? AppBar(
+            backgroundColor: AppTheme.appBarColor,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(user.displayName, style: const TextStyle(color: Colors.white)),
+            elevation: 0,
+          ) : null,
+          body: _ProfileView(user: user, isOwnProfile: isOwnProfile),
+        );
+      },
     );
   }
 }
@@ -123,9 +138,9 @@ class _ProfileView extends StatelessWidget {
                     ],
                   ),
                 ),
-              _UserInfoCard(user: user),
+              _UserInfoCard(user: user, isOwnProfile: isOwnProfile),
               const SizedBox(height: 24),
-              _InfoSection(user: user),
+              _InfoSection(user: user, isOwnProfile: isOwnProfile),
             ],
           ),
         ),
@@ -136,8 +151,9 @@ class _ProfileView extends StatelessWidget {
 
 class _UserInfoCard extends StatelessWidget {
   final UserModel user;
+  final bool isOwnProfile;
 
-  const _UserInfoCard({required this.user});
+  const _UserInfoCard({required this.user, required this.isOwnProfile});
 
   @override
   Widget build(BuildContext context) {
@@ -175,12 +191,14 @@ class _UserInfoCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _StatusBadge(
-                icon: Icons.calendar_today,
-                label: 'Membro desde: $memberSince',
-                color: Colors.blue.shade300,
-              ),
-              const SizedBox(width: 12),
+              if (isOwnProfile)
+                _StatusBadge(
+                  icon: Icons.calendar_today,
+                  label: 'Membro desde: $memberSince',
+                  color: Colors.blue.shade300,
+                ),
+              if (isOwnProfile && user.isApproved)
+                const SizedBox(width: 12),
               if (user.isApproved)
                 _StatusBadge(
                   icon: Icons.verified,
@@ -224,7 +242,9 @@ class _StatusBadge extends StatelessWidget {
 
 class _InfoSection extends StatelessWidget {
   final UserModel user;
-  const _InfoSection({required this.user});
+  final bool isOwnProfile;
+
+  const _InfoSection({required this.user, required this.isOwnProfile});
 
   @override
   Widget build(BuildContext context) {
@@ -249,17 +269,187 @@ class _InfoSection extends StatelessWidget {
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
               children: [
+                // Nome - SEMPRE VISÍVEL
                 _InfoTile(icon: Icons.person_outline, label: 'Nome Completo', value: user.displayName),
-                _InfoTile(icon: Icons.email_outlined, label: 'Email', value: user.email, canCopy: true),
-                _InfoTile(icon: Icons.phone_outlined, label: 'Telefone', value: formattedPhone, canCopy: true),
-                _InfoTile(icon: FontAwesomeIcons.telegram, label: 'Telegram', value: user.telegram ?? 'Não informado'),
+
+                // Email - APENAS PRÓPRIO PERFIL
+                if (isOwnProfile)
+                  _InfoTile(icon: Icons.email_outlined, label: 'Email', value: user.email, canCopy: true),
+
+                // Telefone - APENAS PRÓPRIO PERFIL
+                if (isOwnProfile)
+                  _InfoTile(icon: Icons.phone_outlined, label: 'Telefone', value: formattedPhone, canCopy: true),
+
+                // Telegram - Visível no próprio perfil (editável) ou se preenchido (apenas visualização)
+                if (isOwnProfile || (user.telegram != null && user.telegram!.isNotEmpty))
+                  _InfoTile(
+                    icon: FontAwesomeIcons.telegram,
+                    label: 'Telegram',
+                    value: user.telegram ?? 'Não informado',
+                  ),
+
+                // País - SEMPRE VISÍVEL
                 _InfoTile(icon: Icons.flag_outlined, label: 'País', value: user.country),
+
+                // Plano - SEMPRE VISÍVEL
                 _InfoTile(icon: Icons.star_outline, label: 'Plano', value: user.tier),
+
+                // ID da Conta - APENAS PRÓPRIO PERFIL (sempre visível para editar)
+                if (isOwnProfile)
+                  _InfoTile(
+                    icon: Icons.numbers,
+                    label: 'ID da Conta',
+                    value: user.accountId ?? 'Não informado',
+                    onTap: () => _showEditAccountIdDialog(context, user),
+                  ),
+
+                // Corretora - APENAS PRÓPRIO PERFIL (sempre visível para editar)
+                if (isOwnProfile)
+                  _InfoTile(
+                    icon: Icons.business,
+                    label: 'Corretora',
+                    value: user.broker ?? 'Não informada',
+                    onTap: () => _showEditBrokerDialog(context, user),
+                  ),
               ],
             );
           },
         ),
       ],
+    );
+  }
+
+  void _showEditAccountIdDialog(BuildContext context, UserModel user) {
+    final controller = TextEditingController(text: user.accountId);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.cardDark,
+        title: Text('Editar ID da Conta', style: TextStyle(color: AppTheme.textPrimary)),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            labelText: 'ID da Conta',
+            hintText: 'Digite o ID/número da sua conta',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            filled: true,
+            fillColor: AppTheme.inputBackground,
+          ),
+          maxLength: 50,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancelar', style: TextStyle(color: AppTheme.textSecondary)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('ID da conta não pode ser vazio'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              await UserService().updateUser(
+                userId: user.uid,
+                accountId: controller.text.trim(),
+              );
+
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('ID da conta atualizado'),
+                    backgroundColor: AppTheme.accentGreen,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentGreen,
+            ),
+            child: const Text('Salvar', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditBrokerDialog(BuildContext context, UserModel user) {
+    String? selectedBroker = user.broker;
+    final brokers = ['Vantage', 'Hantech', 'XM', 'Pocket Option', 'TV Markets'];
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: AppTheme.cardDark,
+          title: Text('Editar Corretora', style: TextStyle(color: AppTheme.textPrimary)),
+          content: DropdownButtonFormField<String>(
+            value: selectedBroker,
+            decoration: InputDecoration(
+              labelText: 'Corretora',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              filled: true,
+              fillColor: AppTheme.inputBackground,
+            ),
+            dropdownColor: AppTheme.cardDark,
+            style: const TextStyle(color: Colors.white),
+            items: brokers.map((broker) {
+              return DropdownMenuItem(value: broker, child: Text(broker));
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                selectedBroker = value;
+              });
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancelar', style: TextStyle(color: AppTheme.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (selectedBroker == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Selecione uma corretora'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
+                await UserService().updateUser(
+                  userId: user.uid,
+                  broker: selectedBroker,
+                );
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Corretora atualizada'),
+                      backgroundColor: AppTheme.accentGreen,
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.accentGreen),
+              child: const Text('Salvar', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -269,18 +459,22 @@ class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
   final bool canCopy;
+  final VoidCallback? onTap;
 
-  const _InfoTile({required this.icon, required this.label, required this.value, this.canCopy = false});
+  const _InfoTile({required this.icon, required this.label, required this.value, this.canCopy = false, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.inputBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.inputBackground,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
         children: [
           Icon(icon, color: AppTheme.accentGreen, size: 24),
           const SizedBox(width: 16),
@@ -306,6 +500,7 @@ class _InfoTile extends StatelessWidget {
               },
             ),
         ],
+      ),
       ),
     );
   }

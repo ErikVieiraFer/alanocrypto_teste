@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:alanoapp/theme/app_theme.dart';
 import '../features/dashboard/screen/dashboard_screen.dart';
 
@@ -93,6 +94,11 @@ class _AppDrawerState extends State<AppDrawer> {
                         title: 'Portfólio',
                         onTap: () => _changeTab(context, 9),
                       ),
+                      _buildDrawerItem(
+                        icon: Icons.event_note_rounded,
+                        title: 'Calendário Econômico',
+                        onTap: () => _changeTab(context, 14),
+                      ),
                     ]),
 
                     _buildSection('Aprendizado', [
@@ -125,6 +131,13 @@ class _AppDrawerState extends State<AppDrawer> {
                         onTap: () => _changeTab(context, 12),
                       ),
                     ]),
+
+                    const SizedBox(height: 20),
+
+                    // BOTÃO DE LOGOUT
+                    _buildLogoutButton(context),
+
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -370,6 +383,85 @@ class _AppDrawerState extends State<AppDrawer> {
                 Icon(
                   Icons.arrow_forward_ios_rounded,
                   color: Colors.white.withOpacity(0.8),
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogoutButton(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            // Confirmar logout
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                backgroundColor: AppTheme.cardDark,
+                title: Text('Sair', style: TextStyle(color: AppTheme.textPrimary)),
+                content: Text(
+                  'Deseja realmente sair do aplicativo?',
+                  style: TextStyle(color: AppTheme.textSecondary),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancelar', style: TextStyle(color: AppTheme.textSecondary)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: Text('Sair', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm == true && context.mounted) {
+              await FirebaseAuth.instance.signOut();
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              }
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.red.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.logout_rounded,
+                  color: Colors.red.shade400,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Sair',
+                    style: TextStyle(
+                      color: Colors.red.shade400,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.red.shade400.withOpacity(0.6),
                   size: 16,
                 ),
               ],

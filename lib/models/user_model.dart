@@ -13,6 +13,8 @@ class UserModel {
   final DateTime createdAt;
   final DateTime lastLogin;
   final bool isApproved;
+  final String? accountId;      // ID/Número da conta
+  final String? broker;         // Corretora
 
   UserModel({
     required this.uid,
@@ -27,6 +29,8 @@ class UserModel {
     required this.createdAt,
     required this.lastLogin,
     required this.isApproved,
+    this.accountId,
+    this.broker,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -44,6 +48,8 @@ class UserModel {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       lastLogin: (data['lastLogin'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isApproved: data['approved'] ?? false,
+      accountId: data['accountId'],
+      broker: data['broker'],
     );
   }
 
@@ -60,6 +66,8 @@ class UserModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'lastLogin': Timestamp.fromDate(lastLogin),
       'approved': isApproved,
+      'accountId': accountId,
+      'broker': broker,
     };
   }
 
@@ -76,6 +84,8 @@ class UserModel {
     DateTime? createdAt,
     DateTime? lastLogin,
     bool? isApproved,
+    String? accountId,
+    String? broker,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -90,6 +100,8 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,
       isApproved: isApproved ?? this.isApproved,
+      accountId: accountId ?? this.accountId,
+      broker: broker ?? this.broker,
     );
   }
 }

@@ -16,6 +16,7 @@ import 'package:alanoapp/features/portfolio/screens/portfolio_screen.dart';
 import 'package:alanoapp/features/links/screens/useful_links_screen.dart';
 import 'package:alanoapp/features/support/screens/support_screen.dart';
 import 'package:alanoapp/features/cupula/screens/cupula_coming_soon_screen.dart';
+import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_screen.dart';
 import 'package:alanoapp/services/notification_service.dart';
 import 'package:alanoapp/services/alano_post_service.dart';
 import 'package:alanoapp/services/signal_service.dart';
@@ -58,6 +59,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     const UsefulLinksScreen(), // 11 - Links Úteis
     const SupportScreen(), // 12 - Suporte
     const CupulaComingSoonScreen(), // 13 - A Cúpula
+    const EconomicCalendarScreen(), // 14 - Calendário Econômico
   ];
 
   @override
@@ -260,7 +262,12 @@ class DashboardScreenState extends State<DashboardScreen> {
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      _currentIndex = 4; // Perfil
+                      // Toggle entre Perfil (index 4) e Home (index 0)
+                      if (_currentIndex == 4) {
+                        _currentIndex = 0; // Se já está no perfil, vai pra Home
+                      } else {
+                        _currentIndex = 4; // Se não está no perfil, vai pro Perfil
+                      }
                     });
                   },
                   child: CircleAvatar(
