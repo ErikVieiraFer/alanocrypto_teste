@@ -18,6 +18,9 @@ import 'package:alanoapp/features/support/screens/support_screen.dart';
 import 'package:alanoapp/features/cupula/screens/cupula_coming_soon_screen.dart';
 import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_screen.dart';
 import 'package:alanoapp/services/notification_service.dart';
+import 'package:alanoapp/services/alano_post_service.dart';
+import 'package:alanoapp/services/signal_service.dart';
+import 'package:alanoapp/services/chat_service.dart';
 import '../../../widgets/app_drawer.dart';
 import '../../../widgets/app_logo.dart';
 import '../../../widgets/welcome_notification_dialog.dart';
@@ -37,9 +40,9 @@ class DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
   final NotificationService _notificationService = NotificationService();
-  //   final AlanoPostService _alanoPostService = AlanoPostService();
-  //   final SignalService _signalService = SignalService();
-  //   final ChatService _chatService = ChatService();
+  final AlanoPostService _alanoPostService = AlanoPostService();
+  final SignalService _signalService = SignalService();
+  final ChatService _chatService = ChatService();
   final String? _userId = FirebaseAuth.instance.currentUser?.uid;
 
   // Chaves para SharedPreferences (última visualização)
@@ -47,8 +50,8 @@ class DashboardScreenState extends State<DashboardScreen> {
   static const String _keyLastSignalView = 'last_signal_view';
 
   // Chaves para SharedPreferences (última visualização)
-  //   static const String _keyLastPostView = 'last_post_view';
-  //   static const String _keyLastSignalView = 'last_signal_view';
+  static const String _keyLastPostView = 'last_post_view';
+  static const String _keyLastSignalView = 'last_signal_view';
 
 
   final List<Widget> _screens = [

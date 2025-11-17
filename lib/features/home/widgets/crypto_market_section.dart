@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../../models/crypto_data_model.dart';
 import '../../../services/crypto_market_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../dashboard/screen/dashboard_screen.dart';
 
 class CryptoMarketSection extends StatefulWidget {
   const CryptoMarketSection({super.key});
@@ -75,7 +76,11 @@ class _CryptoMarketSectionState extends State<CryptoMarketSection> {
               ),
               TextButton(
                 onPressed: () {
-                  // TODO: Navegar para tela de mercado completo
+                  // Navega para a tela de mercado através do DashboardScreen
+                  final dashboardState = context.findAncestorStateOfType<DashboardScreenState>();
+                  if (dashboardState != null) {
+                    dashboardState.changeTab(5); // Index 5 = MarketScreen
+                  }
                 },
                 child: Row(
                   children: [

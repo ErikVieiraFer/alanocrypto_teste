@@ -18,12 +18,14 @@ import 'package:alanoapp/features/support/screens/support_screen.dart';
 import 'package:alanoapp/features/cupula/screens/cupula_coming_soon_screen.dart';
 import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_screen.dart';
 import 'package:alanoapp/services/notification_service.dart';
+import 'package:alanoapp/services/alano_post_service.dart';
+import 'package:alanoapp/services/signal_service.dart';
+import 'package:alanoapp/services/chat_service.dart';
 import '../../../widgets/app_drawer.dart';
 import '../../../widgets/app_logo.dart';
 import '../../../widgets/welcome_notification_dialog.dart';
 import '../../../widgets/install_pwa_dialog.dart';
 import '../../../theme/app_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -37,19 +39,10 @@ class DashboardScreenState extends State<DashboardScreen> {
   int _currentIndex = 0;
 
   final NotificationService _notificationService = NotificationService();
-  //   final AlanoPostService _alanoPostService = AlanoPostService();
-  //   final SignalService _signalService = SignalService();
-  //   final ChatService _chatService = ChatService();
+  final AlanoPostService _alanoPostService = AlanoPostService();
+  final SignalService _signalService = SignalService();
+  final ChatService _chatService = ChatService();
   final String? _userId = FirebaseAuth.instance.currentUser?.uid;
-
-  // Chaves para SharedPreferences (última visualização)
-  static const String _keyLastPostView = 'last_post_view';
-  static const String _keyLastSignalView = 'last_signal_view';
-
-  // Chaves para SharedPreferences (última visualização)
-  //   static const String _keyLastPostView = 'last_post_view';
-  //   static const String _keyLastSignalView = 'last_signal_view';
-
 
   final List<Widget> _screens = [
     const HomeScreen(), // 0 - Home (Dashboard)
@@ -68,93 +61,6 @@ class DashboardScreenState extends State<DashboardScreen> {
     const CupulaComingSoonScreen(), // 13 - A Cúpula
     const EconomicCalendarScreen(), // 14 - Calendário Econômico
   ];
-  // ═══════════════════════════════════════════════════════════
-  // MÉTODOS DE GERENCIAMENTO DE ÚLTIMA VISUALIZAÇÃO
-  // ═══════════════════════════════════════════════════════════
-
-  /// Salva timestamp da última visualização de posts
-  Future<void> _saveLastPostView() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_keyLastPostView, DateTime.now().millisecondsSinceEpoch);
-  }
-
-  /// Salva timestamp da última visualização de sinais
-  Future<void> _saveLastSignalView() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_keyLastSignalView, DateTime.now().millisecondsSinceEpoch);
-  }
-
-  /// Retorna timestamp da última visualização de posts
-  Future<DateTime?> _getLastPostView() async {
-    final prefs = await SharedPreferences.getInstance();
-    final timestamp = prefs.getInt(_keyLastPostView);
-    return timestamp != null ? DateTime.fromMillisecondsSinceEpoch(timestamp) : null;
-  }
-
-  /// Retorna timestamp da última visualização de sinais
-  Future<DateTime?> _getLastSignalView() async {
-    final prefs = await SharedPreferences.getInstance();
-    final timestamp = prefs.getInt(_keyLastSignalView);
-    return timestamp != null ? DateTime.fromMillisecondsSinceEpoch(timestamp) : null;
-  }
-
-  // ═══════════════════════════════════════════════════════════
-  // STREAMS PARA DETECTAR NOVOS CONTEÚDOS
-  // ═══════════════════════════════════════════════════════════
-
-  /// Stream que verifica se há novos posts
-  Stream<bool> _hasNewPosts() async* {
-    final lastView = await _getLastPostView();
-    
-    yield* FirebaseFirestore.instance
-        .collection('alano_posts')
-        .orderBy('createdAt', descending: true)
-        .limit(1)
-        .snapshots()
-        .map((snapshot) {
-      if (snapshot.docs.isEmpty) return false;
-      if (lastView == null) return true;
-
-      final latestPost = snapshot.docs.first.data();
-      final postTimestamp = (latestPost['createdAt'] as Timestamp?)?.toDate();
-
-      return postTimestamp != null && postTimestamp.isAfter(lastView);
-    });
-  }
-
-  /// Stream que verifica se há novos sinais
-  Stream<bool> _hasNewSignals() async* {
-    final lastView = await _getLastSignalView();
-    
-    yield* FirebaseFirestore.instance
-        .collection('signals')
-        .orderBy('createdAt', descending: true)
-        .limit(1)
-        .snapshots()
-        .map((snapshot) {
-      if (snapshot.docs.isEmpty) return false;
-      if (lastView == null) return true;
-
-      final latestSignal = snapshot.docs.first.data();
-      final signalTimestamp = (latestSignal['createdAt'] as Timestamp?)?.toDate();
-
-      return signalTimestamp != null && signalTimestamp.isAfter(lastView);
-    });
-  }
-
-  /// Stream que verifica se há mensagens no chat
-  Stream<bool> _hasUnreadChat() {
-    if (_userId == null) return Stream.value(false);
-    
-    return FirebaseFirestore.instance
-        .collection('chat_messages')
-        .orderBy('timestamp', descending: true)
-        .limit(10)
-        .snapshots()
-        .map((snapshot) => snapshot.docs.isNotEmpty);
-  }
-
-
 
   @override
   void initState() {

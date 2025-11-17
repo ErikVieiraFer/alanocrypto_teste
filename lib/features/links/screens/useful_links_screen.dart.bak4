@@ -82,6 +82,7 @@ class UsefulLinksScreen extends StatelessWidget {
       builder: (context) {
         return Container(
           margin: EdgeInsets.only(bottom: AppTheme.gapMedium),
+          decoration: BoxDecoration(
           decoration: AppTheme.modernCard(),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,

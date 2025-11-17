@@ -617,6 +617,7 @@ class _MarketCryptoCard extends StatelessWidget {
           child: Ink(
             padding: const EdgeInsets.all(AppTheme.paddingMedium),
             decoration: AppTheme.modernCard(),
+            ),
             child: Row(
               children: [
                 Container(

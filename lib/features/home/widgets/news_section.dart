@@ -58,38 +58,10 @@ class _NewsSectionState extends State<NewsSection> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppTheme.mobileHorizontalPadding),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.article, color: AppTheme.primaryGreen, size: 24),
-                  const SizedBox(width: 8),
-                  Text('Notícias', style: AppTheme.heading2),
-                ],
-              ),
-              TextButton(
-                onPressed: () {
-                  // TODO: Navegar para tela de notícias completa
-                },
-                child: Row(
-                  children: [
-                    Text(
-                      'Ver Mais',
-                      style: TextStyle(
-                        color: AppTheme.primaryGreen,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      color: AppTheme.primaryGreen,
-                      size: 14,
-                    ),
-                  ],
-                ),
-              ),
+              Icon(Icons.article, color: AppTheme.primaryGreen, size: 24),
+              const SizedBox(width: 8),
+              Text('Notícias', style: AppTheme.heading2),
             ],
           ),
         ),
