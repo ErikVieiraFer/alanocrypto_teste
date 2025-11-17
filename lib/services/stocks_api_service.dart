@@ -2,44 +2,58 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class StocksApiService {
-  static const String _baseUrl = 'https://www.alphavantage.co/query';
-  final String apiKey;
-
-  StocksApiService({required this.apiKey});
+  static const String _cloudFunctionUrl =
+    'https://gettopstocks-yoas3thzsq-uc.a.run.app';
 
   Future<List<Stock>> getTopStocks() async {
-    // Lista de ações populares para buscar
-    final symbols = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'JPM'];
-    List<Stock> stocks = [];
-
     try {
-      // Buscar cotações em lote
-      for (String symbol in symbols.take(5)) { // Limitar a 5 para não estourar API
-        final response = await http.get(
-          Uri.parse('$_baseUrl?function=GLOBAL_QUOTE&symbol=$symbol&apikey=$apiKey'),
-        );
+      print('📈 Buscando top ações via Cloud Function...');
+      print('🔗 URL: $_cloudFunctionUrl');
 
-        if (response.statusCode == 200) {
-          final data = json.decode(response.body);
+      final response = await http.get(
+        Uri.parse(_cloudFunctionUrl),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
 
-          if (data.containsKey('Global Quote')) {
-            final quote = data['Global Quote'];
+      print('📡 Status code: ${response.statusCode}');
 
-            if (quote.isNotEmpty) {
-              stocks.add(Stock.fromJson(quote));
-            }
-          }
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['stocks'] != null) {
+          final List<dynamic> stocks = data['stocks'];
+
+          print('✅ ${stocks.length} ações encontradas');
+
+          return stocks.map((stock) {
+            final quote = stock['data'];
+            return Stock(
+              symbol: stock['symbol'],
+              price: double.tryParse(quote['05. price']?.toString() ?? '0') ?? 0.0,
+              change: double.tryParse(quote['09. change']?.toString() ?? '0') ?? 0.0,
+              changePercent: _parseChangePercent(quote['10. change percent']),
+              volume: int.tryParse(quote['06. volume']?.toString() ?? '0') ?? 0,
+            );
+          }).toList();
+        } else {
+          print('⚠️ Resposta sem campo "stocks"');
+          return [];
         }
-
-        // Pequeno delay para não sobrecarregar API
-        await Future.delayed(const Duration(milliseconds: 500));
+      } else {
+        print('❌ Erro HTTP: ${response.statusCode}');
+        return [];
       }
-
-      return stocks;
-    } catch (e) {
-      print('Error fetching stocks data: $e');
+    } catch (e, stackTrace) {
+      print('❌ Erro ao buscar ações: $e');
+      print('📍 Stack: $stackTrace');
       return [];
     }
+  }
+
+  double _parseChangePercent(String? value) {
+    if (value == null) return 0.0;
+    final cleaned = value.replaceAll('%', '').replaceAll('+', '');
+    return double.tryParse(cleaned) ?? 0.0;
   }
 }
 
@@ -48,7 +62,7 @@ class Stock {
   final double price;
   final double change;
   final double changePercent;
-  final String volume;
+  final int volume;
 
   Stock({
     required this.symbol,
@@ -57,16 +71,4 @@ class Stock {
     required this.changePercent,
     required this.volume,
   });
-
-  factory Stock.fromJson(Map<String, dynamic> json) {
-    return Stock(
-      symbol: json['01. symbol'] ?? '',
-      price: double.tryParse(json['05. price'] ?? '0') ?? 0.0,
-      change: double.tryParse(json['09. change'] ?? '0') ?? 0.0,
-      changePercent: double.tryParse(
-        (json['10. change percent'] ?? '0%').replaceAll('%', '')
-      ) ?? 0.0,
-      volume: json['06. volume'] ?? '0',
-    );
-  }
 }

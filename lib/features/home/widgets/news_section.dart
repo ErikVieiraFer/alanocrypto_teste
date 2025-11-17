@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../services/news_api_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/shimmer_loading.dart';
@@ -21,10 +20,10 @@ class _NewsSectionState extends State<NewsSection> {
   @override
   void initState() {
     super.initState();
-    final apiKey = dotenv.env['ALPHA_VANTAGE_API_KEY'] ?? '';
+
     print('📰 NewsSection iniciado');
-    print('🔑 API Key carregada: ${apiKey.isNotEmpty}');
-    _newsService = NewsApiService(apiKey: apiKey);
+
+    _newsService = NewsApiService();  // Sem API key - usa Cloud Function
     _loadNews();
   }
 
@@ -52,6 +51,8 @@ class _NewsSectionState extends State<NewsSection> {
 
   @override
   Widget build(BuildContext context) {
+    print('🏗️ NewsSection build() - isLoading: $_isLoading, newsCount: ${_news.length}');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -85,15 +86,37 @@ class _NewsSectionState extends State<NewsSection> {
                     right: AppTheme.mobileHorizontalPadding,
                   ),
                   itemCount: 3,
-                  itemBuilder: (context, index) => const NewsCardShimmer(),
+                  itemBuilder: (context, index) {
+                    print('🔄 Renderizando shimmer $index');
+                    return const NewsCardShimmer();
+                  },
                 )
               : _news.isEmpty
                   ? Center(
-                      child: Text(
-                        'Nenhuma notícia disponível',
-                        style: AppTheme.bodyMedium.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                        ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.newspaper,
+                            size: 64,
+                            color: AppTheme.textTertiary,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Nenhuma notícia disponível',
+                            style: AppTheme.bodyMedium.copyWith(
+                              color: Colors.white.withOpacity(0.9),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: _loadNews,
+                            child: Text(
+                              'Tentar novamente',
+                              style: TextStyle(color: AppTheme.primaryGreen),
+                            ),
+                          ),
+                        ],
                       ),
                     )
                   : ListView.builder(
@@ -104,6 +127,7 @@ class _NewsSectionState extends State<NewsSection> {
                       ),
                       itemCount: _news.length,
                       itemBuilder: (context, index) {
+                        print('📰 Renderizando card de notícia ${index + 1}/${_news.length}: ${_news[index].title.substring(0, 30)}...');
                         return _NewsCard(article: _news[index]);
                       },
                     ),
@@ -127,13 +151,18 @@ class _NewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('🃏 _NewsCard build() - title: ${article.title.substring(0, 30)}..., hasImage: ${article.imageUrl != null}');
+
     return Container(
       width: 280,
       margin: const EdgeInsets.only(right: AppTheme.mobileCardSpacing),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _launchUrl(article.url),
+          onTap: () {
+            print('🔗 Card clicado: ${article.url}');
+            _launchUrl(article.url);
+          },
           borderRadius: AppTheme.largeRadius,
           splashColor: AppTheme.primaryGreen.withOpacity(0.1),
           child: Ink(
@@ -151,24 +180,30 @@ class _NewsCard extends StatelessWidget {
                               width: double.infinity,
                               height: 160,
                               fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
-                                color: AppTheme.cardMedium,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: AppTheme.primaryGreen,
+                              placeholder: (context, url) {
+                                print('🖼️ Carregando imagem: $url');
+                                return Container(
+                                  color: AppTheme.cardMedium,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      color: AppTheme.primaryGreen,
+                                    ),
                                   ),
-                                ),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                color: AppTheme.cardMedium,
-                                child: Center(
-                                  child: Icon(
-                                    Icons.image_not_supported,
-                                    color: AppTheme.textSecondary,
-                                    size: 48,
+                                );
+                              },
+                              errorWidget: (context, url, error) {
+                                print('⚠️ Erro ao carregar imagem: $error');
+                                return Container(
+                                  color: AppTheme.cardMedium,
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.image_not_supported,
+                                      color: AppTheme.textSecondary,
+                                      size: 48,
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             )
                           : Container(
                               width: double.infinity,

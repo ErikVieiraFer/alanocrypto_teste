@@ -73,7 +73,8 @@ class AlanoPost {
   String? get autoThumbnailUrl {
     final id = videoId;
     if (id != null) {
-      return 'https://img.youtube.com/vi/$id/maxresdefault.jpg';
+      // Usar 0.jpg - formato sem CORS e mais confiável
+      return 'https://img.youtube.com/vi/$id/0.jpg';
     }
     return thumbnailUrl;
   }

@@ -3,62 +3,65 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 
 class EconomicCalendarService {
-  static const String _baseUrl = 'https://financialmodelingprep.com/api/v3';
-  final String apiKey;
-
-  EconomicCalendarService({required this.apiKey});
+  // URL da Cloud Function (será preenchida após deploy)
+  static const String _cloudFunctionUrl =
+    'https://us-central1-alanocryptofx-v2.cloudfunctions.net/getEconomicCalendar';
 
   Future<List<EconomicEvent>> getEconomicCalendar({int days = 7}) async {
     try {
-      final now = DateTime.now();
-      final fromDate = now.subtract(const Duration(days: 1));
-      final toDate = now.add(Duration(days: days));
+      print('📅 Buscando calendário econômico via Cloud Function...');
+      print('🔗 URL: $_cloudFunctionUrl');
 
-      final from = _formatDate(fromDate);
-      final to = _formatDate(toDate);
-
-      print('📅 Buscando eventos de $from até $to');
-
-      final url = '$_baseUrl/economic_calendar?from=$from&to=$to&apikey=$apiKey';
-      print('🔗 URL: $url');
-
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(
+        Uri.parse(_cloudFunctionUrl),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 15));
 
       print('📡 Status code: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final data = json.decode(response.body);
 
-        print('✅ ${data.length} eventos encontrados');
+        print('📊 Resposta recebida');
 
-        if (data.isEmpty) {
+        if (data['status'] == true && data['response'] != null) {
+          final List<dynamic> responseData = data['response'];
+
+          print('✅ ${responseData.length} eventos encontrados');
+
+          if (responseData.isEmpty) {
+            return [];
+          }
+
+          final events = responseData
+              .map((item) {
+                try {
+                  return EconomicEvent.fromJson(item);
+                } catch (e) {
+                  print('⚠️ Erro ao parsear evento: $e');
+                  return null;
+                }
+              })
+              .whereType<EconomicEvent>()
+              .toList()
+            ..sort((a, b) => a.date.compareTo(b.date));
+
+          print('✅ ${events.length} eventos parseados com sucesso');
+
+          return events;
+        } else {
+          print('⚠️ Status false ou sem eventos');
           return [];
         }
-
-        return data
-            .map((item) {
-              try {
-                return EconomicEvent.fromJson(item);
-              } catch (e) {
-                print('❌ Erro ao parsear evento: $e');
-                return null;
-              }
-            })
-            .whereType<EconomicEvent>()
-            .toList()
-          ..sort((a, b) => a.date.compareTo(b.date));
+      } else {
+        print('❌ Erro HTTP: ${response.statusCode}');
+        return [];
       }
-
-      return [];
     } catch (e, stackTrace) {
       print('❌ Erro ao buscar calendário: $e');
       print('📍 Stack: $stackTrace');
       return [];
     }
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }
 
@@ -66,10 +69,12 @@ class EconomicEvent {
   final String title;
   final String country;
   final DateTime date;
-  final String impact;
+  final String impact; // Vamos converter importance -> impact
   final String? previous;
-  final String? estimate;
+  final String? forecast;
   final String? actual;
+  final String? indicator;
+  final String? comment;
 
   EconomicEvent({
     required this.title,
@@ -77,36 +82,67 @@ class EconomicEvent {
     required this.date,
     required this.impact,
     this.previous,
-    this.estimate,
+    this.forecast,
     this.actual,
+    this.indicator,
+    this.comment,
   });
 
   factory EconomicEvent.fromJson(Map<String, dynamic> json) {
-    // Determinar impacto baseado no evento
-    String determineImpact(String event) {
-      final highImpact = ['gdp', 'employment', 'interest rate', 'inflation', 'nonfarm'];
-      final mediumImpact = ['retail', 'manufacturing', 'consumer', 'pmi'];
+    // Parse da data (formato: "2025-11-16 11:00:00")
+    DateTime parseDate(dynamic dateValue) {
+      if (dateValue == null) return DateTime.now();
 
-      final eventLower = event.toLowerCase();
-
-      if (highImpact.any((keyword) => eventLower.contains(keyword))) {
-        return 'High';
-      } else if (mediumImpact.any((keyword) => eventLower.contains(keyword))) {
-        return 'Medium';
+      try {
+        if (dateValue is String) {
+          // Remover possível timezone
+          final cleaned = dateValue.split('.')[0].trim();
+          return DateTime.parse(cleaned.replaceAll(' ', 'T'));
+        } else if (dateValue is int) {
+          return DateTime.fromMillisecondsSinceEpoch(dateValue * 1000);
+        }
+      } catch (e) {
+        print('⚠️ Erro ao parsear data "$dateValue": $e');
       }
-      return 'Low';
+
+      return DateTime.now();
     }
 
-    final event = json['event'] ?? '';
+    // Converter importance (0-3) para impact (Low/Medium/High)
+    String convertImportanceToImpact(dynamic importance) {
+      if (importance == null) return 'Low';
+
+      final importanceValue = int.tryParse(importance.toString()) ?? 0;
+
+      switch (importanceValue) {
+        case 3:
+          return 'High';
+        case 2:
+          return 'Medium';
+        case 1:
+          return 'Low';
+        default:
+          return 'Low';
+      }
+    }
+
+    final title = json['title'] ?? json['event'] ?? json['name'] ?? '';
+    final country = json['country'] ?? '';
+    final date = parseDate(json['date'] ?? json['time']);
+    final impact = convertImportanceToImpact(json['importance']);
+
+    print('📋 Parseando evento: $title ($country) - Importance: ${json['importance']} -> Impact: $impact');
 
     return EconomicEvent(
-      title: event,
-      country: json['country'] ?? '',
-      date: DateTime.parse(json['date'] ?? DateTime.now().toIso8601String()),
-      impact: json['impact'] ?? determineImpact(event),
+      title: title,
+      country: country,
+      date: date,
+      impact: impact,
       previous: json['previous']?.toString(),
-      estimate: json['estimate']?.toString(),
+      forecast: json['forecast']?.toString() ?? json['estimate']?.toString(),
       actual: json['actual']?.toString(),
+      indicator: json['indicator']?.toString(),
+      comment: json['comment']?.toString(),
     );
   }
 
@@ -118,6 +154,17 @@ class EconomicEvent {
         return Colors.orange;
       default:
         return Colors.grey;
+    }
+  }
+
+  String getImpactLabel() {
+    switch (impact.toLowerCase()) {
+      case 'high':
+        return 'ALTA';
+      case 'medium':
+        return 'MÉDIA';
+      default:
+        return 'BAIXA';
     }
   }
 }

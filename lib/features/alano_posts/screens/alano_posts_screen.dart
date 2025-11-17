@@ -329,21 +329,48 @@ class AlanoPostCard extends StatelessWidget {
                         fit: BoxFit.cover,
                         placeholder: (context, url) => Container(
                           height: 200,
-                          color: Colors.grey[300],
-                          child: const Center(child: CircularProgressIndicator()),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          height: 200,
-                          color: Colors.grey[300],
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.play_circle_outline, size: 64),
-                              SizedBox(height: 8),
-                              Text('Assistir no YouTube'),
-                            ],
+                          color: AppTheme.cardDark,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.primaryGreen,
+                            ),
                           ),
                         ),
+                        errorWidget: (context, url, error) {
+                          print('⚠️ Erro ao carregar thumbnail do YouTube: $error');
+                          return Container(
+                            height: 200,
+                            color: AppTheme.cardDark,
+                            child: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.play_circle_outline,
+                                    size: 64,
+                                    color: AppTheme.primaryGreen,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Vídeo do YouTube',
+                                    style: TextStyle(
+                                      color: AppTheme.textSecondary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Toque para assistir',
+                                    style: TextStyle(
+                                      color: AppTheme.textTertiary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       Container(
                         padding: const EdgeInsets.all(16),

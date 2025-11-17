@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../models/crypto_data_model.dart';
 import '../../../services/crypto_market_service.dart';
 import '../../../services/forex_api_service.dart';
@@ -43,12 +42,8 @@ class _MarketScreenState extends State<MarketScreen> with SingleTickerProviderSt
 
     _cryptoService = CryptoMarketService();
 
-    // Carregar API keys do arquivo .env
-    final alphaVantageKey = dotenv.env['ALPHA_VANTAGE_API_KEY'] ?? '';
-    final fcsKey = dotenv.env['FCS_API_KEY'] ?? '';
-
-    _forexService = ForexApiService(apiKey: fcsKey);
-    _stocksService = StocksApiService(apiKey: alphaVantageKey);
+    _forexService = ForexApiService();  // Sem API key - usa Cloud Function
+    _stocksService = StocksApiService();  // Sem API key - usa Cloud Function
 
     _loadCryptos();
     _searchController.addListener(_filterCryptos);

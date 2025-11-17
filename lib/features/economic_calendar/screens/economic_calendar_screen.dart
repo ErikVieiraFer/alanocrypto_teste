@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/intl.dart';
 import '../../../services/economic_calendar_service.dart';
 import '../../../theme/app_theme.dart';
@@ -19,9 +18,10 @@ class _EconomicCalendarScreenState extends State<EconomicCalendarScreen> {
   @override
   void initState() {
     super.initState();
-    // Carregar FMP API key do arquivo .env
-    final apiKey = dotenv.env['FMP_API_KEY'] ?? '';
-    _calendarService = EconomicCalendarService(apiKey: apiKey);
+
+    // SEM API KEY - usa Cloud Function
+    _calendarService = EconomicCalendarService();
+
     _loadCalendar();
   }
 
@@ -135,15 +135,15 @@ class _EconomicCalendarScreenState extends State<EconomicCalendarScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            if (event.previous != null || event.estimate != null || event.actual != null)
+            if (event.previous != null || event.forecast != null || event.actual != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Row(
                   children: [
                     if (event.previous != null)
                       _buildDataChip('Anterior', event.previous!),
-                    if (event.estimate != null)
-                      _buildDataChip('Previsão', event.estimate!),
+                    if (event.forecast != null)
+                      _buildDataChip('Previsão', event.forecast!),
                     if (event.actual != null)
                       _buildDataChip('Atual', event.actual!, highlight: true),
                   ],
