@@ -19,24 +19,21 @@ class WelcomeNotificationDialog extends StatelessWidget {
     await prefs.setBool(_keyShownBefore, true);
   }
 
-  /// Mostra o diálogo apenas na primeira vez
+  /// Mostra o diálogo (sempre, a menos que usuário tenha escolhido não mostrar)
   static Future<void> showIfNeeded(BuildContext context) async {
-    // Verifica se dialog já foi mostrado
-    if (!await shouldShow()) {
-      print('✅ Dialog de boas-vindas já foi mostrado anteriormente');
+    // Verifica se usuário optou por não mostrar mais
+    if (await shouldShow()) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (context.mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: true, // Permite fechar clicando fora
+          builder: (context) => const WelcomeNotificationDialog(),
+        );
+      }
+    } else {
+      // Se usuário marcou "não mostrar", respeita a escolha
       return;
-    }
-
-    // MARCA COMO MOSTRADO ANTES DE EXIBIR (previne duplicação)
-    await markAsShown();
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (context.mounted) {
-      await showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (context) => const WelcomeNotificationDialog(),
-      );
     }
   }
 
@@ -211,17 +208,22 @@ class WelcomeNotificationDialog extends StatelessWidget {
 
                   const SizedBox(height: 8),
 
-                  // Botão discreto "Fechar"
+                  // Botão discreto "Não mostrar mais"
                   Center(
                     child: TextButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: () async {
+                        await markAsShown();
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                        }
+                      },
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         minimumSize: Size.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: Text(
-                        'Fechar',
+                        'Não mostrar mais',
                         style: TextStyle(
                           fontSize: 11,
                           color: AppTheme.textSecondary.withOpacity(0.5),
