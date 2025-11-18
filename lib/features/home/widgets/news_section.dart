@@ -20,20 +20,15 @@ class _NewsSectionState extends State<NewsSection> {
   @override
   void initState() {
     super.initState();
-
-    print('📰 NewsSection iniciado');
-
     _newsService = NewsApiService();  // Sem API key - usa Cloud Function
     _loadNews();
   }
 
   Future<void> _loadNews() async {
-    print('📰 _loadNews() chamado');
     setState(() => _isLoading = true);
 
     try {
       final articles = await _newsService.getFinancialNews();
-      print('📊 Artigos recebidos no NewsSection: ${articles.length}');
 
       if (mounted) {
         setState(() {
@@ -42,7 +37,7 @@ class _NewsSectionState extends State<NewsSection> {
         });
       }
     } catch (e) {
-      print('❌ Erro ao carregar notícias no NewsSection: $e');
+      print('❌ Erro ao carregar notícias: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -51,7 +46,6 @@ class _NewsSectionState extends State<NewsSection> {
 
   @override
   Widget build(BuildContext context) {
-    print('🏗️ NewsSection build() - isLoading: $_isLoading, newsCount: ${_news.length}');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +81,6 @@ class _NewsSectionState extends State<NewsSection> {
                   ),
                   itemCount: 3,
                   itemBuilder: (context, index) {
-                    print('🔄 Renderizando shimmer $index');
                     return const NewsCardShimmer();
                   },
                 )
@@ -127,7 +120,6 @@ class _NewsSectionState extends State<NewsSection> {
                       ),
                       itemCount: _news.length,
                       itemBuilder: (context, index) {
-                        print('📰 Renderizando card de notícia ${index + 1}/${_news.length}: ${_news[index].title.substring(0, 30)}...');
                         return _NewsCard(article: _news[index]);
                       },
                     ),
@@ -151,18 +143,13 @@ class _NewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('🃏 _NewsCard build() - title: ${article.title.substring(0, 30)}..., hasImage: ${article.imageUrl != null}');
-
     return Container(
       width: 280,
       margin: const EdgeInsets.only(right: AppTheme.mobileCardSpacing),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            print('🔗 Card clicado: ${article.url}');
-            _launchUrl(article.url);
-          },
+          onTap: () => _launchUrl(article.url),
           borderRadius: AppTheme.largeRadius,
           splashColor: AppTheme.primaryGreen.withOpacity(0.1),
           child: Ink(
@@ -180,30 +167,24 @@ class _NewsCard extends StatelessWidget {
                               width: double.infinity,
                               height: 160,
                               fit: BoxFit.cover,
-                              placeholder: (context, url) {
-                                print('🖼️ Carregando imagem: $url');
-                                return Container(
-                                  color: AppTheme.cardMedium,
-                                  child: Center(
-                                    child: CircularProgressIndicator(
-                                      color: AppTheme.primaryGreen,
-                                    ),
+                              placeholder: (context, url) => Container(
+                                color: AppTheme.cardMedium,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppTheme.primaryGreen,
                                   ),
-                                );
-                              },
-                              errorWidget: (context, url, error) {
-                                print('⚠️ Erro ao carregar imagem: $error');
-                                return Container(
-                                  color: AppTheme.cardMedium,
-                                  child: Center(
-                                    child: Icon(
-                                      Icons.image_not_supported,
-                                      color: AppTheme.textSecondary,
-                                      size: 48,
-                                    ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: AppTheme.cardMedium,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: AppTheme.textSecondary,
+                                    size: 48,
                                   ),
-                                );
-                              },
+                                ),
+                              ),
                             )
                           : Container(
                               width: double.infinity,

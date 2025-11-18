@@ -259,6 +259,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Center(
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppTheme.accentGreen,
+                              width: 3,
+                            ),
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/logo.jpeg',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                       Text(
                         'Entrar',
                         style: TextStyle(

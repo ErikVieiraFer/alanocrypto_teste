@@ -7,7 +7,7 @@ import '../../../theme/app_theme.dart';
 import '../../home/screens/comments_screen.dart';
 import '../../signals/screens/signals_screen.dart';
 import '../../alano_posts/screens/alano_posts_screen.dart';
-import '../../home/screens/group_chat_screen.dart';
+import '../../dashboard/screen/dashboard_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -26,6 +26,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.chat_bubble_outline;
       case NotificationType.like:
         return Icons.favorite_border;
+      case NotificationType.mention:
+        return Icons.alternate_email;
       case NotificationType.chatReply:
         return Icons.reply;
       case NotificationType.chatReaction:
@@ -65,13 +67,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           MaterialPageRoute(builder: (context) => const AlanoPostsScreen()),
         );
         break;
+      case NotificationType.mention:
       case NotificationType.chatReply:
       case NotificationType.chatReaction:
-        // Navega para a tela de chat em grupo
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const GroupChatScreen()),
-        );
+        // Navega para a tela de chat em grupo através do Dashboard
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => const DashboardScreen(initialIndex: 1),
+            ),
+          );
+        }
         break;
       default:
         // Não faz nada para tipos desconhecidos

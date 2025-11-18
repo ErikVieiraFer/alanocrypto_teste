@@ -134,6 +134,22 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         );
       }
 
+      // Criar notificações para menções
+      if (mentions.isNotEmpty) {
+        for (final mention in mentions) {
+          // Não notificar se mencionar a si mesmo
+          if (mention.userId != _currentUser!.uid) {
+            await _notificationService.createNotification(
+              userId: mention.userId,
+              type: NotificationType.mention,
+              title: '${userModel?.displayName ?? _currentUser!.displayName ?? 'Usuário'} mencionou você',
+              content: text.length > 50 ? '${text.substring(0, 50)}...' : text,
+              relatedId: _currentUser!.uid,
+            );
+          }
+        }
+      }
+
       setState(() {
         _replyToMessage = null;
       });

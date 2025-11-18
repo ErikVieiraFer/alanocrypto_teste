@@ -76,6 +76,14 @@ class AlanoPost {
       // Usar 0.jpg - formato sem CORS e mais confiável
       return 'https://img.youtube.com/vi/$id/0.jpg';
     }
+
+    // Ignorar thumbnailUrl se for da URL problemática com CORS
+    if (thumbnailUrl != null &&
+        (thumbnailUrl!.contains('i3.ytimg.com') ||
+         thumbnailUrl!.contains('vi_webp'))) {
+      return null; // Não usar thumbnail problemática
+    }
+
     return thumbnailUrl;
   }
 }

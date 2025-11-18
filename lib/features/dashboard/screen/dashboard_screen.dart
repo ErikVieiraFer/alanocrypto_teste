@@ -26,7 +26,12 @@ import '../../../theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final int initialIndex;
+
+  const DashboardScreen({
+    super.key,
+    this.initialIndex = 0,
+  });
 
   @override
   State<DashboardScreen> createState() => DashboardScreenState();
@@ -34,7 +39,7 @@ class DashboardScreen extends StatefulWidget {
 
 class DashboardScreenState extends State<DashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   final NotificationService _notificationService = NotificationService();
   //   final AlanoPostService _alanoPostService = AlanoPostService();
@@ -159,6 +164,9 @@ class DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Inicializar com o índice fornecido
+    _currentIndex = widget.initialIndex;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args =

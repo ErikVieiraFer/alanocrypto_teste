@@ -7,8 +7,6 @@ class NewsApiService {
     'https://getnews-yoas3thzsq-uc.a.run.app';
 
   List<NewsArticle> _getMockNews() {
-    print('📰 Usando notícias mockadas como fallback');
-
     final now = DateTime.now();
 
     return [
@@ -67,30 +65,21 @@ class NewsApiService {
     // Verificar cache
     final cachedNews = await _getCachedNews();
     if (cachedNews != null && cachedNews.isNotEmpty) {
-      print('📦 Usando notícias do cache (${cachedNews.length} artigos)');
       return cachedNews;
     }
 
     try {
-      print('🔍 Buscando notícias via Cloud Function...');
-      print('🔗 URL: $_cloudFunctionUrl');
-
       final response = await http.get(
         Uri.parse(_cloudFunctionUrl),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 15));
 
-      print('📡 Status code: ${response.statusCode}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-
-        print('📄 Response keys: ${data.keys.toList()}');
 
         // Verificar rate limit
         if (data.containsKey('Information')) {
           print('⚠️ Alpha Vantage rate limit: ${data['Information']}');
-          print('💡 Usando notícias mockadas como fallback');
           final mockNews = _getMockNews();
           await _cacheNews(mockNews);
           return mockNews;
@@ -99,7 +88,6 @@ class NewsApiService {
         // Verificar erro
         if (data.containsKey('Error Message')) {
           print('❌ Erro da API: ${data['Error Message']}');
-          print('💡 Usando notícias mockadas como fallback');
           final mockNews = _getMockNews();
           await _cacheNews(mockNews);
           return mockNews;
@@ -110,14 +98,10 @@ class NewsApiService {
           final List<dynamic> feed = data['feed'];
 
           if (feed.isEmpty) {
-            print('⚠️ API retornou 0 artigos');
-            print('💡 Usando notícias mockadas como fallback');
             final mockNews = _getMockNews();
             await _cacheNews(mockNews);
             return mockNews;
           }
-
-          print('✅ ${feed.length} notícias encontradas na API');
 
           final articles = feed.take(10).map((article) {
             return NewsArticle(
@@ -135,22 +119,18 @@ class NewsApiService {
           await _cacheNews(articles);
           return articles;
         } else {
-          print('⚠️ Resposta sem campo "feed" válido');
-          print('💡 Usando notícias mockadas como fallback');
           final mockNews = _getMockNews();
           await _cacheNews(mockNews);
           return mockNews;
         }
       } else {
-        print('❌ Erro HTTP: ${response.statusCode}');
-        print('💡 Usando notícias mockadas como fallback');
+        print('❌ Erro HTTP ao buscar notícias: ${response.statusCode}');
         final mockNews = _getMockNews();
         await _cacheNews(mockNews);
         return mockNews;
       }
     } catch (e) {
       print('❌ Erro ao buscar notícias: $e');
-      print('💡 Usando notícias mockadas como fallback');
       final mockNews = _getMockNews();
       await _cacheNews(mockNews);
       return mockNews;

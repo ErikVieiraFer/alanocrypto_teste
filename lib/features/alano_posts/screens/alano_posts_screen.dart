@@ -271,7 +271,8 @@ class AlanoPostCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+              // Imagem do post (quando não há vídeo)
+              if (post.imageUrl != null && post.imageUrl!.isNotEmpty && post.videoUrl == null)
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -313,78 +314,117 @@ class AlanoPostCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              // Vídeo com thumbnail customizada
               if (post.videoUrl != null && post.videoUrl!.isNotEmpty)
                 GestureDetector(
                   onTap: () {
                     onVideoTap(post.videoUrl);
                     onViewIncrement(post.id);
                   },
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      CachedNetworkImage(
-                        imageUrl: post.autoThumbnailUrl ?? '',
-                        width: double.infinity,
-                        height: 200,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          height: 200,
-                          color: AppTheme.cardDark,
-                          child: Center(
-                            child: CircularProgressIndicator(
+                  child: Container(
+                    height: 220,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppTheme.cardDark,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        // Thumbnail customizada ou fallback
+                        if (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(
+                              imageUrl: post.imageUrl!,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: AppTheme.cardDark,
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    color: AppTheme.primaryGreen,
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Center(
+                                child: Icon(
+                                  Icons.play_circle_outline,
+                                  size: 80,
+                                  color: AppTheme.primaryGreen,
+                                ),
+                              ),
+                            ),
+                          )
+                        else
+                          Center(
+                            child: Icon(
+                              Icons.play_circle_outline,
+                              size: 80,
+                              color: AppTheme.primaryGreen,
+                            ),
+                          ),
+
+                        // Overlay escuro
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+
+                        // Ícone de play centralizado
+                        Center(
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.play_arrow,
+                              size: 48,
                               color: AppTheme.primaryGreen,
                             ),
                           ),
                         ),
-                        errorWidget: (context, url, error) {
-                          print('⚠️ Erro ao carregar thumbnail do YouTube: $error');
-                          return Container(
-                            height: 200,
-                            color: AppTheme.cardDark,
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.play_circle_outline,
-                                    size: 64,
-                                    color: AppTheme.primaryGreen,
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Vídeo do YouTube',
-                                    style: TextStyle(
-                                      color: AppTheme.textSecondary,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Toque para assistir',
-                                    style: TextStyle(
-                                      color: AppTheme.textTertiary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
+
+                        // Badge "Vídeo" no canto superior direito
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
                             ),
-                          );
-                        },
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          shape: BoxShape.circle,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.videocam,
+                                  size: 16,
+                                  color: AppTheme.primaryGreen,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Vídeo',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 48,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               Padding(

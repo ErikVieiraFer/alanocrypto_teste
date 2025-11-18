@@ -67,12 +67,20 @@ class _CryptoMarketSectionState extends State<CryptoMarketSection> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.trending_up, color: AppTheme.primaryGreen, size: 24),
-                  const SizedBox(width: 8),
-                  Text('Mercado Cripto', style: AppTheme.heading2),
-                ],
+              Flexible(
+                child: Row(
+                  children: [
+                    Icon(Icons.trending_up, color: AppTheme.primaryGreen, size: 24),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'Mercado Cripto',
+                        style: AppTheme.heading2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               TextButton(
                 onPressed: () {
@@ -83,6 +91,7 @@ class _CryptoMarketSectionState extends State<CryptoMarketSection> {
                   }
                 },
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'Ver todos',

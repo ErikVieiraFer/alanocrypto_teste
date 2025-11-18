@@ -30,7 +30,6 @@ class _SignupScreenState extends State<SignupScreen> {
     'Hantech',
     'XM',
     'Pocket Option',
-    'TV Markets',
   ];
 
   @override
@@ -169,6 +168,26 @@ class _SignupScreenState extends State<SignupScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppTheme.accentGreen,
+                          width: 3,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          'assets/images/logo.jpeg',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Text(
                     'Criar Conta',
                     style: TextStyle(
@@ -273,7 +292,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     controller: _accountIdController,
                     maxLength: 50,
                     decoration: InputDecoration(
-                      labelText: 'ID da Conta',
+                      labelText: 'ID da Conta (Opcional)',
                       hintText: 'Digite o ID/número da sua conta',
                       prefixIcon: const Icon(Icons.numbers),
                       border: OutlineInputBorder(
@@ -282,10 +301,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       counterText: '',
                     ),
                     validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Digite o ID da sua conta';
-                      }
-                      if (value.length > 50) {
+                      if (value != null && value.isNotEmpty && value.length > 50) {
                         return 'ID deve ter no máximo 50 caracteres';
                       }
                       return null;
@@ -297,7 +313,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   DropdownButtonFormField<String>(
                     value: _selectedBroker,
                     decoration: InputDecoration(
-                      labelText: 'Corretora',
+                      labelText: 'Corretora (Opcional)',
+                      hintText: 'Selecione sua corretora',
                       prefixIcon: const Icon(Icons.business),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -315,9 +332,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       });
                     },
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Selecione uma corretora';
-                      }
                       return null;
                     },
                   ),

@@ -64,6 +64,9 @@ class AlanoPostService {
     String? thumbnailUrl,
   }) async {
     try {
+      // IMPORTANTE: Para vídeos do YouTube, não use thumbnailUrl manual.
+      // O modelo AlanoPost já gera automaticamente a thumbnail via autoThumbnailUrl
+      // usando a URL sem CORS: https://img.youtube.com/vi/{videoId}/0.jpg
       final newPost = AlanoPost(
         id: '',
         title: title,

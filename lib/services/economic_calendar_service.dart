@@ -9,25 +9,16 @@ class EconomicCalendarService {
 
   Future<List<EconomicEvent>> getEconomicCalendar({int days = 7}) async {
     try {
-      print('📅 Buscando calendário econômico via Cloud Function...');
-      print('🔗 URL: $_cloudFunctionUrl');
-
       final response = await http.get(
         Uri.parse(_cloudFunctionUrl),
         headers: {'Content-Type': 'application/json'},
       ).timeout(const Duration(seconds: 15));
 
-      print('📡 Status code: ${response.statusCode}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        print('📊 Resposta recebida');
-
         if (data['status'] == true && data['response'] != null) {
           final List<dynamic> responseData = data['response'];
-
-          print('✅ ${responseData.length} eventos encontrados');
 
           if (responseData.isEmpty) {
             return [];
@@ -38,7 +29,6 @@ class EconomicCalendarService {
                 try {
                   return EconomicEvent.fromJson(item);
                 } catch (e) {
-                  print('⚠️ Erro ao parsear evento: $e');
                   return null;
                 }
               })
@@ -46,20 +36,16 @@ class EconomicCalendarService {
               .toList()
             ..sort((a, b) => a.date.compareTo(b.date));
 
-          print('✅ ${events.length} eventos parseados com sucesso');
-
           return events;
         } else {
-          print('⚠️ Status false ou sem eventos');
           return [];
         }
       } else {
-        print('❌ Erro HTTP: ${response.statusCode}');
+        print('❌ Erro HTTP ao buscar calendário: ${response.statusCode}');
         return [];
       }
     } catch (e, stackTrace) {
       print('❌ Erro ao buscar calendário: $e');
-      print('📍 Stack: $stackTrace');
       return [];
     }
   }
@@ -102,7 +88,7 @@ class EconomicEvent {
           return DateTime.fromMillisecondsSinceEpoch(dateValue * 1000);
         }
       } catch (e) {
-        print('⚠️ Erro ao parsear data "$dateValue": $e');
+        // Silencioso - retorna data atual em caso de erro
       }
 
       return DateTime.now();
@@ -130,8 +116,6 @@ class EconomicEvent {
     final country = json['country'] ?? '';
     final date = parseDate(json['date'] ?? json['time']);
     final impact = convertImportanceToImpact(json['importance']);
-
-    print('📋 Parseando evento: $title ($country) - Importance: ${json['importance']} -> Impact: $impact');
 
     return EconomicEvent(
       title: title,

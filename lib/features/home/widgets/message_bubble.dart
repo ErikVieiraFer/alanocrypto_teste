@@ -163,18 +163,8 @@ class MessageBubble extends StatelessWidget {
     // Usar a foto atual (prioridade) ou a foto salva na mensagem
     final photoUrl = currentUserPhotoUrl ?? message.userPhotoUrl;
 
-    // Debug: verificar URL da foto
-    if (photoUrl != null && photoUrl.isNotEmpty) {
-      print(
-        '🖼️ MessageBubble - Tentando carregar foto: $photoUrl (${currentUserPhotoUrl != null ? "atualizada" : "da mensagem"})',
-      );
-    }
-
     // Se não tem foto ou foto é vazia, mostrar inicial
     if (photoUrl == null || photoUrl.isEmpty) {
-      print(
-        '⚠️ MessageBubble - Sem foto para ${message.userName}, mostrando inicial',
-      );
       return CircleAvatar(
         radius: 20,
         backgroundColor: AppTheme.accentGreen,
@@ -214,7 +204,6 @@ class MessageBubble extends StatelessWidget {
             ),
           ),
           errorWidget: (context, url, error) {
-            print('❌ MessageBubble - Erro ao carregar foto: $error');
             return Text(
               message.userName.isNotEmpty
                   ? message.userName[0].toUpperCase()
