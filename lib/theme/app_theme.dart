@@ -5,21 +5,18 @@ class AppTheme {
   static const Color secondaryGreen = Color.fromRGBO(129, 199, 132, 1);
   static const Color darkGreen = Color.fromRGBO(56, 142, 60, 1);
 
-  // Backgrounds (tons azuis escuros)
-  static const Color backgroundBlack = Color.fromRGBO(11, 15, 25, 1);      // Azul escuro quase preto
-  static const Color cardDark = Color.fromRGBO(21, 27, 39, 1);             // Azul escuro
-  static const Color cardMedium = Color.fromRGBO(31, 41, 55, 1);           // Azul médio escuro
-  static const Color cardLight = Color.fromRGBO(51, 61, 75, 1);            // Azul claro escuro
+  static const Color backgroundBlack = Color.fromRGBO(11, 15, 25, 1);
+  static const Color cardDark = Color.fromRGBO(21, 27, 39, 1);
+  static const Color cardMedium = Color.fromRGBO(31, 41, 55, 1);
+  static const Color cardLight = Color.fromRGBO(51, 61, 75, 1);
 
-  // Borders
-  static const Color borderDark = Color.fromRGBO(71, 81, 95, 1);           // Border mais visível
-  static const Color borderMedium = Color.fromRGBO(91, 101, 115, 1);       // Border médio
+  static const Color borderDark = Color.fromRGBO(71, 81, 95, 1);
+  static const Color borderMedium = Color.fromRGBO(91, 101, 115, 1);
 
-  // Textos
-  static const Color textPrimary = Color.fromRGBO(248, 250, 252, 1);      // Branco suave
-  static const Color textSecondary = Color.fromRGBO(148, 163, 184, 1);    // Cinza azulado
-  static const Color textTertiary = Color.fromRGBO(100, 116, 139, 1);     // Cinza azulado escuro
-  static const Color textDisabled = Color.fromRGBO(71, 85, 105, 1);       // Cinza muito escuro
+  static const Color textPrimary = Color.fromRGBO(248, 250, 252, 1);
+  static const Color textSecondary = Color.fromRGBO(148, 163, 184, 1);
+  static const Color textTertiary = Color.fromRGBO(100, 116, 139, 1);
+  static const Color textDisabled = Color.fromRGBO(71, 85, 105, 1);
 
   static const Color errorRed = Color.fromRGBO(244, 67, 54, 1);
   static const Color warningOrange = Color.fromRGBO(255, 152, 0, 1);
@@ -65,13 +62,11 @@ class AppTheme {
   static const double gapLarge = 16;
   static const double gapXLarge = 24;
 
-  // Espaçamentos para mobile
   static const double mobileHorizontalPadding = 16;
   static const double mobileVerticalPadding = 12;
   static const double mobileCardSpacing = 12;
   static const double mobileSectionSpacing = 24;
 
-  // Safe area (evitar notch/barra de navegação)
   static const double topSafeArea = 8;
   static const double bottomSafeArea = 16;
 
@@ -119,7 +114,6 @@ class AppTheme {
         color: textPrimary,
       );
 
-  // Decorações de cards
   static BoxDecoration cardDecoration({
     Color? color,
     Color? borderColor,
@@ -191,7 +185,6 @@ class AppTheme {
     ],
   );
 
-  // Card moderno padrão
   static BoxDecoration modernCard({Color? backgroundColor, Color? glowColor}) {
     return BoxDecoration(
       gradient: LinearGradient(
@@ -229,7 +222,6 @@ class AppTheme {
     );
   }
 
-  // Card de sinal (com indicador lateral)
   static BoxDecoration signalCard({required bool isLong}) {
     return BoxDecoration(
       gradient: LinearGradient(
@@ -332,16 +324,13 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
 
-      // Cores primárias
       primaryColor: accentGreen,
       scaffoldBackgroundColor: backgroundColor,
 
-      // AppBar
       appBarTheme: AppBarTheme(
         backgroundColor: appBarColor,
-        surfaceTintColor:
-            Colors.transparent, // Remove efeito de tint do Material 3
-        scrolledUnderElevation: 0, // Remove mudança de cor ao scrollar
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
         elevation: 0,
         centerTitle: true,
         iconTheme: IconThemeData(color: textPrimary),
@@ -352,14 +341,12 @@ class AppTheme {
         ),
       ),
 
-      // Cards
       cardTheme: CardThemeData(
         color: inputBackground,
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
 
-      // Input Fields
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: inputBackground,
@@ -380,16 +367,15 @@ class AppTheme {
           borderSide: BorderSide(color: errorRed, width: 2),
         ),
         hintStyle: TextStyle(
-          color: Color(0xFFAAAAAA), // Mais claro que textSecondary
-          fontSize: 16, // Maior
+          color: Color(0xFFAAAAAA),
+          fontSize: 16,
         ),
         labelStyle: TextStyle(
-          color: Colors.white, // Branco em vez de cinza
+          color: Colors.white,
           fontSize: 16,
         ),
       ),
 
-      // Buttons
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: accentGreen,
@@ -410,7 +396,6 @@ class AppTheme {
         ),
       ),
 
-      // Bottom Navigation Bar
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: appBarColor,
         selectedItemColor: accentGreen,
@@ -419,19 +404,15 @@ class AppTheme {
         elevation: 0,
       ),
 
-      // Drawer
       drawerTheme: DrawerThemeData(backgroundColor: backgroundColor),
 
-      // Dialog
       dialogTheme: DialogThemeData(
         backgroundColor: inputBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
 
-      // Icon
       iconTheme: IconThemeData(color: textPrimary),
 
-      // Text
       textTheme: TextTheme(
         displayLarge: TextStyle(
           color: textPrimary,
@@ -468,17 +449,14 @@ class AppTheme {
         labelSmall: TextStyle(color: textSecondary),
       ),
 
-      // Divider
       dividerTheme: DividerThemeData(color: inputBackground, thickness: 1),
 
-      // Chip
       chipTheme: ChipThemeData(
         backgroundColor: inputBackground,
         selectedColor: accentGreen,
         labelStyle: TextStyle(color: textPrimary),
       ),
 
-      // SnackBar
       snackBarTheme: SnackBarThemeData(
         backgroundColor: inputBackground,
         contentTextStyle: TextStyle(color: textPrimary),

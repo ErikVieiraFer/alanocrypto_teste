@@ -116,7 +116,6 @@ class SignalShimmer extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
               Container(
                 padding: const EdgeInsets.all(18),
                 color: AppTheme.cardMedium.withOpacity(0.3),
@@ -152,7 +151,6 @@ class SignalShimmer extends StatelessWidget {
                   ],
                 ),
               ),
-              // Body
               Padding(
                 padding: const EdgeInsets.all(18),
                 child: Column(
@@ -252,7 +250,6 @@ class NewsCardShimmer extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image placeholder
               Container(
                 height: 160,
                 decoration: BoxDecoration(
@@ -262,7 +259,6 @@ class NewsCardShimmer extends StatelessWidget {
                   ),
                 ),
               ),
-              // Content
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -316,7 +312,6 @@ class MarketItemShimmer extends StatelessWidget {
       child: ShimmerLoading(
         child: Row(
           children: [
-            // Icon
             Container(
               width: 40,
               height: 40,
@@ -326,7 +321,6 @@ class MarketItemShimmer extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,7 +345,6 @@ class MarketItemShimmer extends StatelessWidget {
                 ],
               ),
             ),
-            // Price
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [

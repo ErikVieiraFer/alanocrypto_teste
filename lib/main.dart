@@ -21,7 +21,6 @@ import 'middleware/auth_middleware.dart';
 import 'package:alanoapp/firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
-// Handler para notificações em background (deve estar no top-level)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -31,13 +30,11 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 void main() {
-  // Global error handler to suppress known FlutterFire web interop error
   FlutterError.onError = (FlutterErrorDetails details) {
     final error = details.exception.toString();
     if (error.contains('JavaScriptObject') ||
         error.contains('_testException') ||
         error.contains('ArgumentError')) {
-      // Suppress known FlutterFire web interop error
       debugPrint(
         'Suprimindo erro conhecido do FlutterFire: ${details.exception}',
       );
@@ -46,18 +43,15 @@ void main() {
     FlutterError.presentError(details);
   };
 
-  // Catch errors in async code - EVERYTHING must be inside runZonedGuarded
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
 
-      // Initialize Firebase
       try {
         await Firebase.initializeApp(
           options: DefaultFirebaseOptions.currentPlatform,
         );
 
-        // Only activate App Check on non-web platforms to avoid conflicts
         if (!kIsWeb) {
           await FirebaseAppCheck.instance.activate(
             androidProvider: AndroidProvider.debug,
@@ -65,16 +59,13 @@ void main() {
           );
         }
 
-        // Registrar handler para notificações em background (mobile)
         if (!kIsWeb) {
           FirebaseMessaging.onBackgroundMessage(
             _firebaseMessagingBackgroundHandler,
           );
         }
       } catch (e) {
-        if (e.toString().contains('duplicate-app')) {
-          // Firebase already initialized
-        } else {
+        if (!e.toString().contains('duplicate-app')) {
           rethrow;
         }
       }
@@ -84,7 +75,6 @@ void main() {
       runApp(const MyApp());
     },
     (error, stack) {
-      // Catch uncaught async errors
       if (error.toString().contains('JavaScriptObject') ||
           error.toString().contains('_testException') ||
           error.toString().contains('ArgumentError')) {
@@ -104,14 +94,12 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Configurar cor da StatusBar do sistema
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
-        statusBarColor:
-            Colors.transparent, // Transparente para usar a cor do AppBar
-        statusBarIconBrightness: Brightness.light, // Ícones brancos
-        statusBarBrightness: Brightness.dark, // Para iOS
-        systemNavigationBarColor: Color(0xFF0f0f0f), // Mesma cor da AppBar
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Color(0xFF0f0f0f),
         systemNavigationBarIconBrightness: Brightness.light,
       ),
     );

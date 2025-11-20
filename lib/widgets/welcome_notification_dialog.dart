@@ -77,7 +77,6 @@ class WelcomeNotificationDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Ícone no topo
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -110,12 +109,10 @@ class WelcomeNotificationDialog extends StatelessWidget {
               ),
             ),
 
-            // Conteúdo
             Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  // Título
                   const Text(
                     'Seja Notificado!',
                     style: TextStyle(
@@ -128,7 +125,6 @@ class WelcomeNotificationDialog extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // Descrição
                   const Text(
                     'Ative as notificações para receber alertas instantâneos sobre:',
                     style: TextStyle(
@@ -141,7 +137,6 @@ class WelcomeNotificationDialog extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  // Lista de benefícios
                   _buildBenefit(Icons.show_chart_rounded, 'Novos sinais de trading'),
                   const SizedBox(height: 12),
                   _buildBenefit(Icons.article_rounded, 'Posts exclusivos do Alano'),
@@ -150,7 +145,6 @@ class WelcomeNotificationDialog extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // Mensagem de suporte
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -185,7 +179,6 @@ class WelcomeNotificationDialog extends StatelessWidget {
 
                   const SizedBox(height: 24),
 
-                  // Botão principal
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -211,7 +204,6 @@ class WelcomeNotificationDialog extends StatelessWidget {
 
                   const SizedBox(height: 8),
 
-                  // Botão discreto "Fechar"
                   Center(
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),

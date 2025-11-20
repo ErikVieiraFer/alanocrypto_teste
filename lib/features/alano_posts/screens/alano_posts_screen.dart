@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../models/alano_post_model.dart';
 import '../../../services/alano_post_service.dart';
 import '../../../widgets/haptic_button.dart';
+import '../../../widgets/common/linkify_text.dart';
 import '../../../theme/app_theme.dart';
 
 class AlanoPostsScreen extends StatefulWidget {
@@ -259,8 +260,8 @@ class AlanoPostCard extends StatelessWidget {
                     ),
                     if (post.content.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Text(
-                        post.content,
+                      LinkifyText(
+                        text: post.content,
                         style: const TextStyle(
                           fontSize: 14,
                           color: Colors.white,

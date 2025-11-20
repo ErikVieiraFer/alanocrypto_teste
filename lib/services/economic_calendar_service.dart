@@ -1,24 +1,19 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class EconomicCalendarService {
-  // URL da Cloud Function (será preenchida após deploy)
-  static const String _cloudFunctionUrl =
-    'https://us-central1-alanocryptofx-v2.cloudfunctions.net/getEconomicCalendar';
-
   Future<List<EconomicEvent>> getEconomicCalendar({int days = 7}) async {
     try {
-      final response = await http.get(
-        Uri.parse(_cloudFunctionUrl),
-        headers: {'Content-Type': 'application/json'},
-      ).timeout(const Duration(seconds: 15));
+      // Buscar do cache no Firestore
+      final doc = await FirebaseFirestore.instance
+          .collection('market_cache')
+          .doc('economic_calendar')
+          .get();
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        if (data['status'] == true && data['response'] != null) {
-          final List<dynamic> responseData = data['response'];
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data()!;
+        if (data['data'] != null) {
+          final List<dynamic> responseData = data['data'];
 
           if (responseData.isEmpty) {
             return [];
@@ -27,7 +22,7 @@ class EconomicCalendarService {
           final events = responseData
               .map((item) {
                 try {
-                  return EconomicEvent.fromJson(item);
+                  return EconomicEvent.fromJson(Map<String, dynamic>.from(item));
                 } catch (e) {
                   return null;
                 }
@@ -37,15 +32,12 @@ class EconomicCalendarService {
             ..sort((a, b) => a.date.compareTo(b.date));
 
           return events;
-        } else {
-          return [];
         }
-      } else {
-        print('❌ Erro HTTP ao buscar calendário: ${response.statusCode}');
-        return [];
       }
-    } catch (e, stackTrace) {
-      print('❌ Erro ao buscar calendário: $e');
+
+      return [];
+    } catch (e) {
+      print('❌ Erro ao buscar calendário do cache: $e');
       return [];
     }
   }

@@ -1,7 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../../models/transaction_model.dart';
-import '../../../services/transaction_service.dart';
-import '../../../theme/app_theme.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
+import '../widgets/add_transaction_dialog.dart';
+import '../widgets/edit_transaction_dialog.dart';
 
 class PortfolioScreen extends StatefulWidget {
   const PortfolioScreen({super.key});
@@ -11,17 +17,18 @@ class PortfolioScreen extends StatefulWidget {
 }
 
 class _PortfolioScreenState extends State<PortfolioScreen> with SingleTickerProviderStateMixin {
-  final TransactionService _transactionService = TransactionService();
-
   late TabController _tabController;
-  double _balance = 10000.0;
-  Map<String, double> _currentPrices = {};
+  int _selectedPeriod = 1;
+  final List<String> _periods = ['1D', '7D', '1M', '3M', '1Y', 'YTD', 'ALL'];
+  int _selectedTab = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _loadBalance();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -30,908 +37,815 @@ class _PortfolioScreenState extends State<PortfolioScreen> with SingleTickerProv
     super.dispose();
   }
 
-  Future<void> _loadBalance() async {
-    final balance = await _transactionService.getCurrentBalance();
-    if (mounted) {
-      setState(() => _balance = balance);
+  String _getAssetTypeFromIndex(int index) {
+    switch (index) {
+      case 0:
+        return 'Criptomoedas';
+      case 1:
+        return 'Ações';
+      case 2:
+        return 'Forex';
+      default:
+        return 'Criptomoedas';
     }
   }
 
-  Future<void> _editBalance() async {
-    final controller = TextEditingController(text: _balance.toStringAsFixed(2));
+  Future<void> _exportToCsv() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    final newBalance = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.cardDark,
-        title: Text('Editar Saldo', style: AppTheme.heading3),
-        content: TextField(
-          controller: controller,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: InputDecoration(
-            labelText: 'Novo Saldo',
-            prefixText: '\$ ',
-            filled: true,
-            fillColor: AppTheme.cardMedium,
-            border: OutlineInputBorder(
-              borderRadius: AppTheme.defaultRadius,
-              borderSide: BorderSide.none,
-            ),
-          ),
-          style: const TextStyle(color: AppTheme.textPrimary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Salvar', style: TextStyle(color: AppTheme.primaryGreen)),
-          ),
-        ],
-      ),
-    );
-
-    if (newBalance != null && newBalance.isNotEmpty) {
-      try {
-        final value = double.parse(newBalance);
-        if (value >= 0) {
-          await _transactionService.setBalance(value);
-          _loadBalance();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Saldo atualizado para \$${value.toStringAsFixed(2)}'),
-                backgroundColor: AppTheme.primaryGreen,
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Valor inválido'),
-              backgroundColor: AppTheme.errorRed,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  void _showCreateTransactionModal() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => CreateTransactionModal(
-        onTransactionCreated: () {
-          _loadBalance();
-          if (mounted) {
-            setState(() {});
-          }
-        },
-      ),
-    );
-  }
-
-  Future<void> _resetPortfolio() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.cardDark,
-        title: Text('Resetar Portfólio', style: AppTheme.heading3),
-        content: Text(
-          'Tem certeza que deseja resetar seu portfólio? Todas as operações serão apagadas e o saldo voltará para \$10,000.',
-          style: AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Resetar', style: TextStyle(color: AppTheme.errorRed)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await _transactionService.resetPortfolio();
-        _loadBalance();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Portfólio resetado com sucesso'),
-              backgroundColor: AppTheme.primaryGreen,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Erro ao resetar portfólio'),
-              backgroundColor: AppTheme.errorRed,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  Future<void> _closeTransaction(TransactionModel transaction) async {
     try {
-      await _transactionService.closeTransaction(
-        transaction.id,
-        transaction.entryPrice,
+      final assetType = _getAssetTypeFromIndex(_tabController.index);
+      final snapshot = await FirebaseFirestore.instance
+          .collection('portfolio_transactions')
+          .where('userId', isEqualTo: user.uid)
+          .where('assetType', isEqualTo: assetType)
+          .orderBy('date', descending: true)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Nenhuma transação para exportar'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Criar CSV
+      final buffer = StringBuffer();
+      buffer.writeln('Data,Tipo,Símbolo,Nome,Quantidade,Preço,Taxas,Total,Observações');
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final date = (data['date'] as Timestamp).toDate();
+        final dateStr = DateFormat('yyyy-MM-dd HH:mm').format(date);
+        final type = data['transactionType'] ?? '';
+        final symbol = data['symbol'] ?? '';
+        final name = (data['name'] ?? '').toString().replaceAll(',', ';');
+        final quantity = data['quantity']?.toString() ?? '0';
+        final price = data['price']?.toString() ?? '0';
+        final fees = data['fees']?.toString() ?? '0';
+        final total = data['total']?.toString() ?? '0';
+        final obs = (data['observations'] ?? '').toString().replaceAll(',', ';').replaceAll('\n', ' ');
+
+        buffer.writeln('$dateStr,$type,$symbol,$name,$quantity,$price,$fees,$total,$obs');
+      }
+
+      // Salvar arquivo
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/portfolio_${assetType.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}.csv');
+      await file.writeAsString(buffer.toString());
+
+      // Compartilhar
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Portfólio $assetType',
       );
-      _loadBalance();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Operação fechada com sucesso'),
-            backgroundColor: AppTheme.primaryGreen,
+          SnackBar(
+            content: Text('${snapshot.docs.length} transações exportadas'),
+            backgroundColor: const Color(0xFF00FF88),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erro ao fechar operação'),
-            backgroundColor: AppTheme.errorRed,
+          SnackBar(
+            content: Text('Erro ao exportar: $e'),
+            backgroundColor: Colors.red,
           ),
         );
       }
     }
   }
 
-  Widget _buildActiveTab() {
-    return StreamBuilder<List<TransactionModel>>(
-      stream: _transactionService.getActiveTransactionsStream(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryGreen),
-          );
-        }
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final assetType = _getAssetTypeFromIndex(_tabController.index);
 
-        if (snapshot.hasError) {
-          print('=== ERRO NO STREAMBUILDER (ATIVAS) ===');
-          print('Erro: ${snapshot.error}');
-          print('Stack: ${snapshot.stackTrace}');
-          if (snapshot.error.toString().contains('index') ||
-              snapshot.error.toString().contains('INDEX')) {
-            print('');
-            print('⚠️  LINK DO INDEX FIRESTORE:');
-            print(snapshot.error.toString());
-            print('');
-          }
-          print('======================================');
-
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 64, color: AppTheme.errorRed),
-                const SizedBox(height: AppTheme.gapLarge),
-                Text('Erro ao carregar operações', style: AppTheme.heading3),
-                const SizedBox(height: AppTheme.gapSmall),
-                Text(
-                  snapshot.error.toString(),
-                  style: AppTheme.bodySmall.copyWith(color: AppTheme.textSecondary),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
-        }
-
-        final transactions = snapshot.data ?? [];
-
-        if (transactions.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.trending_up, size: 64, color: AppTheme.textSecondary),
-                const SizedBox(height: AppTheme.gapLarge),
-                Text('Nenhuma operação ativa', style: AppTheme.heading3),
-                const SizedBox(height: AppTheme.gapSmall),
-                Text(
-                  'Crie sua primeira operação',
-                  style: AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondary),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () async {
-            setState(() {});
-            await Future.delayed(const Duration(milliseconds: 500));
-          },
-          color: AppTheme.primaryGreen,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(AppTheme.paddingMedium),
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              return _buildTransactionCard(transactions[index], true);
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHistoryTab() {
-    return StreamBuilder<List<TransactionModel>>(
-      stream: _transactionService.getClosedTransactionsStream(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryGreen),
-          );
-        }
-
-        if (snapshot.hasError) {
-          print('=== ERRO NO STREAMBUILDER (HISTÓRICO) ===');
-          print('Erro: ${snapshot.error}');
-          print('Stack: ${snapshot.stackTrace}');
-          if (snapshot.error.toString().contains('index') ||
-              snapshot.error.toString().contains('INDEX')) {
-            print('');
-            print('⚠️  LINK DO INDEX FIRESTORE:');
-            print(snapshot.error.toString());
-            print('');
-          }
-          print('=========================================');
-
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 64, color: AppTheme.errorRed),
-                const SizedBox(height: AppTheme.gapLarge),
-                Text('Erro ao carregar histórico', style: AppTheme.heading3),
-                const SizedBox(height: AppTheme.gapSmall),
-                Text(
-                  snapshot.error.toString(),
-                  style: AppTheme.bodySmall.copyWith(color: AppTheme.textSecondary),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          );
-        }
-
-        final transactions = snapshot.data ?? [];
-
-        if (transactions.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.history, size: 64, color: AppTheme.textSecondary),
-                const SizedBox(height: AppTheme.gapLarge),
-                Text('Nenhuma operação no histórico', style: AppTheme.heading3),
-              ],
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () async {
-            setState(() {});
-            await Future.delayed(const Duration(milliseconds: 500));
-          },
-          color: AppTheme.primaryGreen,
-          child: ListView.builder(
-            padding: const EdgeInsets.all(AppTheme.paddingMedium),
-            itemCount: transactions.length,
-            itemBuilder: (context, index) {
-              return _buildTransactionCard(transactions[index], false);
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTransactionCard(TransactionModel transaction, bool isActive) {
-    final double priceToUse;
-    if (isActive) {
-      priceToUse = _currentPrices[transaction.forexPair] ?? transaction.entryPrice;
-    } else {
-      priceToUse = transaction.exitPrice ?? transaction.entryPrice;
-    }
-
-    final pnl = transaction.calculatePnL(priceToUse);
-    final isProfit = pnl >= 0;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppTheme.gapMedium),
-      decoration: AppTheme.modernCard(
-        glowColor: isProfit ? AppTheme.primaryGreen : AppTheme.errorRed,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: isProfit ? AppTheme.primaryGreen : AppTheme.errorRed,
-              width: 1,
-            ),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                transaction.forexPair,
-                style: AppTheme.heading2.copyWith(fontWeight: FontWeight.bold),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppTheme.paddingSmall,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: transaction.type == TransactionType.buy
-                      ? AppTheme.primaryGreen
-                      : AppTheme.errorRed,
-                  borderRadius: AppTheme.smallRadius,
-                ),
-                child: Text(
-                  transaction.type == TransactionType.buy ? 'BUY' : 'SELL',
-                  style: AppTheme.bodySmall.copyWith(
-                    color: AppTheme.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppTheme.gapSmall),
-          Text(
-            '${transaction.quantity} lotes @ \$${transaction.entryPrice.toStringAsFixed(2)}',
-            style: AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondary),
-          ),
-          if (!isActive && transaction.exitPrice != null) ...[
-            const SizedBox(height: AppTheme.gapSmall),
-            Text(
-              'Fechado @ \$${transaction.exitPrice!.toStringAsFixed(2)}',
-              style: AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondary),
-            ),
-          ],
-          const SizedBox(height: AppTheme.gapMedium),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
+    return Scaffold(
+      backgroundColor: const Color(0xFF0E1116),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'P&L',
-                    style: AppTheme.bodySmall.copyWith(color: AppTheme.textSecondary),
+                  const Text(
+                    'Portfólio',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Acompanhe seus investimentos em tempo real',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Row(
                     children: [
-                      Icon(
-                        isProfit ? Icons.arrow_upward : Icons.arrow_downward,
-                        size: 18,
-                        color: isProfit ? AppTheme.primaryGreen : AppTheme.errorRed,
+                      const Spacer(),
+                      OutlinedButton.icon(
+                        onPressed: _exportToCsv,
+                        icon: const Icon(Icons.upload_file, size: 18),
+                        label: const Text('Exportar CSV'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: const BorderSide(color: Color(0xFF2a2f36)),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${pnl >= 0 ? '+' : ''}\$${pnl.toStringAsFixed(2)}',
-                        style: AppTheme.heading3.copyWith(
-                          color: isProfit ? AppTheme.primaryGreen : AppTheme.errorRed,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => const AddTransactionDialog(),
+                          );
+                        },
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('Adicionar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00FF88),
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              if (isActive)
-                ElevatedButton(
-                  onPressed: () => _closeTransaction(transaction),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryGreen,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.paddingLarge,
-                      vertical: 12,
-                    ),
-                  ),
-                  child: const Text('Fechar'),
+            ),
+
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1a1f26),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicator: _GlowingBorderIndicator(
+                  borderRadius: BorderRadius.circular(10),
+                  borderColor: const Color(0xFF00FF88),
+                  borderWidth: 2,
+                  glowColor: const Color(0xFF00FF88),
+                  glowSpread: 8,
+                  glowBlur: 12,
                 ),
-            ],
-          ),
-        ],
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.grey,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                tabs: const [
+                  Tab(text: 'Crypto'),
+                  Tab(text: 'Ações'),
+                  Tab(text: 'Forex'),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            Expanded(
+              child: user == null
+                  ? const Center(
+                      child: Text(
+                        'Faça login para ver seu portfólio',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  : StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('portfolio_transactions')
+                          .where('userId', isEqualTo: user.uid)
+                          .where('assetType', isEqualTo: assetType)
+                          .orderBy('date', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.cloud_off, color: Colors.orange, size: 48),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Não foi possível carregar',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Verifique sua conexão com a internet e tente novamente.',
+                                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton.icon(
+                                    onPressed: () => setState(() {}),
+                                    icon: const Icon(Icons.refresh, size: 18),
+                                    label: const Text('Tentar novamente'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF00FF88),
+                                      foregroundColor: Colors.black,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF00FF88),
+                            ),
+                          );
+                        }
+
+                        final docs = snapshot.data?.docs ?? [];
+
+                        // Calcular totais
+                        double totalValue = 0;
+                        double totalBought = 0;
+                        double totalSold = 0;
+                        final Map<String, Map<String, dynamic>> holdings = {};
+
+                        for (final doc in docs) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final symbol = data['symbol'] as String;
+                          final quantity = (data['quantity'] ?? 0).toDouble();
+                          final price = (data['price'] ?? 0).toDouble();
+                          final type = data['transactionType'] as String;
+
+                          if (!holdings.containsKey(symbol)) {
+                            holdings[symbol] = {
+                              'name': data['name'] ?? symbol,
+                              'quantity': 0.0,
+                              'totalCost': 0.0,
+                              'transactions': <Map<String, dynamic>>[],
+                            };
+                          }
+
+                          if (type == 'Compra') {
+                            holdings[symbol]!['quantity'] += quantity;
+                            holdings[symbol]!['totalCost'] += quantity * price;
+                            totalBought += quantity * price;
+                          } else {
+                            holdings[symbol]!['quantity'] -= quantity;
+                            totalSold += quantity * price;
+                          }
+
+                          (holdings[symbol]!['transactions'] as List).add({
+                            'id': doc.id,
+                            ...data,
+                          });
+                        }
+
+                        // Calcular valor total (usando preço médio)
+                        holdings.forEach((symbol, data) {
+                          if (data['quantity'] > 0 && data['totalCost'] > 0) {
+                            totalValue += data['totalCost'] as double;
+                          }
+                        });
+
+                        final pnl = totalSold - totalBought + totalValue;
+
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildInfoCard(
+                                      'Valor do Portfólio',
+                                      'US\$ ${totalValue.toStringAsFixed(2)}',
+                                      null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildInfoCard(
+                                      'PnL Total',
+                                      'US\$ ${pnl.toStringAsFixed(2)}',
+                                      pnl >= 0 ? '+${((pnl / (totalBought > 0 ? totalBought : 1)) * 100).toStringAsFixed(2)}%' : '${((pnl / (totalBought > 0 ? totalBought : 1)) * 100).toStringAsFixed(2)}%',
+                                      isPositive: pnl >= 0,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildInfoCard(
+                                      'Total Comprado',
+                                      'US\$ ${totalBought.toStringAsFixed(2)}',
+                                      null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildInfoCard(
+                                      'Total Vendido',
+                                      'US\$ ${totalSold.toStringAsFixed(2)}',
+                                      null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              Row(
+                                children: [
+                                  _buildTabButton('Ativos', 0),
+                                  const SizedBox(width: 12),
+                                  _buildTabButton('Histórico', 1),
+                                ],
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              if (_selectedTab == 0)
+                                _buildHoldingsList(holdings)
+                              else
+                                _buildTransactionsList(docs),
+
+                              const SizedBox(height: 100),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
         ),
-      ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          color: AppTheme.backgroundBlack,
+  Widget _buildHoldingsList(Map<String, Map<String, dynamic>> holdings) {
+    final activeHoldings = holdings.entries
+        .where((e) => (e.value['quantity'] as double) > 0)
+        .toList();
+
+    if (activeHoldings.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1a1f26),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
           child: Column(
             children: [
-              Container(
-                color: AppTheme.cardDark,
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppTheme.paddingMedium,
-                        AppTheme.paddingMedium,
-                        AppTheme.paddingMedium,
-                        AppTheme.gapSmall,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Saldo Disponível',
-                                style: AppTheme.bodyMedium.copyWith(
-                                  color: AppTheme.textSecondary,
-                                ),
-                              ),
-                              const SizedBox(height: AppTheme.gapSmall),
-                              Text(
-                                '\$${_balance.toStringAsFixed(2)}',
-                                style: AppTheme.heading1,
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit, color: AppTheme.primaryGreen),
-                                onPressed: _editBalance,
-                                tooltip: 'Editar Saldo',
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.refresh, color: AppTheme.textSecondary),
-                                onPressed: _resetPortfolio,
-                                tooltip: 'Resetar Portfólio',
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    TabBar(
-                      controller: _tabController,
-                      indicatorColor: AppTheme.primaryGreen,
-                      indicatorWeight: 3,
-                      labelColor: AppTheme.textPrimary,
-                      unselectedLabelColor: AppTheme.textSecondary,
-                      labelStyle: AppTheme.bodyLarge.copyWith(fontWeight: FontWeight.w600),
-                      tabs: const [
-                        Tab(text: 'Ativas'),
-                        Tab(text: 'Histórico'),
-                      ],
-                    ),
-                  ],
-                ),
+              Icon(Icons.account_balance_wallet_outlined, color: Colors.grey, size: 48),
+              SizedBox(height: 12),
+              Text(
+                'Nenhum ativo em carteira',
+                style: TextStyle(color: Colors.grey),
               ),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildActiveTab(),
-                    _buildHistoryTab(),
-                  ],
-                ),
+              SizedBox(height: 4),
+              Text(
+                'Adicione sua primeira transação',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ],
           ),
         ),
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: FloatingActionButton(
-            heroTag: 'portfolio_fab',
-            onPressed: _showCreateTransactionModal,
-            backgroundColor: AppTheme.primaryGreen,
-            child: const Icon(Icons.add, color: AppTheme.textPrimary),
+      );
+    }
+
+    return Column(
+      children: activeHoldings.map((entry) {
+        final symbol = entry.key;
+        final data = entry.value;
+        final quantity = data['quantity'] as double;
+        final totalCost = data['totalCost'] as double;
+        final avgPrice = quantity > 0 ? totalCost / quantity : 0;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1a1f26),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00FF88).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.monetization_on,
+                    color: Color(0xFF00FF88),
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      symbol,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      data['name'] as String,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${quantity.toStringAsFixed(quantity < 1 ? 8 : 2)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    'PM: \$${avgPrice.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTransactionsList(List<QueryDocumentSnapshot> docs) {
+    if (docs.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1a1f26),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+          child: Column(
+            children: [
+              Icon(Icons.history, color: Colors.grey, size: 48),
+              SizedBox(height: 12),
+              Text(
+                'Nenhuma transação registrada',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
           ),
         ),
-      ],
+      );
+    }
+
+    return Column(
+      children: docs.take(20).map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final date = (data['date'] as Timestamp).toDate();
+        final symbol = data['symbol'] as String;
+        final type = data['transactionType'] as String;
+        final quantity = (data['quantity'] ?? 0).toDouble();
+        final price = (data['price'] ?? 0).toDouble();
+        final total = quantity * price;
+        final isBuy = type == 'Compra';
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1a1f26),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isBuy
+                      ? const Color(0xFF00FF88).withValues(alpha: 0.2)
+                      : Colors.red.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  isBuy ? Icons.arrow_downward : Icons.arrow_upward,
+                  color: isBuy ? const Color(0xFF00FF88) : Colors.red,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$type $symbol',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      DateFormat('dd/MM/yyyy HH:mm').format(date),
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '\$${total.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: isBuy ? const Color(0xFF00FF88) : Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '${quantity.toStringAsFixed(quantity < 1 ? 8 : 2)} @ \$${price.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, color: Color(0xFF00FF88), size: 20),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => EditTransactionDialog(
+                          transactionId: doc.id,
+                          transactionData: data,
+                        ),
+                      );
+                    },
+                    tooltip: 'Editar',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: const Color(0xFF1a1f26),
+                          title: const Text(
+                            'Excluir transação?',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          content: Text(
+                            'Deseja excluir a transação de $type $symbol?\n\nEsta ação não pode ser desfeita.',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancelar'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text(
+                                'Excluir',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        await doc.reference.delete();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Transação excluída'),
+                              backgroundColor: Color(0xFF00FF88),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    tooltip: 'Excluir',
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildInfoCard(String title, String value, String? percentage, {bool isPositive = true}) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1a1f26),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          if (percentage != null) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(
+                  isPositive ? Icons.trending_up : Icons.trending_down,
+                  size: 16,
+                  color: isPositive ? const Color(0xFF00FF88) : Colors.red,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  percentage,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isPositive ? const Color(0xFF00FF88) : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabButton(String label, int index) {
+    final bool isSelected = _selectedTab == index;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _selectedTab = index;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF00FF88) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: isSelected ? Colors.black : Colors.grey,
+          ),
+        ),
+      ),
     );
   }
 }
 
-class CreateTransactionModal extends StatefulWidget {
-  final VoidCallback onTransactionCreated;
+class _GlowingBorderIndicator extends Decoration {
+  final BorderRadius borderRadius;
+  final Color borderColor;
+  final double borderWidth;
+  final Color glowColor;
+  final double glowSpread;
+  final double glowBlur;
 
-  const CreateTransactionModal({
-    super.key,
-    required this.onTransactionCreated,
+  const _GlowingBorderIndicator({
+    required this.borderRadius,
+    required this.borderColor,
+    required this.borderWidth,
+    required this.glowColor,
+    required this.glowSpread,
+    required this.glowBlur,
   });
 
   @override
-  State<CreateTransactionModal> createState() => _CreateTransactionModalState();
+  BoxPainter createBoxPainter([VoidCallback? onChanged]) {
+    return _GlowingBorderPainter(
+      borderRadius: borderRadius,
+      borderColor: borderColor,
+      borderWidth: borderWidth,
+      glowColor: glowColor,
+      glowSpread: glowSpread,
+      glowBlur: glowBlur,
+    );
+  }
 }
 
-class _CreateTransactionModalState extends State<CreateTransactionModal> {
-  final _formKey = GlobalKey<FormState>();
-  final TransactionService _transactionService = TransactionService();
+class _GlowingBorderPainter extends BoxPainter {
+  final BorderRadius borderRadius;
+  final Color borderColor;
+  final double borderWidth;
+  final Color glowColor;
+  final double glowSpread;
+  final double glowBlur;
 
-  String? _selectedPair;
-  String _customPair = '';
-  TransactionType _type = TransactionType.buy;
-  final _quantityController = TextEditingController();
-  final _entryController = TextEditingController();
-  final _target1Controller = TextEditingController();
-  final _target2Controller = TextEditingController();
-  final _target3Controller = TextEditingController();
-  final _stopLossController = TextEditingController();
-
-  bool _isLoading = false;
-  bool _useCustomPair = false;
-
-  final List<Map<String, String>> _commonPairs = [
-    {'symbol': 'EUR/USD', 'name': 'Euro / Dólar Americano'},
-    {'symbol': 'GBP/USD', 'name': 'Libra Esterlina / Dólar Americano'},
-    {'symbol': 'USD/JPY', 'name': 'Dólar Americano / Iene Japonês'},
-    {'symbol': 'AUD/USD', 'name': 'Dólar Australiano / Dólar Americano'},
-    {'symbol': 'USD/CAD', 'name': 'Dólar Americano / Dólar Canadense'},
-    {'symbol': 'NZD/USD', 'name': 'Dólar Neozelandês / Dólar Americano'},
-    {'symbol': 'EUR/GBP', 'name': 'Euro / Libra Esterlina'},
-    {'symbol': 'USD/CHF', 'name': 'Dólar Americano / Franco Suíço'},
-  ];
+  _GlowingBorderPainter({
+    required this.borderRadius,
+    required this.borderColor,
+    required this.borderWidth,
+    required this.glowColor,
+    required this.glowSpread,
+    required this.glowBlur,
+  });
 
   @override
-  void dispose() {
-    _quantityController.dispose();
-    _entryController.dispose();
-    _target1Controller.dispose();
-    _target2Controller.dispose();
-    _target3Controller.dispose();
-    _stopLossController.dispose();
-    super.dispose();
-  }
+  void paint(Canvas canvas, Offset offset, ImageConfiguration configuration) {
+    final rect = offset & configuration.size!;
+    final rrect = borderRadius.toRRect(rect);
 
-  Future<void> _createTransaction() async {
-    if (!_formKey.currentState!.validate()) return;
+    // Paint glow effect
+    final glowPaint = Paint()
+      ..color = glowColor.withValues(alpha: 0.3)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, glowBlur)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = borderWidth + glowSpread;
 
-    final pair = _useCustomPair ? _customPair : _selectedPair;
-    if (pair == null || pair.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Selecione ou digite um par Forex'),
-          backgroundColor: AppTheme.errorRed,
-        ),
-      );
-      return;
-    }
+    canvas.drawRRect(rrect, glowPaint);
 
-    setState(() => _isLoading = true);
+    // Paint border
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = borderWidth;
 
-    try {
-      final quantity = double.parse(_quantityController.text);
-      final entry = double.parse(_entryController.text);
-
-      await _transactionService.createTransaction(
-        forexPair: pair,
-        cryptoSymbol: pair,
-        forexPairName: _commonPairs.firstWhere(
-          (p) => p['symbol'] == pair,
-          orElse: () => {'symbol': pair, 'name': pair},
-        )['name']!,
-        type: _type,
-        quantity: quantity,
-        entryPrice: entry,
-      );
-
-      if (mounted) {
-        Navigator.pop(context);
-        widget.onTransactionCreated();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Operação $pair criada com sucesso!'),
-            backgroundColor: AppTheme.primaryGreen,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.toString().contains('Saldo') || e.toString().contains('insuficiente')
-                  ? 'Saldo insuficiente'
-                  : 'Erro ao criar operação',
-            ),
-            backgroundColor: AppTheme.errorRed,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.cardDark,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.paddingLarge),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Nova Operação', style: AppTheme.heading2),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: AppTheme.textSecondary),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppTheme.gapLarge),
-              Row(
-                children: [
-                  Text('Par personalizado', style: AppTheme.bodyMedium),
-                  const Spacer(),
-                  Switch(
-                    value: _useCustomPair,
-                    onChanged: (value) => setState(() => _useCustomPair = value),
-                    activeColor: AppTheme.primaryGreen,
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppTheme.gapMedium),
-              if (!_useCustomPair)
-                DropdownButtonFormField<String>(
-                  value: _selectedPair,
-                  decoration: InputDecoration(
-                    labelText: 'Par Forex',
-                    filled: true,
-                    fillColor: AppTheme.cardMedium,
-                    border: OutlineInputBorder(
-                      borderRadius: AppTheme.defaultRadius,
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  dropdownColor: AppTheme.cardMedium,
-                  items: _commonPairs.map((pair) {
-                    return DropdownMenuItem(
-                      value: pair['symbol'],
-                      child: Text('${pair['symbol']} - ${pair['name']}'),
-                    );
-                  }).toList(),
-                  onChanged: (value) => setState(() => _selectedPair = value),
-                  validator: (value) =>
-                      !_useCustomPair && value == null ? 'Selecione um par' : null,
-                  style: const TextStyle(color: AppTheme.textPrimary),
-                )
-              else
-                TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'Par Forex (ex: EUR/USD)',
-                    filled: true,
-                    fillColor: AppTheme.cardMedium,
-                    border: OutlineInputBorder(
-                      borderRadius: AppTheme.defaultRadius,
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  style: const TextStyle(color: AppTheme.textPrimary),
-                  onChanged: (value) => _customPair = value,
-                  validator: (value) =>
-                      _useCustomPair && (value == null || value.isEmpty)
-                          ? 'Digite o par'
-                          : null,
-                ),
-              const SizedBox(height: AppTheme.gapMedium),
-              DropdownButtonFormField<TransactionType>(
-                value: _type,
-                decoration: InputDecoration(
-                  labelText: 'Tipo',
-                  filled: true,
-                  fillColor: AppTheme.cardMedium,
-                  border: OutlineInputBorder(
-                    borderRadius: AppTheme.defaultRadius,
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                dropdownColor: AppTheme.cardMedium,
-                items: const [
-                  DropdownMenuItem(value: TransactionType.buy, child: Text('BUY (Compra)')),
-                  DropdownMenuItem(value: TransactionType.sell, child: Text('SELL (Venda)')),
-                ],
-                onChanged: (value) => setState(() => _type = value!),
-                style: const TextStyle(color: AppTheme.textPrimary),
-              ),
-              const SizedBox(height: AppTheme.gapMedium),
-              TextFormField(
-                controller: _quantityController,
-                decoration: InputDecoration(
-                  labelText: 'Quantidade (Lotes)',
-                  filled: true,
-                  fillColor: AppTheme.cardMedium,
-                  border: OutlineInputBorder(
-                    borderRadius: AppTheme.defaultRadius,
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: const TextStyle(color: AppTheme.textPrimary),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Digite a quantidade';
-                  if (double.tryParse(value) == null) return 'Valor inválido';
-                  return null;
-                },
-              ),
-              const SizedBox(height: AppTheme.gapMedium),
-              TextFormField(
-                controller: _entryController,
-                decoration: InputDecoration(
-                  labelText: 'Preço de Entrada',
-                  filled: true,
-                  fillColor: AppTheme.cardMedium,
-                  border: OutlineInputBorder(
-                    borderRadius: AppTheme.defaultRadius,
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: const TextStyle(color: AppTheme.textPrimary),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Digite o preço de entrada';
-                  if (double.tryParse(value) == null) return 'Valor inválido';
-                  return null;
-                },
-              ),
-              const SizedBox(height: AppTheme.gapMedium),
-              Text(
-                'Targets (Opcional)',
-                style: AppTheme.bodySmall.copyWith(color: AppTheme.textSecondary),
-              ),
-              const SizedBox(height: AppTheme.gapSmall),
-              TextFormField(
-                controller: _target1Controller,
-                decoration: InputDecoration(
-                  labelText: 'Target 1',
-                  filled: true,
-                  fillColor: AppTheme.cardMedium,
-                  border: OutlineInputBorder(
-                    borderRadius: AppTheme.defaultRadius,
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: const TextStyle(color: AppTheme.textPrimary),
-              ),
-              const SizedBox(height: AppTheme.gapSmall),
-              TextFormField(
-                controller: _target2Controller,
-                decoration: InputDecoration(
-                  labelText: 'Target 2',
-                  filled: true,
-                  fillColor: AppTheme.cardMedium,
-                  border: OutlineInputBorder(
-                    borderRadius: AppTheme.defaultRadius,
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: const TextStyle(color: AppTheme.textPrimary),
-              ),
-              const SizedBox(height: AppTheme.gapSmall),
-              TextFormField(
-                controller: _target3Controller,
-                decoration: InputDecoration(
-                  labelText: 'Target 3',
-                  filled: true,
-                  fillColor: AppTheme.cardMedium,
-                  border: OutlineInputBorder(
-                    borderRadius: AppTheme.defaultRadius,
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: const TextStyle(color: AppTheme.textPrimary),
-              ),
-              const SizedBox(height: AppTheme.gapMedium),
-              TextFormField(
-                controller: _stopLossController,
-                decoration: InputDecoration(
-                  labelText: 'Stop Loss (Opcional)',
-                  filled: true,
-                  fillColor: AppTheme.cardMedium,
-                  border: OutlineInputBorder(
-                    borderRadius: AppTheme.defaultRadius,
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                style: const TextStyle(color: AppTheme.textPrimary),
-              ),
-              const SizedBox(height: AppTheme.gapXLarge),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: _isLoading ? null : () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.textPrimary,
-                        side: const BorderSide(color: AppTheme.borderDark),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppTheme.defaultRadius,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: const Text('Cancelar'),
-                    ),
-                  ),
-                  const SizedBox(width: AppTheme.gapMedium),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _createTransaction,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryGreen,
-                        foregroundColor: AppTheme.textPrimary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppTheme.defaultRadius,
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(AppTheme.textPrimary),
-                              ),
-                            )
-                          : const Text('Criar Operação'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    canvas.drawRRect(rrect, borderPaint);
   }
 }

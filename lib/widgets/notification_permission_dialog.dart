@@ -23,7 +23,6 @@ class NotificationPermissionDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Ícone principal
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -39,7 +38,6 @@ class NotificationPermissionDialog extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Título
             Text(
               'Receber Notificações?',
               style: TextStyle(
@@ -52,7 +50,6 @@ class NotificationPermissionDialog extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Descrição
             Text(
               'Seja notificado instantaneamente quando:',
               style: TextStyle(
@@ -64,7 +61,6 @@ class NotificationPermissionDialog extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Features
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -99,7 +95,6 @@ class NotificationPermissionDialog extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Botões
             Row(
               children: [
                 Expanded(
@@ -161,7 +156,6 @@ class NotificationPermissionDialog extends StatelessWidget {
 
             const SizedBox(height: 8),
 
-            // Nota adicional
             Text(
               'Você pode alterar isso nas configurações a qualquer momento',
               style: TextStyle(

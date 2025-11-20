@@ -10,13 +10,16 @@ import 'package:alanoapp/features/signals/screens/signals_screen.dart';
 import 'package:alanoapp/features/notifications/screens/notifications_screen.dart';
 import 'package:alanoapp/features/crypto/screens/market_screen.dart';
 import 'package:alanoapp/features/crypto/screens/watchlist_screen.dart';
+import 'package:alanoapp/features/markets/screens/markets_screen.dart';
 import 'package:alanoapp/features/forex/screens/forex_calculator_screen.dart';
 import 'package:alanoapp/features/courses/screens/courses_screen.dart';
 import 'package:alanoapp/features/portfolio/screens/portfolio_screen.dart';
 import 'package:alanoapp/features/links/screens/useful_links_screen.dart';
 import 'package:alanoapp/features/support/screens/support_screen.dart';
 import 'package:alanoapp/features/cupula/screens/cupula_coming_soon_screen.dart';
-import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_screen.dart';
+// import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_screen.dart'; // DESABILITADO - Em desenvolvimento
+import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_coming_soon_screen.dart';
+import 'package:alanoapp/features/management/screens/management_screen.dart';
 import 'package:alanoapp/services/notification_service.dart';
 import '../../../widgets/app_drawer.dart';
 import '../../../widgets/app_logo.dart';
@@ -62,7 +65,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     const AlanoPostsScreen(), // 2 - Posts
     const SignalsScreen(), // 3 - Sinais
     const ProfileScreen(), // 4 - Perfil
-    const MarketScreen(), // 5 - Mercado
+    const MarketsScreen(), // 5 - Mercados (Novo com integração CoinGecko)
     const WatchlistScreen(), // 6 - Watchlist
     const ForexCalculatorScreen(), // 7 - Calculadora Forex
     const CoursesScreen(), // 8 - Cursos
@@ -71,7 +74,8 @@ class DashboardScreenState extends State<DashboardScreen> {
     const UsefulLinksScreen(), // 11 - Links Úteis
     const SupportScreen(), // 12 - Suporte
     const CupulaComingSoonScreen(), // 13 - A Cúpula
-    const EconomicCalendarScreen(), // 14 - Calendário Econômico
+    const EconomicCalendarComingSoonScreen(), // 14 - Calendário Econômico (Em Breve)
+    const ManagementScreen(), // 15 - Gerenciamento
   ];
   // ═══════════════════════════════════════════════════════════
   // MÉTODOS DE GERENCIAMENTO DE ÚLTIMA VISUALIZAÇÃO

@@ -9,41 +9,87 @@ class NewsService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Stream<List<NewsArticleModel>> getNewsStream({int limit = 6}) {
+    // Ler do cache market_cache/news
     return _firestore
-        .collection('news')
-        .orderBy('publishedAt', descending: true)
-        .limit(limit)
+        .collection('market_cache')
+        .doc('news')
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => NewsArticleModel.fromFirestore(doc))
-            .toList());
+        .map((doc) {
+      if (!doc.exists || doc.data() == null) return <NewsArticleModel>[];
+
+      final data = doc.data()!;
+      final List<dynamic> newsData = data['data'] ?? [];
+
+      return newsData
+          .take(limit)
+          .map((item) => _parseNewsFromCache(item))
+          .toList();
+    });
   }
 
   Future<List<NewsArticleModel>> getNews({int limit = 6}) async {
     try {
-      final snapshot = await _firestore
-          .collection('news')
-          .orderBy('publishedAt', descending: true)
-          .limit(limit)
+      final doc = await _firestore
+          .collection('market_cache')
+          .doc('news')
           .get();
 
-      return snapshot.docs
-          .map((doc) => NewsArticleModel.fromFirestore(doc))
+      if (!doc.exists || doc.data() == null) return [];
+
+      final data = doc.data()!;
+      final List<dynamic> newsData = data['data'] ?? [];
+
+      return newsData
+          .take(limit)
+          .map((item) => _parseNewsFromCache(item))
           .toList();
     } catch (e) {
       throw Exception('Error fetching news: $e');
     }
   }
 
+  NewsArticleModel _parseNewsFromCache(dynamic item) {
+    final map = item as Map<String, dynamic>;
+
+    // Parse da data
+    DateTime publishedAt;
+    try {
+      if (map['publishedAt'] is String) {
+        publishedAt = DateTime.parse(map['publishedAt']);
+      } else if (map['publishedAt'] is Timestamp) {
+        publishedAt = (map['publishedAt'] as Timestamp).toDate();
+      } else {
+        publishedAt = DateTime.now();
+      }
+    } catch (e) {
+      publishedAt = DateTime.now();
+    }
+
+    return NewsArticleModel(
+      id: map['id']?.toString() ?? '',
+      title: map['title']?.toString() ?? '',
+      imageUrl: map['urlToImage']?.toString() ?? '',
+      tags: [map['source']?.toString() ?? 'News'],
+      url: map['url']?.toString() ?? '',
+      isPremium: false,
+      publishedAt: publishedAt,
+    );
+  }
+
   Future<List<NewsArticleModel>> getAllNews() async {
     try {
-      final snapshot = await _firestore
-          .collection('news')
-          .orderBy('publishedAt', descending: true)
+      final doc = await _firestore
+          .collection('market_cache')
+          .doc('news')
           .get();
 
-      return snapshot.docs
-          .map((doc) => NewsArticleModel.fromFirestore(doc))
+      if (!doc.exists || doc.data() == null) return [];
+
+      final data = doc.data()!;
+      final List<dynamic> newsData = data['data'] ?? [];
+
+      return newsData
+          .map((item) => _parseNewsFromCache(item))
           .toList();
     } catch (e) {
       throw Exception('Error fetching all news: $e');

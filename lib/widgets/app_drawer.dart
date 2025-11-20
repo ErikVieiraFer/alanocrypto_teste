@@ -95,6 +95,11 @@ class _AppDrawerState extends State<AppDrawer> {
                         onTap: () => _changeTab(context, 9),
                       ),
                       _buildDrawerItem(
+                        icon: Icons.assessment_rounded,
+                        title: 'Gerenciamento',
+                        onTap: () => _changeTab(context, 15),
+                      ),
+                      _buildDrawerItem(
                         icon: Icons.event_note_rounded,
                         title: 'Calendário Econômico',
                         onTap: () => _changeTab(context, 14),

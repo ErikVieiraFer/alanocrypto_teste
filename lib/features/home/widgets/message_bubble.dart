@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../models/message_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../profile/screens/profile_screen.dart';
@@ -292,8 +293,63 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  static final RegExp _urlRegex = RegExp(
+    r'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)',
+    caseSensitive: false,
+  );
+
+  Future<void> _launchUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      debugPrint('Erro ao abrir URL: $e');
+    }
+  }
+
   Widget _buildMessageText(BuildContext context) {
-    if (message.mentions.isEmpty) {
+    final List<TextSpan> spans = [];
+    int currentPosition = 0;
+
+    // Coletar todas as marcações (menções e URLs)
+    final List<_TextMarker> markers = [];
+
+    // Adicionar menções
+    for (final mention in message.mentions) {
+      markers.add(_TextMarker(
+        start: mention.startIndex,
+        end: mention.startIndex + mention.length,
+        type: _MarkerType.mention,
+        data: mention,
+      ));
+    }
+
+    // Adicionar URLs
+    final urlMatches = _urlRegex.allMatches(message.text);
+    for (final match in urlMatches) {
+      // Verificar se a URL não está dentro de uma menção
+      bool insideMention = markers.any((m) =>
+          m.type == _MarkerType.mention &&
+          match.start >= m.start &&
+          match.end <= m.end);
+
+      if (!insideMention) {
+        markers.add(_TextMarker(
+          start: match.start,
+          end: match.end,
+          type: _MarkerType.url,
+          data: match.group(0),
+        ));
+      }
+    }
+
+    // Ordenar por posição inicial
+    markers.sort((a, b) => a.start.compareTo(b.start));
+
+    // Se não há marcações, retornar texto simples
+    if (markers.isEmpty) {
       return Text(
         message.text,
         style: const TextStyle(
@@ -304,43 +360,70 @@ class MessageBubble extends StatelessWidget {
       );
     }
 
-    final List<TextSpan> spans = [];
-    int currentPosition = 0;
-
-    // Ordenar menções pelo índice inicial
-    final sortedMentions = List<Mention>.from(message.mentions)
-      ..sort((a, b) => a.startIndex.compareTo(b.startIndex));
-
-    for (final mention in sortedMentions) {
-      if (mention.startIndex > currentPosition) {
-        spans.add(TextSpan(text: message.text.substring(currentPosition, mention.startIndex)));
+    // Construir spans
+    for (final marker in markers) {
+      // Texto antes da marcação
+      if (marker.start > currentPosition) {
+        spans.add(TextSpan(
+          text: message.text.substring(currentPosition, marker.start),
+        ));
       }
 
-      spans.add(
-        TextSpan(
-          text: message.text.substring(mention.startIndex, mention.startIndex + mention.length),
-          style: const TextStyle(
-            color: Color.fromRGBO(74, 158, 255, 1), // Azul #4A9EFF
-            fontWeight: FontWeight.bold,
+      // Marcação
+      if (marker.type == _MarkerType.mention) {
+        final mention = marker.data as Mention;
+        spans.add(
+          TextSpan(
+            text: message.text.substring(marker.start, marker.end),
+            style: const TextStyle(
+              color: Color.fromRGBO(74, 158, 255, 1),
+              fontWeight: FontWeight.bold,
+            ),
+            recognizer: TapGestureRecognizer()..onTap = () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProfileScreen(userId: mention.userId),
+                ),
+              );
+            },
           ),
-          recognizer: TapGestureRecognizer()..onTap = () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ProfileScreen(userId: mention.userId),
-              ),
-            );
-          },
-        ),
-      );
-      currentPosition = mention.startIndex + mention.length;
+        );
+      } else if (marker.type == _MarkerType.url) {
+        final url = marker.data as String;
+        spans.add(
+          TextSpan(
+            text: url,
+            style: const TextStyle(
+              color: Color.fromRGBO(74, 158, 255, 1),
+              decoration: TextDecoration.underline,
+              decorationColor: Color.fromRGBO(74, 158, 255, 1),
+            ),
+            recognizer: TapGestureRecognizer()..onTap = () => _launchUrl(url),
+          ),
+        );
+      }
+
+      currentPosition = marker.end;
     }
 
+    // Texto após a última marcação
     if (currentPosition < message.text.length) {
-      spans.add(TextSpan(text: message.text.substring(currentPosition)));
+      spans.add(TextSpan(
+        text: message.text.substring(currentPosition),
+      ));
     }
 
-    return RichText(text: TextSpan(style: const TextStyle(color: Colors.white, fontSize: 18, height: 1.4), children: spans));
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          height: 1.4,
+        ),
+        children: spans,
+      ),
+    );
   }
 
   Widget _buildReactions(ThemeData theme) {
@@ -391,4 +474,21 @@ class MessageBubble extends StatelessWidget {
   String _formatTime(DateTime timestamp) {
     return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
   }
+}
+
+// Classes auxiliares para marcação de texto
+enum _MarkerType { mention, url }
+
+class _TextMarker {
+  final int start;
+  final int end;
+  final _MarkerType type;
+  final dynamic data;
+
+  _TextMarker({
+    required this.start,
+    required this.end,
+    required this.type,
+    required this.data,
+  });
 }

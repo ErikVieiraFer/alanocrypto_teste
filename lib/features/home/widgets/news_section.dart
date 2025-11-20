@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../services/news_api_service.dart';
+import '../../../services/news_service.dart';
+import '../../../models/news_article_model.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/shimmer_loading.dart';
 
@@ -13,14 +14,13 @@ class NewsSection extends StatefulWidget {
 }
 
 class _NewsSectionState extends State<NewsSection> {
-  late final NewsApiService _newsService;
-  List<NewsArticle> _news = [];
+  final NewsService _newsService = NewsService();
+  List<NewsArticleModel> _news = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _newsService = NewsApiService();  // Sem API key - usa Cloud Function
     _loadNews();
   }
 
@@ -28,7 +28,7 @@ class _NewsSectionState extends State<NewsSection> {
     setState(() => _isLoading = true);
 
     try {
-      final articles = await _newsService.getFinancialNews();
+      final articles = await _newsService.getNews(limit: 6);
 
       if (mounted) {
         setState(() {
@@ -130,7 +130,7 @@ class _NewsSectionState extends State<NewsSection> {
 }
 
 class _NewsCard extends StatelessWidget {
-  final NewsArticle article;
+  final NewsArticleModel article;
 
   const _NewsCard({required this.article});
 
@@ -161,9 +161,9 @@ class _NewsCard extends StatelessWidget {
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                      child: article.imageUrl != null
+                      child: article.imageUrl.isNotEmpty
                           ? CachedNetworkImage(
-                              imageUrl: article.imageUrl!,
+                              imageUrl: article.imageUrl,
                               width: double.infinity,
                               height: 160,
                               fit: BoxFit.cover,
@@ -212,7 +212,7 @@ class _NewsCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          article.source,
+                          article.tags.isNotEmpty ? article.tags.first : 'News',
                           style: AppTheme.bodySmall.copyWith(
                             color: AppTheme.primaryGreen,
                             fontSize: 11,
