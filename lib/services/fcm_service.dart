@@ -86,13 +86,15 @@ class FcmService {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      await _firestore.collection('users').doc(user.uid).update({
+      // SEMPRE sobrescrever o token (não adicionar múltiplos)
+      await _firestore.collection('users').doc(user.uid).set({
         'fcmToken': token,
         'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
         'notificationsEnabled': true,
-      });
+        'platform': kIsWeb ? 'web' : 'mobile',
+      }, SetOptions(merge: true));
 
-      debugPrint('✅ Token FCM salvo no Firestore');
+      debugPrint('✅ Token FCM salvo (sobrescrito): ${token.substring(0, 20)}...');
     } catch (e) {
       debugPrint('❌ Erro ao salvar token FCM no Firestore: $e');
     }

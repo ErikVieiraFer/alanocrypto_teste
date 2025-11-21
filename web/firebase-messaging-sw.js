@@ -31,27 +31,34 @@ messaging.onBackgroundMessage((payload) => {
   return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
+// Criar BroadcastChannel para comunicação
+const channel = new BroadcastChannel('notification_channel');
+
 // Quando usuário clica na notificação
 self.addEventListener('notificationclick', (event) => {
   console.log('🔔 Notificação clicada:', event.notification.data);
   event.notification.close();
 
-  const notifData = event.notification.data || {};
-  const type = notifData.type;
+  const data = event.notification.data || {};
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Enviar mensagem via BroadcastChannel
+      channel.postMessage({
+        type: 'NOTIFICATION_CLICK',
+        notifType: data.type,
+        data: data
+      });
+
+      console.log('📡 Mensagem enviada via BroadcastChannel:', data.type);
+
+      // Focar ou abrir janela
       for (let client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.focus();
-          client.postMessage({
-            type: 'NOTIFICATION_CLICK',
-            notifType: type,
-            data: notifData
-          });
-          return;
+        if (client.url.includes(self.location.origin)) {
+          return client.focus();
         }
       }
+
       if (clients.openWindow) {
         return clients.openWindow('/');
       }

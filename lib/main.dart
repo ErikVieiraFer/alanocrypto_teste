@@ -22,7 +22,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 
 // Import condicional para Web
 // ignore: avoid_web_libraries_in_flutter, deprecated_member_use
-import 'dart:html' as html if (dart.library.io) '';
+import 'dart:js' as js if (dart.library.io) '';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -32,59 +32,94 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('Corpo: ${message.notification?.body}');
 }
 
-// Global key para navegação
+// Chave global de navegação
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void _setupWebMessageListener() {
+void setupNotificationNavigation() {
   if (kIsWeb) {
-    debugPrint('🌐 Configurando listener de mensagens do Service Worker');
+    try {
+      // Escutar mensagens do Service Worker via BroadcastChannel
+      final broadcastChannel = js.JsObject(
+        js.context['BroadcastChannel'],
+        ['notification_channel']
+      );
 
-    html.window.addEventListener('message', (event) {
-      final messageEvent = event as html.MessageEvent;
-      final data = messageEvent.data;
+      broadcastChannel.callMethod('addEventListener', [
+        'message',
+        js.allowInterop((event) {
+          final data = js.JsObject.fromBrowserObject(event)['data'];
+          if (data != null) {
+            _navigateFromNotification(data);
+          }
+        })
+      ]);
 
-      if (data is Map && data['type'] == 'NOTIFICATION_CLICK') {
-        debugPrint('📱 Mensagem do SW recebida: ${data['notifType']}');
-        _handleWebNotificationClick(data);
-      }
-    });
+      debugPrint('✅ Listener de navegação via BroadcastChannel configurado');
+    } catch (e) {
+      debugPrint('❌ Erro ao configurar BroadcastChannel: $e');
+    }
   }
 }
 
-void _handleWebNotificationClick(Map<dynamic, dynamic> data) {
-  final notifType = data['notifType'];
-  final notifData = data['data'] ?? {};
+void _navigateFromNotification(dynamic data) {
+  debugPrint('🎯 Navegando da notificação: $data');
 
-  debugPrint('🎯 Tipo de notificação: $notifType');
-  debugPrint('📦 Dados: $notifData');
+  final notifType = _getProperty(data, 'notifType')?.toString();
 
-  // Delay para garantir que app esteja carregado
-  Future.delayed(const Duration(milliseconds: 500), () {
+  if (notifType == null) {
+    debugPrint('⚠️ notifType é null');
+    return;
+  }
+
+  // Delay para garantir que app está pronto
+  Future.delayed(const Duration(milliseconds: 300), () {
     final context = navigatorKey.currentContext;
-    if (context != null) {
-      // Usar callback do FCM Service
-      final postId = notifData['postId']?.toString();
-      final messageId = notifData['messageId']?.toString();
+    if (context == null) {
+      debugPrint('❌ Context não disponível para navegação');
+      return;
+    }
 
-      switch (notifType) {
-        case 'alano_post':
-          debugPrint('📝 Navegar para post do Alano: $postId');
-          FcmService().navigateToScreen(2); // Index 2 = AlanoPostsScreen
-          break;
+    if (!context.mounted) {
+      debugPrint('⚠️ Context não está mais montado');
+      return;
+    }
 
-        case 'mention':
-          debugPrint('💬 Navegar para chat na mensagem: $messageId');
-          FcmService().navigateToScreen(1); // Index 1 = GroupChatScreen
-          break;
+    debugPrint('✅ Navegando para tipo: $notifType');
 
-        default:
-          debugPrint('❓ Tipo desconhecido: $notifType');
-          FcmService().navigateToScreen(0); // Ir para home
-      }
-    } else {
-      debugPrint('⚠️ Context não disponível para navegação');
+    switch (notifType) {
+      case 'alano_post':
+        // Navegar para Posts do Alano
+        Navigator.of(context).pushNamed('/alano-posts');
+        break;
+
+      case 'mention':
+        // Navegar para Chat
+        Navigator.of(context).pushNamed('/chat');
+        break;
+
+      case 'signal':
+        // Navegar para Sinais
+        Navigator.of(context).pushNamed('/signals');
+        break;
+
+      default:
+        debugPrint('⚠️ Tipo de notificação não mapeado: $notifType');
     }
   });
+}
+
+// Helper para ler propriedades de JsObject
+dynamic _getProperty(dynamic obj, String property) {
+  if (kIsWeb) {
+    try {
+      if (obj is js.JsObject) {
+        return obj[property];
+      }
+    } catch (e) {
+      debugPrint('⚠️ Erro ao ler propriedade $property: $e');
+    }
+  }
+  return null;
 }
 
 void main() {
@@ -137,9 +172,9 @@ void main() {
 
       timeago.setLocaleMessages('pt_BR', timeago.PtBrMessages());
 
-      // Configurar listener de mensagens web
+      // Configurar navegação de notificações
       if (kIsWeb) {
-        _setupWebMessageListener();
+        setupNotificationNavigation();
       }
 
       runApp(const MyApp());
@@ -194,6 +229,9 @@ class MyApp extends StatelessWidget {
         // }, // DESABILITADO - Fluxo direto sem verificação
         '/pending-approval': (context) => const PendingApprovalScreen(),
         '/dashboard': (context) => const DashboardScreen(),
+        '/alano-posts': (context) => const DashboardScreen(initialIndex: 2),
+        '/chat': (context) => const DashboardScreen(initialIndex: 1),
+        '/signals': (context) => const DashboardScreen(initialIndex: 3),
         '/under-development': (context) {
           final pageName =
               ModalRoute.of(context)?.settings.arguments as String? ?? 'Página';
