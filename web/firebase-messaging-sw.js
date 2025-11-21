@@ -33,47 +33,27 @@ messaging.onBackgroundMessage((payload) => {
 
 // Quando usuário clica na notificação
 self.addEventListener('notificationclick', (event) => {
-  console.log('🔔 Notificação FCM clicada:', event.notification.tag);
+  console.log('🔔 Notificação clicada:', event.notification.data);
   event.notification.close();
 
-  const type = event.notification.data?.type;
-  let targetUrl = '/';
+  const notifData = event.notification.data || {};
+  const type = notifData.type;
 
-  // Definir URL de destino baseado no tipo
-  switch (type) {
-    case 'signal':
-      targetUrl = '/#signals';
-      break;
-    case 'post':
-    case 'alano_post':
-      targetUrl = '/#posts';
-      break;
-    default:
-      targetUrl = '/';
-  }
-
-  // Abrir app ou focar na aba já aberta
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Verificar se já existe uma janela aberta
-      for (let i = 0; i < clientList.length; i++) {
-        const client = clientList[i];
+      for (let client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.focus().then(() => {
-            // Enviar mensagem para o cliente com a URL de destino
-            if ('postMessage' in client) {
-              client.postMessage({
-                type: 'NOTIFICATION_CLICK',
-                url: targetUrl,
-                data: event.notification.data
-              });
-            }
+          client.focus();
+          client.postMessage({
+            type: 'NOTIFICATION_CLICK',
+            notifType: type,
+            data: notifData
           });
+          return;
         }
       }
-      // Se não houver janela aberta, abrir uma nova
       if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
+        return clients.openWindow('/');
       }
     })
   );

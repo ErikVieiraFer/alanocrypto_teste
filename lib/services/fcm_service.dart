@@ -102,6 +102,12 @@ class FcmService {
     // Notificação recebida quando app está em foreground
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('📬 Notificação FCM recebida (foreground)');
+
+      if (kIsWeb) {
+        debugPrint('⚠️ Web: Service Worker já mostrou notificação, ignorando');
+        return;
+      }
+
       debugPrint('Título: ${message.notification?.title}');
       debugPrint('Corpo: ${message.notification?.body}');
       debugPrint('Data: ${message.data}');
@@ -126,31 +132,54 @@ class FcmService {
   }
 
   void _handleNotificationClick(RemoteMessage message) {
-    debugPrint('📲 Tratando clique em notificação FCM: ${message.data}');
+    debugPrint('📲 Tratando clique em notificação: ${message.data}');
 
-    // Aqui você pode navegar para uma tela específica
-    // Baseado no tipo de notificação
     final type = message.data['type'];
+    final postId = message.data['postId'];
+    final messageId = message.data['messageId'];
 
     switch (type) {
-      case 'signal':
-        // Navegar para tela de sinais
-        debugPrint('📊 Navegar para sinais');
-        // TODO: Implementar navegação para sinais
-        break;
-      case 'post':
-        // Navegar para posts do Alano
-        debugPrint('📝 Navegar para posts');
-        // TODO: Implementar navegação para posts
-        break;
       case 'alano_post':
-        // Navegar para posts exclusivos do Alano
-        debugPrint('⭐ Navegar para posts exclusivos do Alano');
-        // TODO: Implementar navegação para posts do Alano
+        debugPrint('📝 Abrir post do Alano: $postId');
+        navigateToScreen(2); // Index 2 = AlanoPostsScreen
+        // TODO: Navegar para tela de posts do Alano com ID específico
         break;
+
+      case 'mention':
+        debugPrint('💬 Abrir chat na mensagem: $messageId');
+        navigateToScreen(1); // Index 1 = GroupChatScreen
+        // TODO: Navegar para chat e focar na mensagem
+        break;
+
+      case 'signal':
+        debugPrint('📊 Abrir tela de sinais');
+        navigateToScreen(3); // Index 3 = SignalsScreen
+        break;
+
       default:
-        debugPrint('❓ Tipo de notificação desconhecido: $type');
+        debugPrint('❓ Tipo desconhecido: $type');
+        navigateToScreen(0); // Ir para home por padrão
     }
+  }
+
+  void navigateToScreen(int screenIndex) {
+    // Usar um GlobalKey ou NavigatorState para navegar
+    // Como FcmService é um singleton, precisamos de uma referência ao contexto
+    // A melhor forma é através de um callback ou usando GetX/Provider
+
+    // Por enquanto, vamos usar um approach simplificado com um callback
+    if (_navigationCallback != null) {
+      _navigationCallback!(screenIndex);
+    } else {
+      debugPrint('⚠️ Navigation callback não configurado');
+    }
+  }
+
+  // Callback para navegação
+  Function(int)? _navigationCallback;
+
+  void setNavigationCallback(Function(int) callback) {
+    _navigationCallback = callback;
   }
 
   Future<void> disableNotifications() async {

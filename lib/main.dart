@@ -17,9 +17,12 @@ import 'features/placeholder/under_development_screen.dart';
 import 'services/auth_service.dart';
 import 'services/user_service.dart';
 import 'services/fcm_service.dart';
-import 'middleware/auth_middleware.dart';
 import 'package:alanoapp/firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+
+// Import condicional para Web
+// ignore: avoid_web_libraries_in_flutter, deprecated_member_use
+import 'dart:html' as html if (dart.library.io) '';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -27,6 +30,61 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('📬 Notificação FCM recebida em background');
   debugPrint('Título: ${message.notification?.title}');
   debugPrint('Corpo: ${message.notification?.body}');
+}
+
+// Global key para navegação
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+void _setupWebMessageListener() {
+  if (kIsWeb) {
+    debugPrint('🌐 Configurando listener de mensagens do Service Worker');
+
+    html.window.addEventListener('message', (event) {
+      final messageEvent = event as html.MessageEvent;
+      final data = messageEvent.data;
+
+      if (data is Map && data['type'] == 'NOTIFICATION_CLICK') {
+        debugPrint('📱 Mensagem do SW recebida: ${data['notifType']}');
+        _handleWebNotificationClick(data);
+      }
+    });
+  }
+}
+
+void _handleWebNotificationClick(Map<dynamic, dynamic> data) {
+  final notifType = data['notifType'];
+  final notifData = data['data'] ?? {};
+
+  debugPrint('🎯 Tipo de notificação: $notifType');
+  debugPrint('📦 Dados: $notifData');
+
+  // Delay para garantir que app esteja carregado
+  Future.delayed(const Duration(milliseconds: 500), () {
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      // Usar callback do FCM Service
+      final postId = notifData['postId']?.toString();
+      final messageId = notifData['messageId']?.toString();
+
+      switch (notifType) {
+        case 'alano_post':
+          debugPrint('📝 Navegar para post do Alano: $postId');
+          FcmService().navigateToScreen(2); // Index 2 = AlanoPostsScreen
+          break;
+
+        case 'mention':
+          debugPrint('💬 Navegar para chat na mensagem: $messageId');
+          FcmService().navigateToScreen(1); // Index 1 = GroupChatScreen
+          break;
+
+        default:
+          debugPrint('❓ Tipo desconhecido: $notifType');
+          FcmService().navigateToScreen(0); // Ir para home
+      }
+    } else {
+      debugPrint('⚠️ Context não disponível para navegação');
+    }
+  });
 }
 
 void main() {
@@ -52,11 +110,18 @@ void main() {
           options: DefaultFirebaseOptions.currentPlatform,
         );
 
+        // Firebase App Check - opcional para debug
         if (!kIsWeb) {
-          await FirebaseAppCheck.instance.activate(
-            androidProvider: AndroidProvider.debug,
-            appleProvider: AppleProvider.debug,
-          );
+          try {
+            await FirebaseAppCheck.instance.activate(
+              androidProvider: AndroidProvider.debug,
+              appleProvider: AppleProvider.debug,
+            );
+            debugPrint('✅ Firebase App Check ativado');
+          } catch (e) {
+            debugPrint('⚠️ Firebase App Check não ativado (modo debug): $e');
+            // Continuar sem App Check em desenvolvimento
+          }
         }
 
         if (!kIsWeb) {
@@ -71,6 +136,11 @@ void main() {
       }
 
       timeago.setLocaleMessages('pt_BR', timeago.PtBrMessages());
+
+      // Configurar listener de mensagens web
+      if (kIsWeb) {
+        _setupWebMessageListener();
+      }
 
       runApp(const MyApp());
     },
@@ -109,6 +179,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
       themeMode: ThemeMode.dark,
+      navigatorKey: navigatorKey,
       home: const AuthWrapper(),
       routes: {
         '/landing': (context) => const LandingScreen(),

@@ -21,6 +21,7 @@ import 'package:alanoapp/features/cupula/screens/cupula_coming_soon_screen.dart'
 import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_coming_soon_screen.dart';
 import 'package:alanoapp/features/management/screens/management_screen.dart';
 import 'package:alanoapp/services/notification_service.dart';
+import 'package:alanoapp/services/fcm_service.dart';
 import '../../../widgets/app_drawer.dart';
 import '../../../widgets/app_logo.dart';
 import '../../../widgets/welcome_notification_dialog.dart';
@@ -172,6 +173,9 @@ class DashboardScreenState extends State<DashboardScreen> {
     // Inicializar com o índice fornecido
     _currentIndex = widget.initialIndex;
 
+    // Configurar callback de navegação para notificações FCM
+    _setupFcmNavigationCallback();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args =
           ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
@@ -187,6 +191,17 @@ class DashboardScreenState extends State<DashboardScreen> {
 
       // Mostra os diálogos de primeira vez em sequência
       _showFirstTimeDialogs(context);
+    });
+  }
+
+  void _setupFcmNavigationCallback() {
+    final fcmService = FcmService();
+    fcmService.setNavigationCallback((int screenIndex) {
+      if (mounted && screenIndex >= 0 && screenIndex < _screens.length) {
+        setState(() {
+          _currentIndex = screenIndex;
+        });
+      }
     });
   }
 
