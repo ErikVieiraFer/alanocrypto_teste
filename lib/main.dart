@@ -23,6 +23,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 // Import condicional para Web
 // ignore: avoid_web_libraries_in_flutter, deprecated_member_use
 import 'dart:js' as js if (dart.library.io) '';
+import 'dart:html' as html if (dart.library.io) '';
+import 'dart:ui' as ui;
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -38,49 +40,34 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void setupNotificationNavigation() {
   if (kIsWeb) {
     try {
-      // Escutar mensagens do Service Worker via BroadcastChannel
-      final broadcastChannel = js.JsObject(
-        js.context['BroadcastChannel'],
-        ['notification_channel']
-      );
-
-      broadcastChannel.callMethod('addEventListener', [
-        'message',
-        js.allowInterop((event) {
-          final data = js.JsObject.fromBrowserObject(event)['data'];
-          if (data != null) {
-            _navigateFromNotification(data);
-          }
-        })
-      ]);
-
-      debugPrint('✅ Listener de navegação via BroadcastChannel configurado');
+      html.window.addEventListener('message', (event) {
+        final data = (event as html.MessageEvent).data;
+        if (data is Map && data['type'] == 'NOTIFICATION_CLICK') {
+          debugPrint('📱 Mensagem do SW recebida: ${data['notifType']}');
+          _navigateFromNotification(data);
+        }
+      });
+      debugPrint('✅ Listener de navegação configurado');
     } catch (e) {
-      debugPrint('❌ Erro ao configurar BroadcastChannel: $e');
+      debugPrint('❌ Erro ao configurar listener: $e');
     }
   }
 }
 
-void _navigateFromNotification(dynamic data) {
+void _navigateFromNotification(Map data) {
   debugPrint('🎯 Navegando da notificação: $data');
 
-  final notifType = _getProperty(data, 'notifType')?.toString();
+  final notifType = data['notifType']?.toString();
 
   if (notifType == null) {
     debugPrint('⚠️ notifType é null');
     return;
   }
 
-  // Delay para garantir que app está pronto
-  Future.delayed(const Duration(milliseconds: 300), () {
+  Future.delayed(const Duration(milliseconds: 500), () {
     final context = navigatorKey.currentContext;
     if (context == null) {
       debugPrint('❌ Context não disponível para navegação');
-      return;
-    }
-
-    if (!context.mounted) {
-      debugPrint('⚠️ Context não está mais montado');
       return;
     }
 
@@ -88,38 +75,40 @@ void _navigateFromNotification(dynamic data) {
 
     switch (notifType) {
       case 'alano_post':
-        // Navegar para Posts do Alano
-        Navigator.of(context).pushNamed('/alano-posts');
+      case 'post':
+        debugPrint('📝 Navegando para Posts do Alano');
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const DashboardScreen(initialIndex: 2),
+          ),
+          (route) => false,
+        );
         break;
 
       case 'mention':
-        // Navegar para Chat
-        Navigator.of(context).pushNamed('/chat');
+        debugPrint('💬 Navegando para Chat');
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const DashboardScreen(initialIndex: 1),
+          ),
+          (route) => false,
+        );
         break;
 
       case 'signal':
-        // Navegar para Sinais
-        Navigator.of(context).pushNamed('/signals');
+        debugPrint('📊 Navegando para Sinais');
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const DashboardScreen(initialIndex: 3),
+          ),
+          (route) => false,
+        );
         break;
 
       default:
         debugPrint('⚠️ Tipo de notificação não mapeado: $notifType');
     }
   });
-}
-
-// Helper para ler propriedades de JsObject
-dynamic _getProperty(dynamic obj, String property) {
-  if (kIsWeb) {
-    try {
-      if (obj is js.JsObject) {
-        return obj[property];
-      }
-    } catch (e) {
-      debugPrint('⚠️ Erro ao ler propriedade $property: $e');
-    }
-  }
-  return null;
 }
 
 void main() {

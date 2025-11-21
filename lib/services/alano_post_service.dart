@@ -64,9 +64,6 @@ class AlanoPostService {
     String? thumbnailUrl,
   }) async {
     try {
-      // IMPORTANTE: Para vídeos do YouTube, não use thumbnailUrl manual.
-      // O modelo AlanoPost já gera automaticamente a thumbnail via autoThumbnailUrl
-      // usando a URL sem CORS: https://img.youtube.com/vi/{videoId}/0.jpg
       final newPost = AlanoPost(
         id: '',
         title: title,
@@ -80,44 +77,13 @@ class AlanoPostService {
         createdAt: DateTime.now(),
       );
 
-      final docRef = await _firestore
-          .collection('alano_posts')
-          .add(newPost.toFirestore());
-      await _createNotificationsForAllUsers(docRef.id, title);
+      await _firestore.collection('alano_posts').add(newPost.toFirestore());
+      print('✅ Post criado - Cloud Function enviará notificações');
+
       return true;
     } catch (e) {
       print('Erro ao criar post: $e');
       return false;
-    }
-  }
-
-  Future<void> _createNotificationsForAllUsers(
-    String postId,
-    String title,
-  ) async {
-    try {
-      final usersSnapshot = await _firestore.collection('users').get();
-      if (usersSnapshot.docs.isEmpty) return;
-
-      final batch = _firestore.batch();
-      final notificationsCollection = _firestore.collection('notifications');
-
-      for (final userDoc in usersSnapshot.docs) {
-        final newNotifRef = notificationsCollection.doc();
-        batch.set(newNotifRef, {
-          'userId': userDoc.id,
-          'type': NotificationType.post.name,
-          'title': 'Novo Post do Alano',
-          'content': title,
-          'read': false,
-          'relatedId': postId,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      await batch.commit();
-    } catch (e) {
-      print('Erro ao criar notificações: $e');
     }
   }
 }

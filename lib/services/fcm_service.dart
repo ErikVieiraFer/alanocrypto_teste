@@ -2,6 +2,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import '../features/dashboard/screen/dashboard_screen.dart';
+import '../main.dart' show navigatorKey;
 
 class FcmService {
   static final FcmService _instance = FcmService._internal();
@@ -134,34 +137,57 @@ class FcmService {
   }
 
   void _handleNotificationClick(RemoteMessage message) {
-    debugPrint('📲 Tratando clique em notificação: ${message.data}');
+    debugPrint('📲 Clique em notificação: ${message.data}');
 
     final type = message.data['type'];
     final postId = message.data['postId'];
     final messageId = message.data['messageId'];
 
-    switch (type) {
-      case 'alano_post':
-        debugPrint('📝 Abrir post do Alano: $postId');
-        navigateToScreen(2); // Index 2 = AlanoPostsScreen
-        // TODO: Navegar para tela de posts do Alano com ID específico
-        break;
+    debugPrint('🎯 Tipo: $type');
 
-      case 'mention':
-        debugPrint('💬 Abrir chat na mensagem: $messageId');
-        navigateToScreen(1); // Index 1 = GroupChatScreen
-        // TODO: Navegar para chat e focar na mensagem
-        break;
+    Future.delayed(const Duration(milliseconds: 300), () {
+      final context = navigatorKey.currentContext;
+      if (context == null) {
+        debugPrint('❌ Context não disponível');
+        return;
+      }
 
-      case 'signal':
-        debugPrint('📊 Abrir tela de sinais');
-        navigateToScreen(3); // Index 3 = SignalsScreen
-        break;
+      switch (type) {
+        case 'alano_post':
+        case 'post':
+          debugPrint('📝 Navegando para Posts do Alano');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const DashboardScreen(initialIndex: 2),
+            ),
+            (route) => false,
+          );
+          break;
 
-      default:
-        debugPrint('❓ Tipo desconhecido: $type');
-        navigateToScreen(0); // Ir para home por padrão
-    }
+        case 'mention':
+          debugPrint('💬 Navegando para Chat');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const DashboardScreen(initialIndex: 1),
+            ),
+            (route) => false,
+          );
+          break;
+
+        case 'signal':
+          debugPrint('📊 Navegando para Sinais');
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const DashboardScreen(initialIndex: 3),
+            ),
+            (route) => false,
+          );
+          break;
+
+        default:
+          debugPrint('⚠️ Tipo desconhecido: $type');
+      }
+    });
   }
 
   void navigateToScreen(int screenIndex) {
