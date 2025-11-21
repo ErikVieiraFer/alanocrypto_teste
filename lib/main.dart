@@ -30,8 +30,19 @@ import 'dart:ui' as ui;
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint('📬 Notificação FCM recebida em background');
-  debugPrint('Título: ${message.notification?.title}');
-  debugPrint('Corpo: ${message.notification?.body}');
+
+  // Se tem campo 'notification', o Firebase já mostrou automaticamente
+  if (message.notification != null) {
+    debugPrint('Título: ${message.notification?.title}');
+    debugPrint('Corpo: ${message.notification?.body}');
+  }
+
+  // Se é mensagem data-only, o Firebase NÃO mostra automaticamente
+  // Então precisamos mostrar manualmente (mas não aqui no background handler,
+  // o sistema operacional já mostra baseado nos dados)
+  if (message.data.isNotEmpty) {
+    debugPrint('Data: ${message.data}');
+  }
 }
 
 // Chave global de navegação

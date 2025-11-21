@@ -15,18 +15,26 @@ const messaging = firebase.messaging();
 
 // Handler para notificações em background
 messaging.onBackgroundMessage((payload) => {
-  console.log('📬 Notificação FCM recebida (background):', payload);
+  console.log('📬 Notificação FCM recebida (background - PWA):', payload);
 
-  const notificationTitle = payload.notification?.title || 'AlanoCryptoFX';
+  // Agora os dados vêm no campo 'data' (não mais 'notification')
+  const notificationTitle = payload.data?.notificationTitle || payload.notification?.title || 'AlanoCryptoFX';
+  const notificationBody = payload.data?.body || payload.notification?.body || 'Nova notificação';
+
   const notificationOptions = {
-    body: payload.notification?.body || 'Nova notificação',
+    body: notificationBody,
     icon: '/icons/Icon-192.png',
     badge: '/icons/Icon-192.png',
-    tag: payload.data?.type || 'default',
+    tag: payload.data?.postId || payload.data?.type || 'default', // Tag única para evitar duplicação
     data: payload.data,
     requireInteraction: false,
     vibrate: [200, 100, 200],
+    renotify: false, // Não renotificar se já existe com mesmo tag
   };
+
+  console.log('🔔 Mostrando notificação PWA com tag:', notificationOptions.tag);
+  console.log('🔔 Título:', notificationTitle);
+  console.log('🔔 Corpo:', notificationBody);
 
   return self.registration.showNotification(notificationTitle, notificationOptions);
 });
