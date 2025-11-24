@@ -325,7 +325,7 @@ class DashboardScreenState extends State<DashboardScreen> {
         actions: [
           if (_userId != null)
             StreamBuilder<int>(
-              stream: _notificationService.getUnreadCount(_userId!),
+              stream: _notificationService.getUnreadCountStream(_userId),
               builder: (context, snapshot) {
                 final unreadCount = snapshot.data ?? 0;
                 return Stack(
