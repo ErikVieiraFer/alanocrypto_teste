@@ -15,12 +15,17 @@ class _EconomicCalendarScreenState extends State<EconomicCalendarScreen> with Si
   List<Map<String, dynamic>> _allEvents = [];
   List<Map<String, dynamic>> _filteredEvents = [];
   bool _isLoading = true;
-  int _currentTabIndex = 1; // Start on "Today"
+  int _currentTabIndex = 2; // Start on "Today" (middle tab)
+  late List<DateTime> _dates;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this, initialIndex: 1);
+    // Gerar 5 dias: -2, -1, hoje, +1, +2
+    final today = DateTime.now();
+    _dates = List.generate(5, (i) => today.add(Duration(days: i - 2)));
+
+    _tabController = TabController(length: 5, vsync: this, initialIndex: 2);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() {
@@ -64,37 +69,21 @@ class _EconomicCalendarScreenState extends State<EconomicCalendarScreen> with Si
   }
 
   void _filterEvents() {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final yesterday = today.subtract(const Duration(days: 1));
-    final tomorrow = today.add(const Duration(days: 1));
-    final weekEnd = today.add(const Duration(days: 7));
+    final selectedDate = _dates[_currentTabIndex];
 
     _filteredEvents = _allEvents.where((event) {
       final eventDate = _parseEventDate(event['date']);
       if (eventDate == null) return false;
 
-      final eventDay = DateTime(eventDate.year, eventDate.month, eventDate.day);
-
-      switch (_currentTabIndex) {
-        case 0: // Yesterday
-          return eventDay.isAtSameMomentAs(yesterday);
-        case 1: // Today
-          return eventDay.isAtSameMomentAs(today);
-        case 2: // Tomorrow
-          return eventDay.isAtSameMomentAs(tomorrow);
-        case 3: // This Week
-          return eventDay.isAfter(yesterday) && eventDay.isBefore(weekEnd);
-        default:
-          return false;
-      }
+      return eventDate.year == selectedDate.year &&
+             eventDate.month == selectedDate.month &&
+             eventDate.day == selectedDate.day;
     }).toList();
 
-    // Sort by date
+    // Ordenar por hora
     _filteredEvents.sort((a, b) {
-      final dateA = _parseEventDate(a['date']);
-      final dateB = _parseEventDate(b['date']);
-      if (dateA == null || dateB == null) return 0;
+      final dateA = _parseEventDate(a['date']) ?? DateTime.now();
+      final dateB = _parseEventDate(b['date']) ?? DateTime.now();
       return dateA.compareTo(dateB);
     });
   }
@@ -194,29 +183,24 @@ class _EconomicCalendarScreenState extends State<EconomicCalendarScreen> with Si
             // Tab Bar
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 24),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1a1f26),
-                borderRadius: BorderRadius.circular(12),
-              ),
               child: TabBar(
                 controller: _tabController,
-                indicator: BoxDecoration(
-                  color: AppTheme.primaryGreen,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                labelColor: Colors.black,
-                unselectedLabelColor: Colors.grey,
+                indicatorColor: AppTheme.primaryGreen,
+                indicatorWeight: 3.0,
+                labelColor: AppTheme.primaryGreen,
+                unselectedLabelColor: AppTheme.textSecondary,
                 dividerColor: Colors.transparent,
                 labelStyle: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
-                tabs: const [
-                  Tab(text: 'Ontem'),
-                  Tab(text: 'Hoje'),
-                  Tab(text: 'Amanhã'),
-                  Tab(text: 'Semana'),
-                ],
+                unselectedLabelStyle: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.normal,
+                ),
+                tabs: _dates.map((date) => Tab(
+                  text: DateFormat('dd/MM').format(date),
+                )).toList(),
               ),
             ),
 
@@ -264,11 +248,11 @@ class _EconomicCalendarScreenState extends State<EconomicCalendarScreen> with Si
                           color: AppTheme.primaryGreen,
                           backgroundColor: const Color(0xFF1a1f26),
                           child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            padding: EdgeInsets.zero,
                             itemCount: _filteredEvents.length,
                             itemBuilder: (context, index) {
                               final event = _filteredEvents[index];
-                              return _buildEventCard(event);
+                              return _buildEventItem(event);
                             },
                           ),
                         ),
@@ -279,159 +263,292 @@ class _EconomicCalendarScreenState extends State<EconomicCalendarScreen> with Si
     );
   }
 
-  Widget _buildEventCard(Map<String, dynamic> event) {
-    final importance = event['importance'];
-    final impactColor = _getImpactColor(importance);
-    final impactLabel = _getImpactLabel(importance);
+  // ═══════════════════════════════════════════════════════════
+  // LAYOUT COMPACTO ESTILO TRADING APP
+  // ═══════════════════════════════════════════════════════════
 
+  Widget _buildEventItem(Map<String, dynamic> event) {
     final eventDate = _parseEventDate(event['date']);
-    final timeStr = eventDate != null
-        ? DateFormat('HH:mm').format(eventDate)
-        : '00:00';
-    final dateStr = eventDate != null
-        ? DateFormat('dd/MM').format(eventDate)
-        : '';
+    final timeStr = eventDate != null ? DateFormat('HH:mm').format(eventDate) : '--:--';
 
-    final currency = event['currency']?.toString() ?? 'USD';
     final country = event['country']?.toString() ?? '';
+    final currency = _getCurrencyFromCountry(country);
+    final flag = _getFlagEmoji(country);
     final title = event['event']?.toString() ?? 'Evento';
-    final actual = event['actual']?.toString() ?? '-';
-    final forecast = event['forecast']?.toString() ?? '-';
-    final previous = event['previous']?.toString() ?? '-';
+
+    final actual = event['actual'];
+    final forecast = event['forecast'];
+    final previous = event['previous'];
+
+    final importance = event['importance'] ?? 1;
+    final isUS = event['isUS'] == true || country == 'US';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1a1f26),
-        borderRadius: BorderRadius.circular(12),
         border: Border(
-          left: BorderSide(
-            color: impactColor,
-            width: 4,
+          bottom: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
           ),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: impactColor.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    impactLabel,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: impactColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  currency,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                if (country.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    country,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-                const Spacer(),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      timeStr,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    if (dateStr.isNotEmpty)
-                      Text(
-                        dateStr,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppTheme.textSecondary,
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // Event title
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // COLUNA 1: Horário
+          SizedBox(
+            width: 50,
+            child: Text(
+              timeStr,
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
             ),
+          ),
 
-            const SizedBox(height: 16),
-
-            // Values row
-            Row(
+          // COLUNA 2: Moeda + Bandeira
+          SizedBox(
+            width: 70,
+            child: Row(
               children: [
-                Expanded(
-                  child: _buildValueItem('Anterior', previous, AppTheme.textSecondary),
+                Text(
+                  currency,
+                  style: TextStyle(
+                    color: isUS ? AppTheme.primaryGreen : Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                Expanded(
-                  child: _buildValueItem('Previsão', forecast, AppTheme.textSecondary),
-                ),
-                Expanded(
-                  child: _buildValueItem('Atual', actual, AppTheme.primaryGreen),
-                ),
+                const SizedBox(width: 4),
+                Text(flag, style: const TextStyle(fontSize: 14)),
               ],
             ),
-          ],
-        ),
+          ),
+
+          // COLUNA 3: Conteúdo principal
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Linha 1: Indicador de impacto + Nome do evento
+                Row(
+                  children: [
+                    _buildImpactIndicator(importance),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Linha 2: Valores (Act | Cons | Prev)
+                if (actual != null || forecast != null || previous != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: _buildValuesRow(actual, forecast, previous),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildValueItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: AppTheme.textTertiary,
+  // Indicador de impacto com círculos coloridos
+  Widget _buildImpactIndicator(dynamic importance) {
+    final level = int.tryParse(importance.toString()) ?? 1;
+
+    Color activeColor;
+    switch (level) {
+      case 3:
+        activeColor = Colors.red;
+        break;
+      case 2:
+        activeColor = Colors.orange;
+        break;
+      default:
+        activeColor = Colors.grey;
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (index) {
+        final isActive = index < level;
+        return Container(
+          width: 8,
+          height: 8,
+          margin: const EdgeInsets.only(right: 2),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive ? activeColor : Colors.grey.withValues(alpha: 0.3),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
+        );
+      }),
     );
+  }
+
+  // Linha de valores: Act | Cons | Prev
+  Widget _buildValuesRow(dynamic actual, dynamic forecast, dynamic previous) {
+    final parts = <Widget>[];
+
+    if (actual != null && actual.toString() != '-' && actual.toString().isNotEmpty) {
+      final actualStr = _formatValue(actual);
+      final isPositive = actualStr.startsWith('+') ||
+          (double.tryParse(actualStr.replaceAll('%', '').replaceAll(',', '')) ?? 0) > 0;
+      final isNegative = actualStr.startsWith('-');
+
+      parts.add(
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'Act: ',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+              ),
+              TextSpan(
+                text: actualStr,
+                style: TextStyle(
+                  color: isNegative ? Colors.red : (isPositive ? AppTheme.primaryGreen : Colors.white),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (forecast != null && forecast.toString() != '-' && forecast.toString().isNotEmpty) {
+      if (parts.isNotEmpty) {
+        parts.add(Text(' | ', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)));
+      }
+      parts.add(
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'Cons: ',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+              ),
+              TextSpan(
+                text: _formatValue(forecast),
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (previous != null && previous.toString() != '-' && previous.toString().isNotEmpty) {
+      if (parts.isNotEmpty) {
+        parts.add(Text(' | ', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)));
+      }
+      parts.add(
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'Prev: ',
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+              ),
+              TextSpan(
+                text: _formatValue(previous),
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (parts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(children: parts);
+  }
+
+  // Formatar valores numéricos
+  String _formatValue(dynamic value) {
+    if (value == null) return '-';
+    final str = value.toString();
+    if (str.isEmpty || str == '-') return '-';
+
+    // Se já tem %, manter
+    if (str.contains('%')) return str;
+
+    // Tentar formatar número
+    final num = double.tryParse(str.replaceAll(',', ''));
+    if (num != null) {
+      if (num.abs() >= 1000000000) {
+        return '${(num / 1000000000).toStringAsFixed(1)}B';
+      } else if (num.abs() >= 1000000) {
+        return '${(num / 1000000).toStringAsFixed(1)}M';
+      } else if (num.abs() >= 1000) {
+        return '${(num / 1000).toStringAsFixed(1)}K';
+      }
+      return num.toStringAsFixed(num.truncateToDouble() == num ? 0 : 2);
+    }
+
+    return str;
+  }
+
+  // Obter moeda do país
+  String _getCurrencyFromCountry(String country) {
+    const currencies = {
+      'US': 'USD',
+      'EU': 'EUR',
+      'GB': 'GBP',
+      'JP': 'JPY',
+      'CN': 'CNY',
+      'CA': 'CAD',
+      'AU': 'AUD',
+      'NZ': 'NZD',
+      'CH': 'CHF',
+      'BR': 'BRL',
+      'MX': 'MXN',
+      'ZA': 'ZAR',
+      'KR': 'KRW',
+      'IN': 'INR',
+      'RU': 'RUB',
+    };
+    return currencies[country] ?? country;
+  }
+
+  // Obter emoji de bandeira
+  String _getFlagEmoji(String country) {
+    const flags = {
+      'US': '🇺🇸',
+      'EU': '🇪🇺',
+      'GB': '🇬🇧',
+      'JP': '🇯🇵',
+      'CN': '🇨🇳',
+      'CA': '🇨🇦',
+      'AU': '🇦🇺',
+      'NZ': '🇳🇿',
+      'CH': '🇨🇭',
+      'BR': '🇧🇷',
+      'MX': '🇲🇽',
+      'ZA': '🇿🇦',
+      'KR': '🇰🇷',
+      'IN': '🇮🇳',
+      'RU': '🇷🇺',
+    };
+    return flags[country] ?? '🏳️';
   }
 }

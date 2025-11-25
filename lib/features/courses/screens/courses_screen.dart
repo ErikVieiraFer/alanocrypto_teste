@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
@@ -44,7 +44,6 @@ class _CoursesScreenState extends State<CoursesScreen> {
   }
 
   String? _extractYouTubeId(String url) {
-    // Suporta: youtube.com/watch?v=ID e youtu.be/ID
     final regExp = RegExp(
       r'^.*(?:(?:youtu\.be\/|v\/|vi\/|u\/\w\/|embed\/|shorts\/)|(?:(?:watch)?\?v(?:i)?=|\&v(?:i)?=))([^#\&\?]*).*',
       caseSensitive: false,
@@ -152,10 +151,10 @@ class _CoursesScreenState extends State<CoursesScreen> {
                           child: GridView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              childAspectRatio: 0.75,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
+                              crossAxisCount: 5,
+                              childAspectRatio: 16 / 9,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
                             ),
                             itemCount: _courses.length,
                             itemBuilder: (context, index) {
@@ -172,36 +171,45 @@ class _CoursesScreenState extends State<CoursesScreen> {
   }
 
   Widget _buildCourseCard(Map<String, dynamic> course) {
+    // Gera thumbnail do YouTube se não tiver thumbnail customizada
+    String? thumbnailUrl = course['thumbnailUrl'];
+    if (thumbnailUrl == null || thumbnailUrl.toString().isEmpty) {
+      final videoId = _extractYouTubeId(course['videoUrl'] ?? '');
+      if (videoId != null) {
+        thumbnailUrl = 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
+      }
+    }
+
     return GestureDetector(
       onTap: () => _showCourseModal(course),
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF1a1f26),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Thumbnail
-              course['thumbnailUrl'] != null
+              // Thumbnail (custom ou do YouTube)
+              thumbnailUrl != null
                   ? CachedNetworkImage(
-                      imageUrl: course['thumbnailUrl'],
+                      imageUrl: thumbnailUrl,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
                         color: const Color(0xFF2a2f36),
                         child: const Center(
                           child: CircularProgressIndicator(
                             color: Color(0xFF00FF88),
-                            strokeWidth: 2,
+                            strokeWidth: 1.5,
                           ),
                         ),
                       ),
@@ -210,7 +218,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                         child: const Icon(
                           Icons.play_circle_outline,
                           color: Color(0xFF00FF88),
-                          size: 40,
+                          size: 24,
                         ),
                       ),
                     )
@@ -219,7 +227,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                       child: const Icon(
                         Icons.play_circle_outline,
                         color: Color(0xFF00FF88),
-                        size: 40,
+                        size: 24,
                       ),
                     ),
 
@@ -232,9 +240,9 @@ class _CoursesScreenState extends State<CoursesScreen> {
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withValues(alpha: 0.8),
+                        Colors.black.withValues(alpha: 0.85),
                       ],
-                      stops: const [0.5, 1.0],
+                      stops: const [0.4, 1.0],
                     ),
                   ),
                 ),
@@ -242,15 +250,15 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
               // Title
               Positioned(
-                left: 8,
-                right: 8,
-                bottom: 8,
+                left: 6,
+                right: 6,
+                bottom: 6,
                 child: Text(
                   course['title'] ?? 'Sem título',
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -259,18 +267,18 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
               // Play icon
               Positioned(
-                top: 8,
-                right: 8,
+                top: 4,
+                right: 4,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
                     color: const Color(0xFF00FF88),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(3),
                   ),
                   child: const Icon(
                     Icons.play_arrow,
                     color: Colors.black,
-                    size: 16,
+                    size: 12,
                   ),
                 ),
               ),
@@ -298,18 +306,31 @@ class _CourseModal extends StatefulWidget {
 class _CourseModalState extends State<_CourseModal> {
   final TextEditingController _commentController = TextEditingController();
   bool _isSendingComment = false;
+  late YoutubePlayerController _youtubeController;
+  String? _editingCommentId;
+  final TextEditingController _editController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _youtubeController = YoutubePlayerController.fromVideoId(
+      videoId: widget.videoId,
+      autoPlay: false,
+      params: const YoutubePlayerParams(
+        showControls: true,
+        mute: false,
+        showFullscreenButton: true,
+        loop: false,
+      ),
+    );
+  }
 
   @override
   void dispose() {
     _commentController.dispose();
+    _editController.dispose();
+    _youtubeController.close();
     super.dispose();
-  }
-
-  Future<void> _openInYouTube() async {
-    final url = Uri.parse('https://www.youtube.com/watch?v=${widget.videoId}');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
   }
 
   Future<void> _addComment() async {
@@ -332,7 +353,6 @@ class _CourseModalState extends State<_CourseModal> {
     });
 
     try {
-      // Buscar dados do usuário
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -425,109 +445,56 @@ class _CourseModalState extends State<_CourseModal> {
     }
   }
 
-  Widget _buildYouTubeEmbed() {
-    // Mostrar thumbnail com botão para abrir no YouTube
-    // Funciona em todas as plataformas sem problemas de CORS
-    return GestureDetector(
-      onTap: _openInYouTube,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Image.network(
-              'https://img.youtube.com/vi/${widget.videoId}/hqdefault.jpg',
-              width: double.infinity,
-              height: 200,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  height: 200,
-                  color: const Color(0xFF2a2f36),
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF00FF88),
-                      strokeWidth: 2,
-                    ),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) => Container(
-                height: 200,
-                color: const Color(0xFF2a2f36),
-                child: const Center(
-                  child: Icon(
-                    Icons.video_library,
-                    color: Colors.grey,
-                    size: 48,
-                  ),
-                ),
-              ),
-            ),
-            // Overlay escuro
-            Container(
-              height: 200,
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            // Botão de play
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: const Color(0xFF00FF88),
-                borderRadius: BorderRadius.circular(36),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF00FF88).withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.play_arrow,
-                color: Colors.black,
-                size: 48,
-              ),
-            ),
-            // Texto "Assistir no YouTube"
-            Positioned(
-              bottom: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.open_in_new,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Assistir no YouTube',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+  void _startEditing(String commentId, String currentText) {
+    setState(() {
+      _editingCommentId = commentId;
+      _editController.text = currentText;
+    });
+  }
+
+  void _cancelEditing() {
+    setState(() {
+      _editingCommentId = null;
+      _editController.clear();
+    });
+  }
+
+  Future<void> _saveEdit(String commentId) async {
+    final newText = _editController.text.trim();
+    if (newText.isEmpty) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('course_comments')
+          .doc(commentId)
+          .update({
+        'comment': newText,
+        'editedAt': FieldValue.serverTimestamp(),
+      });
+
+      setState(() {
+        _editingCommentId = null;
+        _editController.clear();
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Comentário editado!'),
+            backgroundColor: Color(0xFF00FF88),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao editar: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -574,8 +541,14 @@ class _CourseModalState extends State<_CourseModal> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // YouTube Player/Embed
-                      _buildYouTubeEmbed(),
+                      // YouTube Player Embedded
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: YoutubePlayer(
+                          controller: _youtubeController,
+                          aspectRatio: 16 / 9,
+                        ),
+                      ),
 
                       const SizedBox(height: 16),
 
@@ -621,13 +594,20 @@ class _CourseModalState extends State<_CourseModal> {
                         stream: FirebaseFirestore.instance
                             .collection('course_comments')
                             .where('courseId', isEqualTo: widget.course['id'])
-                            .orderBy('createdAt', descending: true)
                             .snapshots(),
                         builder: (context, snapshot) {
                           if (snapshot.hasError) {
-                            return const Text(
-                              'Erro ao carregar comentários',
-                              style: TextStyle(color: Colors.red),
+                            debugPrint('Erro nos comentários: ${snapshot.error}');
+                            return Column(
+                              children: [
+                                const Icon(Icons.error_outline, color: Colors.red, size: 32),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Erro ao carregar comentários:\n${snapshot.error}',
+                                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             );
                           }
 
@@ -639,7 +619,18 @@ class _CourseModalState extends State<_CourseModal> {
                             );
                           }
 
-                          final comments = snapshot.data?.docs ?? [];
+                          final docs = snapshot.data?.docs ?? [];
+
+                          // Ordenar no cliente (evita necessidade de índice)
+                          final comments = List<QueryDocumentSnapshot>.from(docs);
+                          comments.sort((a, b) {
+                            final aTime = (a.data() as Map)['createdAt'] as Timestamp?;
+                            final bTime = (b.data() as Map)['createdAt'] as Timestamp?;
+                            if (aTime == null && bTime == null) return 0;
+                            if (aTime == null) return 1;
+                            if (bTime == null) return -1;
+                            return bTime.compareTo(aTime); // Descending
+                          });
 
                           if (comments.isEmpty) {
                             return Container(
@@ -659,9 +650,11 @@ class _CourseModalState extends State<_CourseModal> {
                               final data = doc.data() as Map<String, dynamic>;
                               final isOwner = data['userId'] == FirebaseAuth.instance.currentUser?.uid;
                               final createdAt = data['createdAt'] as Timestamp?;
+                              final editedAt = data['editedAt'] as Timestamp?;
                               final dateStr = createdAt != null
                                   ? DateFormat('dd/MM/yyyy HH:mm').format(createdAt.toDate())
                                   : '';
+                              final isEditing = _editingCommentId == doc.id;
 
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 12),
@@ -669,6 +662,9 @@ class _CourseModalState extends State<_CourseModal> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF1a1f26),
                                   borderRadius: BorderRadius.circular(12),
+                                  border: isEditing
+                                      ? Border.all(color: const Color(0xFF00FF88), width: 1)
+                                      : null,
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -678,10 +674,10 @@ class _CourseModalState extends State<_CourseModal> {
                                         CircleAvatar(
                                           radius: 16,
                                           backgroundColor: const Color(0xFF00FF88),
-                                          backgroundImage: data['userPhoto'] != null && data['userPhoto'].isNotEmpty
+                                          backgroundImage: data['userPhoto'] != null && data['userPhoto'].toString().isNotEmpty
                                               ? NetworkImage(data['userPhoto'])
                                               : null,
-                                          child: data['userPhoto'] == null || data['userPhoto'].isEmpty
+                                          child: data['userPhoto'] == null || data['userPhoto'].toString().isEmpty
                                               ? const Icon(Icons.person, size: 16, color: Colors.white)
                                               : null,
                                         ),
@@ -690,13 +686,28 @@ class _CourseModalState extends State<_CourseModal> {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                data['userName'] ?? 'Usuário',
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 12,
-                                                ),
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    data['userName'] ?? 'Usuário',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                  if (editedAt != null) ...[
+                                                    const SizedBox(width: 6),
+                                                    const Text(
+                                                      '(editado)',
+                                                      style: TextStyle(
+                                                        color: Colors.grey,
+                                                        fontSize: 10,
+                                                        fontStyle: FontStyle.italic,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
                                               ),
                                               Text(
                                                 dateStr,
@@ -708,7 +719,19 @@ class _CourseModalState extends State<_CourseModal> {
                                             ],
                                           ),
                                         ),
-                                        if (isOwner)
+                                        if (isOwner && !isEditing) ...[
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.edit_outlined,
+                                              color: Color(0xFF00FF88),
+                                              size: 18,
+                                            ),
+                                            onPressed: () => _startEditing(doc.id, data['comment'] ?? ''),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            tooltip: 'Editar',
+                                          ),
+                                          const SizedBox(width: 8),
                                           IconButton(
                                             icon: const Icon(
                                               Icons.delete_outline,
@@ -718,17 +741,62 @@ class _CourseModalState extends State<_CourseModal> {
                                             onPressed: () => _deleteComment(doc.id),
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),
+                                            tooltip: 'Excluir',
                                           ),
+                                        ],
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    Text(
-                                      data['comment'] ?? '',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 13,
+                                    if (isEditing)
+                                      Column(
+                                        children: [
+                                          TextField(
+                                            controller: _editController,
+                                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                                            maxLines: null,
+                                            decoration: InputDecoration(
+                                              filled: true,
+                                              fillColor: const Color(0xFF2a2f36),
+                                              border: OutlineInputBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              contentPadding: const EdgeInsets.all(12),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.end,
+                                            children: [
+                                              TextButton(
+                                                onPressed: _cancelEditing,
+                                                child: const Text(
+                                                  'Cancelar',
+                                                  style: TextStyle(color: Colors.grey),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              ElevatedButton(
+                                                onPressed: () => _saveEdit(doc.id),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(0xFF00FF88),
+                                                  foregroundColor: Colors.black,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                ),
+                                                child: const Text('Salvar'),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      )
+                                    else
+                                      Text(
+                                        data['comment'] ?? '',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               );

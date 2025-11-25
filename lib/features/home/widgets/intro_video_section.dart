@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../../models/intro_video_model.dart';
 import '../../../theme/app_theme.dart';
 
@@ -22,6 +22,21 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
     _loadVideoData();
   }
 
+  String? _extractVideoId(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return null;
+
+    // youtube.com/watch?v=VIDEO_ID
+    if (uri.host.contains('youtube.com')) {
+      return uri.queryParameters['v'];
+    }
+    // youtu.be/VIDEO_ID
+    if (uri.host.contains('youtu.be')) {
+      return uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
+    }
+    return null;
+  }
+
   Future<void> _loadVideoData() async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -33,19 +48,23 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
         final videoModel = IntroVideoModel.fromFirestore(doc);
 
         if (videoModel.isActive && videoModel.videoUrl.isNotEmpty) {
-          final videoId = YoutubePlayer.convertUrlToId(videoModel.videoUrl);
+          final videoId = _extractVideoId(videoModel.videoUrl);
 
           if (videoId != null) {
+            final controller = YoutubePlayerController.fromVideoId(
+              videoId: videoId,
+              autoPlay: false,
+              params: const YoutubePlayerParams(
+                showControls: true,
+                mute: false,
+                showFullscreenButton: true,
+                loop: false,
+              ),
+            );
+
             setState(() {
               _videoData = videoModel;
-              _controller = YoutubePlayerController(
-                initialVideoId: videoId,
-                flags: const YoutubePlayerFlags(
-                  autoPlay: false,
-                  mute: false,
-                  enableCaption: false,
-                ),
-              );
+              _controller = controller;
               _isLoading = false;
             });
           }
@@ -56,13 +75,14 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
         setState(() => _isLoading = false);
       }
     } catch (e) {
+      debugPrint('Erro ao carregar vídeo: $e');
       setState(() => _isLoading = false);
     }
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _controller?.close();
     super.dispose();
   }
 
@@ -95,8 +115,7 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: YoutubePlayer(
               controller: _controller!,
-              showVideoProgressIndicator: true,
-              progressIndicatorColor: AppTheme.primaryGreen,
+              aspectRatio: 16 / 9,
             ),
           ),
           Padding(

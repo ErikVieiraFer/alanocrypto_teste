@@ -110,32 +110,61 @@ class _MarketsScreenState extends State<MarketsScreen> with SingleTickerProvider
       final stocksDoc = results[1];
       final forexDoc = results[2];
 
+      // CRYPTO
+      print('📊 [CRYPTO] Documento existe: ${cryptoDoc.exists}');
       if (cryptoDoc.exists && cryptoDoc.data() != null) {
         final data = cryptoDoc.data()!;
+        print('📊 [CRYPTO] Campos: ${data.keys.toList()}');
         if (data['data'] != null) {
           _cryptos = List<Map<String, dynamic>>.from(data['data']);
+          print('📊 [CRYPTO] Quantidade: ${_cryptos.length}');
         }
       }
 
+      // STOCKS
+      print('📊 [STOCKS] Documento existe: ${stocksDoc.exists}');
       if (stocksDoc.exists && stocksDoc.data() != null) {
         final data = stocksDoc.data()!;
+        print('📊 [STOCKS] Campos: ${data.keys.toList()}');
         if (data['data'] != null) {
           _stocks = List<Map<String, dynamic>>.from(data['data']);
+          print('📊 [STOCKS] Quantidade: ${_stocks.length}');
         }
       }
+
+      // FOREX - COM LOGS DETALHADOS
+      print('📊 [FOREX] Iniciando carregamento...');
+      print('📊 [FOREX] Documento existe: ${forexDoc.exists}');
 
       if (forexDoc.exists && forexDoc.data() != null) {
         final data = forexDoc.data()!;
+        print('📊 [FOREX] Campos no documento: ${data.keys.toList()}');
+        print('📊 [FOREX] Source: ${data['source']}');
+        print('📊 [FOREX] UpdatedAt: ${data['updatedAt']}');
+
         if (data['data'] != null) {
-          _forex = List<Map<String, dynamic>>.from(data['data']);
+          final forexList = data['data'] as List<dynamic>;
+          print('📊 [FOREX] Quantidade de pares: ${forexList.length}');
+
+          if (forexList.isNotEmpty) {
+            print('📊 [FOREX] Primeiro par: ${forexList.first}');
+          }
+
+          _forex = List<Map<String, dynamic>>.from(forexList);
+        } else {
+          print('❌ [FOREX] Campo data está null');
+          _forex = [];
         }
+      } else {
+        print('❌ [FOREX] Documento não existe ou está vazio');
+        _forex = [];
       }
 
       setState(() {
         _isLoading = false;
       });
     } catch (e) {
-      print('Erro ao buscar dados do cache: $e');
+      print('❌ [ERROR] Erro ao buscar dados do cache: $e');
       setState(() {
         _isLoading = false;
       });
@@ -202,6 +231,95 @@ class _MarketsScreenState extends State<MarketsScreen> with SingleTickerProvider
     } else {
       return '\$' + value.toStringAsFixed(8);
     }
+  }
+
+  String _formatForexPrice(dynamic price) {
+    if (price == null) return '-';
+
+    double value;
+    if (price is String) {
+      value = double.tryParse(price) ?? 0;
+    } else if (price is int) {
+      value = price.toDouble();
+    } else if (price is double) {
+      value = price;
+    } else {
+      return '-';
+    }
+
+    if (value >= 100) {
+      return value.toStringAsFixed(2);
+    } else if (value >= 1) {
+      return value.toStringAsFixed(4);
+    } else {
+      return value.toStringAsFixed(4);
+    }
+  }
+
+  Widget _buildAssetIcon(Map<String, dynamic> asset, bool isForex) {
+    if (isForex && asset['flag'] != null) {
+      return Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E2329),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Center(
+          child: Text(
+            asset['flag'] ?? '💱',
+            style: const TextStyle(fontSize: 20),
+          ),
+        ),
+      );
+    }
+
+    final imageUrl = asset['image']?.toString() ?? '';
+
+    if (imageUrl.isNotEmpty && !imageUrl.contains('placeholder')) {
+      return Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: const Color(0xFF2a2f36),
+          shape: BoxShape.circle,
+        ),
+        child: ClipOval(
+          child: Image.network(
+            imageUrl,
+            width: 32,
+            height: 32,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              return _buildFallbackIcon(asset['symbol'] ?? '?');
+            },
+          ),
+        ),
+      );
+    }
+
+    return _buildFallbackIcon(asset['symbol'] ?? '?');
+  }
+
+  Widget _buildFallbackIcon(String symbol) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E2329),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          symbol.substring(0, symbol.length > 2 ? 2 : symbol.length),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -385,51 +503,54 @@ class _MarketsScreenState extends State<MarketsScreen> with SingleTickerProvider
               else if (_currentData.isEmpty)
                 SliverFillRemaining(
                   child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _showWatchlistOnly ? Icons.star_border : Icons.search_off,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _showWatchlistOnly
-                              ? 'Sua watchlist está vazia'
-                              : 'Nenhum ativo encontrado',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            color: Colors.white,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _showWatchlistOnly ? Icons.star_border : Icons.search_off,
+                            size: 64,
+                            color: Colors.grey,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _showWatchlistOnly
-                              ? 'Adicione ativos aos favoritos'
-                              : 'Tente outra busca',
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                        if (_showWatchlistOnly) ...[
-                          const SizedBox(height: 24),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                _showWatchlistOnly = false;
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF00FF88),
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _showWatchlistOnly
+                                ? 'Sua watchlist está vazia'
+                                : 'Nenhum ativo encontrado',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
                             ),
-                            child: const Text('Adicionar Ativo'),
                           ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _showWatchlistOnly
+                                ? 'Adicione ativos aos favoritos'
+                                : 'Tente outra busca',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          if (_showWatchlistOnly) ...[
+                            const SizedBox(height: 24),
+                            ElevatedButton(
+                              onPressed: () {
+                                setState(() {
+                                  _showWatchlistOnly = false;
+                                });
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00FF88),
+                                foregroundColor: Colors.black,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                              ),
+                              child: const Text('Adicionar Ativo'),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 )
@@ -524,6 +645,7 @@ class _MarketsScreenState extends State<MarketsScreen> with SingleTickerProvider
                               final isInWatchlist = _watchlist.contains(item['id']);
                               final priceChange = (item['price_change_percentage_24h'] ?? 0).toDouble();
                               final isPositive = priceChange >= 0;
+                              final isForex = _currentTabIndex == 2;
 
                               return InkWell(
                                 onTap: () {},
@@ -566,29 +688,7 @@ class _MarketsScreenState extends State<MarketsScreen> with SingleTickerProvider
                                         flex: 2,
                                         child: Row(
                                           children: [
-                                            Container(
-                                              width: 32,
-                                              height: 32,
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF2a2f36),
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: ClipOval(
-                                                child: Image.network(
-                                                  item['image'] ?? '',
-                                                  width: 32,
-                                                  height: 32,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (context, error, stackTrace) {
-                                                    return const Icon(
-                                                      Icons.currency_bitcoin,
-                                                      color: Colors.grey,
-                                                      size: 20,
-                                                    );
-                                                  },
-                                                ),
-                                              ),
-                                            ),
+                                            _buildAssetIcon(item, isForex),
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: Column(
@@ -618,7 +718,9 @@ class _MarketsScreenState extends State<MarketsScreen> with SingleTickerProvider
                                       ),
                                       Expanded(
                                         child: Text(
-                                          _formatNumber(item['current_price']),
+                                          isForex
+                                              ? _formatForexPrice(item['current_price'])
+                                              : _formatNumber(item['current_price']),
                                           textAlign: TextAlign.right,
                                           style: const TextStyle(
                                             fontSize: 14,

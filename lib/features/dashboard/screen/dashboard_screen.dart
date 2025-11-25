@@ -17,8 +17,8 @@ import 'package:alanoapp/features/portfolio/screens/portfolio_screen.dart';
 import 'package:alanoapp/features/links/screens/useful_links_screen.dart';
 import 'package:alanoapp/features/support/screens/support_screen.dart';
 import 'package:alanoapp/features/cupula/screens/cupula_coming_soon_screen.dart';
-// import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_screen.dart'; // DESABILITADO - Em desenvolvimento
-import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_coming_soon_screen.dart';
+import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_screen.dart';
+// import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_coming_soon_screen.dart'; // DESABILITADO - Funcionalidade implementada
 import 'package:alanoapp/features/management/screens/management_screen.dart';
 import 'package:alanoapp/services/notification_service.dart';
 import 'package:alanoapp/services/fcm_service.dart';
@@ -75,7 +75,7 @@ class DashboardScreenState extends State<DashboardScreen> {
     const UsefulLinksScreen(), // 11 - Links Úteis
     const SupportScreen(), // 12 - Suporte
     const CupulaComingSoonScreen(), // 13 - A Cúpula
-    const EconomicCalendarComingSoonScreen(), // 14 - Calendário Econômico (Em Breve)
+    const EconomicCalendarScreen(), // 14 - Calendário Econômico (Implementado com Trading Economics API)
     const ManagementScreen(), // 15 - Gerenciamento
   ];
   // ═══════════════════════════════════════════════════════════
@@ -338,38 +338,37 @@ class DashboardScreenState extends State<DashboardScreen> {
         ),
         title: const AppLogo(fontSize: 20),
         actions: [
-          if (_userId != null)
-            StreamBuilder<int>(
-              stream: _notificationService.getUnreadCountStream(_userId),
-              builder: (context, snapshot) {
-                final unreadCount = snapshot.data ?? 0;
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.notifications_outlined,
-                        color: AppTheme.accentGreen,
-                      ),
-                      onPressed: _navigateToNotifications,
+          StreamBuilder<int>(
+            stream: _notificationService.getGlobalUnreadCountStream(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: AppTheme.accentGreen,
                     ),
-                    if (unreadCount > 0)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
+                    onPressed: _navigateToNotifications,
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
                         ),
                       ),
-                  ],
-                );
-              },
-            ),
+                    ),
+                ],
+              );
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: StreamBuilder<DocumentSnapshot>(

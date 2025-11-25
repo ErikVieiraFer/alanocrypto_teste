@@ -136,6 +136,26 @@ class NotificationService {
         .snapshots()
         .map((snapshot) => snapshot.docs.length);
   }
+
+  // Stream para contagem de notificações globais não lidas
+  // Combina o stream do Firestore com o SharedPreferences
+  Stream<int> getGlobalUnreadCountStream() {
+    return _firestore
+        .collection('global_notifications')
+        .orderBy('createdAt', descending: true)
+        .limit(50)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final readNotifications = await getReadNotifications();
+      int unreadCount = 0;
+      for (final doc in snapshot.docs) {
+        if (!readNotifications.contains(doc.id)) {
+          unreadCount++;
+        }
+      }
+      return unreadCount;
+    });
+  }
 }
 
 class GlobalNotification {
