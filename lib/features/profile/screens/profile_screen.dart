@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
@@ -622,8 +623,86 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   }
 }
 
-class _SettingsModal extends StatelessWidget {
+class _SettingsModal extends StatefulWidget {
   const _SettingsModal();
+
+  @override
+  State<_SettingsModal> createState() => _SettingsModalState();
+}
+
+class _SettingsModalState extends State<_SettingsModal> {
+  bool _is2FAEnabled = true;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load2FAStatus();
+  }
+
+  Future<void> _load2FAStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (mounted) {
+        setState(() {
+          _is2FAEnabled = doc.data()?['twoFactorEnabled'] ?? true;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _toggle2FA(bool value) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _is2FAEnabled = value);
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({'twoFactorEnabled': value});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              value
+                  ? 'Verificação por email ativada'
+                  : 'Verificação por email desativada',
+            ),
+            backgroundColor: value ? AppTheme.accentGreen : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      // Reverter se falhar
+      if (mounted) {
+        setState(() => _is2FAEnabled = !value);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao atualizar configuração'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -639,7 +718,7 @@ class _SettingsModal extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.settings, size: 28, color: AppTheme.textPrimary),
+              Icon(Icons.settings, size: 28, color: AppTheme.accentGreen),
               const SizedBox(width: 12),
               Text(
                 'Configurações',
@@ -652,22 +731,104 @@ class _SettingsModal extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          Text(
-            'Tema fixado em modo escuro',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textPrimary.withAlpha(178),
+
+          // Tema
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.dark_mode, color: Colors.white70),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Tema escuro',
+                    style: TextStyle(color: AppTheme.textPrimary, fontSize: 16),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentGreen.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Fixado',
+                    style: TextStyle(
+                      color: AppTheme.accentGreen,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
+
+          const SizedBox(height: 12),
+
+          // Toggle 2FA
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.security, color: Colors.white70),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Verificação por email',
+                        style: TextStyle(color: AppTheme.textPrimary, fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Código de segurança ao fazer login',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_isLoading)
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Switch(
+                    value: _is2FAEnabled,
+                    onChanged: _toggle2FA,
+                    activeColor: AppTheme.accentGreen,
+                    activeTrackColor: AppTheme.accentGreen.withOpacity(0.3),
+                    inactiveThumbColor: Colors.grey,
+                    inactiveTrackColor: Colors.grey.withOpacity(0.3),
+                  ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 24),
+
           SizedBox(
             width: double.infinity,
             child: TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
                 'Fechar',
-                style: TextStyle(color: AppTheme.accentGreen),
+                style: TextStyle(
+                  color: AppTheme.accentGreen,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../services/notification_service.dart';
 import '../../../theme/app_theme.dart';
-import '../../alano_posts/screens/alano_posts_screen.dart';
+import '../../dashboard/screen/dashboard_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -42,6 +42,58 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       return '${difference.inMinutes}m atrás';
     } else {
       return 'agora';
+    }
+  }
+
+  /// Retorna o índice da tab no Dashboard baseado no tipo de notificação
+  /// Índices do Dashboard:
+  /// 0: Home, 1: Chat, 2: Posts, 3: Sinais, 4: Perfil, 5: Mercados,
+  /// 6: Watchlist, 7: Calculadora, 8: Cursos, 9: Portfólio, 10: IA,
+  /// 11: Links, 12: Suporte, 13: Cúpula, 14: Calendário, 15: Gerenciamento
+  int _getIndexForNotificationType(String type) {
+    switch (type) {
+      case 'new_post':
+      case 'post':
+      case 'alano_post':
+        return 2; // AlanoPostsScreen
+      case 'new_signal':
+      case 'signal':
+        return 3; // SignalsScreen
+      case 'new_course':
+      case 'course':
+        return 8; // CoursesScreen
+      case 'chat_message':
+      case 'chat':
+      case 'mention':
+        return 1; // GroupChatScreen
+      case 'news':
+        return 0; // HomeScreen (notícias aparecem na home)
+      default:
+        return 2; // Default: Posts do Alano
+    }
+  }
+
+  /// Navega para a tela de destino mantendo AppBar e BottomNavBar
+  void _navigateToDestination(BuildContext context, String notificationType) {
+    // Tenta encontrar o DashboardScreenState no contexto
+    final dashboardState = context.findAncestorStateOfType<DashboardScreenState>();
+
+    if (dashboardState != null) {
+      // Muda a tab no Dashboard
+      final targetIndex = _getIndexForNotificationType(notificationType);
+      dashboardState.changeTab(targetIndex);
+
+      // Fecha a tela de notificações para voltar ao Dashboard
+      Navigator.pop(context);
+    } else {
+      // Fallback: navega para Dashboard com índice específico
+      final targetIndex = _getIndexForNotificationType(notificationType);
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => DashboardScreen(initialIndex: targetIndex),
+        ),
+        (route) => false,
+      );
     }
   }
 
@@ -151,8 +203,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       )
                     : null,
                 onTap: () async {
-                  final navigator = Navigator.of(context);
-
                   // Marcar como lida
                   await _notificationService.markAsRead(notif.id);
                   if (!mounted) return;
@@ -161,12 +211,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     _readNotifications.add(notif.id);
                   });
 
-                  // Navegar para o post
-                  navigator.push(
-                    MaterialPageRoute(
-                      builder: (context) => const AlanoPostsScreen(),
-                    ),
-                  );
+                  // Navegar para a tela correta mantendo AppBar e BottomNavBar
+                  _navigateToDestination(context, notif.type);
                 },
               );
             },

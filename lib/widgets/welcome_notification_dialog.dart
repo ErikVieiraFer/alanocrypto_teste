@@ -30,13 +30,21 @@ class WelcomeNotificationDialog extends StatelessWidget {
     // MARCA COMO MOSTRADO ANTES DE EXIBIR (previne duplicação)
     await markAsShown();
 
-    await Future.delayed(const Duration(milliseconds: 500));
+    // Espera mais tempo para garantir que outros modais foram fechados
+    // e que a navegação está estável
+    await Future.delayed(const Duration(milliseconds: 1500));
+
+    // Verifica se o contexto ainda é válido e se não há outro modal aberto
     if (context.mounted) {
-      await showDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (context) => const WelcomeNotificationDialog(),
-      );
+      // Verifica se a rota atual é o dashboard (não o login)
+      final currentRoute = ModalRoute.of(context);
+      if (currentRoute != null && currentRoute.isCurrent) {
+        await showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) => const WelcomeNotificationDialog(),
+        );
+      }
     }
   }
 

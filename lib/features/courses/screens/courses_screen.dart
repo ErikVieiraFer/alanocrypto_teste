@@ -148,18 +148,39 @@ class _CoursesScreenState extends State<CoursesScreen> {
                       : RefreshIndicator(
                           onRefresh: _fetchCourses,
                           color: const Color(0xFF00FF88),
-                          child: GridView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 5,
-                              childAspectRatio: 16 / 9,
-                              crossAxisSpacing: 8,
-                              mainAxisSpacing: 8,
-                            ),
-                            itemCount: _courses.length,
-                            itemBuilder: (context, index) {
-                              final course = _courses[index];
-                              return _buildCourseCard(course);
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              int crossAxisCount;
+                              double childAspectRatio;
+
+                              if (constraints.maxWidth < 600) {
+                                // Mobile: 1 coluna
+                                crossAxisCount = 1;
+                                childAspectRatio = 16 / 9;
+                              } else if (constraints.maxWidth < 900) {
+                                // Tablet: 2 colunas
+                                crossAxisCount = 2;
+                                childAspectRatio = 16 / 9;
+                              } else {
+                                // Desktop/Web: 4 colunas
+                                crossAxisCount = 4;
+                                childAspectRatio = 16 / 9;
+                              }
+
+                              return GridView.builder(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: crossAxisCount,
+                                  childAspectRatio: childAspectRatio,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
+                                ),
+                                itemCount: _courses.length,
+                                itemBuilder: (context, index) {
+                                  final course = _courses[index];
+                                  return _buildCourseCard(course);
+                                },
+                              );
                             },
                           ),
                         ),
@@ -176,116 +197,148 @@ class _CoursesScreenState extends State<CoursesScreen> {
     if (thumbnailUrl == null || thumbnailUrl.toString().isEmpty) {
       final videoId = _extractYouTubeId(course['videoUrl'] ?? '');
       if (videoId != null) {
-        thumbnailUrl = 'https://img.youtube.com/vi/$videoId/hqdefault.jpg';
+        // Usa maxresdefault para melhor qualidade no mobile
+        thumbnailUrl = 'https://img.youtube.com/vi/$videoId/maxresdefault.jpg';
       }
     }
 
-    return GestureDetector(
-      onTap: () => _showCourseModal(course),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF1a1f26),
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Detecta se é mobile baseado na largura do card
+        final isMobile = constraints.maxWidth > 300;
+        final borderRadius = isMobile ? 12.0 : 8.0;
+        final titleFontSize = isMobile ? 14.0 : 10.0;
+        final playIconSize = isMobile ? 24.0 : 12.0;
+        final playPadding = isMobile ? 6.0 : 3.0;
+        final titlePadding = isMobile ? 12.0 : 6.0;
+        final placeholderIconSize = isMobile ? 48.0 : 24.0;
+
+        return GestureDetector(
+          onTap: () => _showCourseModal(course),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1a1f26),
+              borderRadius: BorderRadius.circular(borderRadius),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Thumbnail (custom ou do YouTube)
-              thumbnailUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: thumbnailUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: const Color(0xFF2a2f36),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFF00FF88),
-                            strokeWidth: 1.5,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(borderRadius),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Thumbnail (custom ou do YouTube)
+                  thumbnailUrl != null
+                      ? CachedNetworkImage(
+                          imageUrl: thumbnailUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: const Color(0xFF2a2f36),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: const Color(0xFF00FF88),
+                                strokeWidth: isMobile ? 2.0 : 1.5,
+                              ),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) {
+                            // Fallback para hqdefault se maxresdefault falhar
+                            final videoId = _extractYouTubeId(course['videoUrl'] ?? '');
+                            if (videoId != null && url.contains('maxresdefault')) {
+                              return CachedNetworkImage(
+                                imageUrl: 'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
+                                fit: BoxFit.cover,
+                                errorWidget: (context, url, error) => Container(
+                                  color: const Color(0xFF2a2f36),
+                                  child: Icon(
+                                    Icons.play_circle_outline,
+                                    color: const Color(0xFF00FF88),
+                                    size: placeholderIconSize,
+                                  ),
+                                ),
+                              );
+                            }
+                            return Container(
+                              color: const Color(0xFF2a2f36),
+                              child: Icon(
+                                Icons.play_circle_outline,
+                                color: const Color(0xFF00FF88),
+                                size: placeholderIconSize,
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          color: const Color(0xFF2a2f36),
+                          child: Icon(
+                            Icons.play_circle_outline,
+                            color: const Color(0xFF00FF88),
+                            size: placeholderIconSize,
                           ),
                         ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: const Color(0xFF2a2f36),
-                        child: const Icon(
-                          Icons.play_circle_outline,
-                          color: Color(0xFF00FF88),
-                          size: 24,
+
+                  // Gradient overlay
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.85),
+                          ],
+                          stops: const [0.4, 1.0],
                         ),
                       ),
-                    )
-                  : Container(
-                      color: const Color(0xFF2a2f36),
-                      child: const Icon(
-                        Icons.play_circle_outline,
-                        color: Color(0xFF00FF88),
-                        size: 24,
+                    ),
+                  ),
+
+                  // Title
+                  Positioned(
+                    left: titlePadding,
+                    right: titlePadding,
+                    bottom: titlePadding,
+                    child: Text(
+                      course['title'] ?? 'Sem título',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: titleFontSize,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+
+                  // Play icon
+                  Positioned(
+                    top: playPadding,
+                    right: playPadding,
+                    child: Container(
+                      padding: EdgeInsets.all(playPadding),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00FF88),
+                        borderRadius: BorderRadius.circular(playPadding),
+                      ),
+                      child: Icon(
+                        Icons.play_arrow,
+                        color: Colors.black,
+                        size: playIconSize,
                       ),
                     ),
-
-              // Gradient overlay
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.85),
-                      ],
-                      stops: const [0.4, 1.0],
-                    ),
                   ),
-                ),
+                ],
               ),
-
-              // Title
-              Positioned(
-                left: 6,
-                right: 6,
-                bottom: 6,
-                child: Text(
-                  course['title'] ?? 'Sem título',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-
-              // Play icon
-              Positioned(
-                top: 4,
-                right: 4,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF00FF88),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: const Icon(
-                    Icons.play_arrow,
-                    color: Colors.black,
-                    size: 12,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

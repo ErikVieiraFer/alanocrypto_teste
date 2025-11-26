@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/utils/password_validator.dart';
 import '../../../services/user_service.dart';
 import '../../../theme/app_theme.dart';
 
@@ -344,6 +345,8 @@ class _SignupScreenState extends State<SignupScreen> {
                     maxLength: 50,
                     decoration: InputDecoration(
                       labelText: 'Senha',
+                      helperText: PasswordValidator.requirements,
+                      helperMaxLines: 2,
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -361,16 +364,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       counterText: '',
                     ),
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Digite uma senha';
-                      }
-                      if (value.length < 6) {
-                        return 'Senha deve ter no mínimo 6 caracteres';
-                      }
-                      if (value.length > 50) {
+                      if (value != null && value.length > 50) {
                         return 'Senha deve ter no máximo 50 caracteres';
                       }
-                      return null;
+                      return PasswordValidator.validate(value);
                     },
                   ),
 
@@ -402,12 +399,6 @@ class _SignupScreenState extends State<SignupScreen> {
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Confirme sua senha';
-                      }
-                      if (value.length < 6) {
-                        return 'Senha deve ter no mínimo 6 caracteres';
-                      }
-                      if (value.length > 50) {
-                        return 'Senha deve ter no máximo 50 caracteres';
                       }
                       if (value != _passwordController.text) {
                         return 'Senhas não conferem';
