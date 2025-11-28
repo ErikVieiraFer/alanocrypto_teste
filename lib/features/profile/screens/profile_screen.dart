@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../models/user_model.dart';
@@ -521,6 +524,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late TextEditingController _phoneController;
   late TextEditingController _telegramController;
   bool _isLoading = false;
+  bool _isUploadingPhoto = false;
+  String? _photoURL;
 
   @override
   void initState() {
@@ -528,13 +533,193 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     _nameController = TextEditingController(text: widget.user.displayName);
     _telegramController = TextEditingController(text: widget.user.telegram ?? '');
     _phoneController = TextEditingController(text: widget.user.phone ?? '');
+    _photoURL = widget.user.photoURL;
+  }
+
+  Future<void> _pickAndUploadPhoto() async {
+    final ImagePicker picker = ImagePicker();
+
+    // Mostrar opções (incluindo remover foto)
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppTheme.cardDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Foto de perfil',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            if (!kIsWeb) ...[
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppTheme.accentGreen),
+                title: const Text('Câmera', style: TextStyle(color: Colors.white)),
+                onTap: () => Navigator.pop(context, 'camera'),
+              ),
+            ],
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppTheme.accentGreen),
+              title: const Text('Galeria', style: TextStyle(color: Colors.white)),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            if (_photoURL != null && _photoURL!.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Remover foto', style: TextStyle(color: Colors.red)),
+                onTap: () => Navigator.pop(context, 'remove'),
+              ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null) return;
+
+    // Remover foto
+    if (result == 'remove') {
+      await _removePhoto();
+      return;
+    }
+
+    // Selecionar nova foto
+    final source = result == 'camera' ? ImageSource.camera : ImageSource.gallery;
+
+    try {
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 75,
+      );
+
+      if (image == null) return;
+
+      setState(() => _isUploadingPhoto = true);
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() => _isUploadingPhoto = false);
+        return;
+      }
+
+      // Upload para Firebase Storage
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_photos')
+          .child('${user.uid}.jpg');
+
+      final bytes = await image.readAsBytes();
+      await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+
+      // Obter URL
+      final photoURL = await ref.getDownloadURL();
+
+      // Atualizar Firebase Auth
+      await user.updatePhotoURL(photoURL);
+
+      // Atualizar Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({'photoURL': photoURL});
+
+      setState(() {
+        _photoURL = photoURL;
+        _isUploadingPhoto = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto atualizada com sucesso!'),
+            backgroundColor: AppTheme.accentGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isUploadingPhoto = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao atualizar foto: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _removePhoto() async {
+    try {
+      setState(() => _isUploadingPhoto = true);
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() => _isUploadingPhoto = false);
+        return;
+      }
+
+      // Tentar deletar do Storage (pode falhar se não existir)
+      try {
+        final ref = FirebaseStorage.instance
+            .ref()
+            .child('profile_photos')
+            .child('${user.uid}.jpg');
+        await ref.delete();
+      } catch (_) {
+        // Ignorar erro se arquivo não existir
+      }
+
+      // Remover URL do Firebase Auth
+      await user.updatePhotoURL(null);
+
+      // Remover URL do Firestore
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({'photoURL': ''});
+
+      setState(() {
+        _photoURL = '';
+        _isUploadingPhoto = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto removida com sucesso!'),
+            backgroundColor: AppTheme.accentGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isUploadingPhoto = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao remover foto: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    
+
     final phone = _phoneController.text.trim();
     final success = await UserService().updateUser(
       userId: widget.user.uid,
@@ -557,6 +742,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final initials = widget.user.displayName.isNotEmpty
+        ? widget.user.displayName[0].toUpperCase()
+        : '?';
+
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
@@ -567,55 +756,112 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
         ),
         child: Form(
           key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Editar Perfil', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nome Completo'),
-                validator: (value) => (value == null || value.trim().length < 3) ? 'Nome deve ter no mínimo 3 caracteres' : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Telefone (com código do país)',
-                  hintText: 'Ex: +55 11 98765-4321',
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Editar Perfil', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 24),
+
+                // Foto de perfil editável
+                GestureDetector(
+                  onTap: _isUploadingPhoto ? null : _pickAndUploadPhoto,
+                  child: Stack(
+                    children: [
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundImage: _photoURL != null && _photoURL!.isNotEmpty
+                            ? CachedNetworkImageProvider(_photoURL!)
+                            : null,
+                        backgroundColor: AppTheme.accentGreen,
+                        child: _photoURL == null || _photoURL!.isEmpty
+                            ? Text(initials, style: const TextStyle(fontSize: 36, color: Colors.white))
+                            : null,
+                      ),
+                      if (_isUploadingPhoto)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: AppTheme.accentGreen,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentGreen,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppTheme.inputBackground, width: 2),
+                            ),
+                            child: const Icon(Icons.camera_alt, size: 16, color: Colors.black),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _telegramController,
-                decoration: const InputDecoration(labelText: 'Telegram (Opcional)', hintText: '@usuario'),
-                 validator: (value) {
-                  if (value != null && value.isNotEmpty && !value.startsWith('@')) {
-                    return 'Usuário do Telegram deve começar com @';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar'),
-                    ),
+                const SizedBox(height: 8),
+                Text(
+                  'Toque para alterar a foto',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+
+                const SizedBox(height: 24),
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Nome Completo'),
+                  validator: (value) => (value == null || value.trim().length < 3) ? 'Nome deve ter no mínimo 3 caracteres' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Telefone (com código do país)',
+                    hintText: 'Ex: +55 11 98765-4321',
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _saveProfile,
-                      child: _isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Salvar'),
+                  keyboardType: TextInputType.phone,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _telegramController,
+                  decoration: const InputDecoration(labelText: 'Telegram (Opcional)', hintText: '@usuario'),
+                   validator: (value) {
+                    if (value != null && value.isNotEmpty && !value.startsWith('@')) {
+                      return 'Usuário do Telegram deve começar com @';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancelar'),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _saveProfile,
+                        child: _isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Salvar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
