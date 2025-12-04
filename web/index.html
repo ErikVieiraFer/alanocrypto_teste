@@ -39,22 +39,43 @@
   <meta name="google-signin-client_id" content="508290889017-kcm5f3mmnnj8iejn2ro12agrjdjju9hj.apps.googleusercontent.com">
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
-
-  <!-- Firebase Cloud Messaging Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('firebase-messaging-sw.js')
-        .then((registration) => {
-          console.log('✅ Service Worker FCM registrado:', registration);
-        })
-        .catch((error) => {
-          console.error('❌ Erro ao registrar Service Worker FCM:', error);
-        });
-    } else {
-      console.warn('⚠️ Service Workers não são suportados neste navegador');
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          if (registration.active &&
+              registration.active.scriptURL.includes('flutter_service_worker.js')) {
+            console.log('Removendo flutter_service_worker antigo');
+            registration.unregister();
+          }
+        }
+      });
     }
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+          .then((registration) => {
+            console.log('Firebase SW registrado:', registration.scope);
+          })
+          .catch((error) => {
+            console.error('Erro ao registrar Firebase SW:', error);
+          });
+      });
+    }
+  </script>
+
+  <script>
+    {{flutter_js}}
+    {{flutter_build_config}}
+
+    _flutter.loader.load({
+      serviceWorkerSettings: {
+        serviceWorkerVersion: null,
+      },
+    });
   </script>
 </body>
 </html>

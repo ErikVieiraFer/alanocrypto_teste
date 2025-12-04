@@ -49,7 +49,7 @@ class FcmService {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         debugPrint(
-          '⚠️ Usuário não autenticado, não é possível obter token FCM',
+          'Usuário não autenticado, não é possível obter token FCM',
         );
         return;
       }
@@ -57,30 +57,29 @@ class FcmService {
       String? token;
 
       if (kIsWeb) {
-        // Web precisa da VAPID key
         if (_vapidKey == 'COLE_SUA_VAPID_KEY_AQUI') {
-          debugPrint(
-            '⚠️ VAPID key não configurada! Configure em fcm_service.dart',
-          );
+          debugPrint('VAPID key não configurada! Configure em fcm_service.dart');
           return;
         }
+
+        await Future.delayed(const Duration(seconds: 2));
+        debugPrint('Aguardando Service Worker estar pronto...');
+
         token = await _messaging.getToken(vapidKey: _vapidKey);
       } else {
-        // Mobile
         token = await _messaging.getToken();
       }
 
       if (token != null) {
-        debugPrint('📱 FCM Token obtido: ${token.substring(0, 20)}...');
+        debugPrint('FCM Token obtido: ${token.substring(0, 20)}...');
         await _saveTokenToFirestore(token);
       } else {
-        debugPrint('❌ Não foi possível obter o FCM token');
+        debugPrint('Não foi possível obter o FCM token');
       }
 
-      // Atualizar token se mudar
       _messaging.onTokenRefresh.listen(_saveTokenToFirestore);
     } catch (e) {
-      debugPrint('❌ Erro ao obter token FCM: $e');
+      debugPrint('Erro ao obter token FCM: $e');
     }
   }
 

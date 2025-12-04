@@ -43,7 +43,10 @@ class ChatService {
         mentions: mentions ?? [],
       );
 
-      await docRef.set(message.toJson());
+      await docRef.set({
+        ...message.toJson(),
+        'notificationSent': false, // Campo necessário para Cloud Functions
+      });
 
       if (mentions != null && mentions.isNotEmpty) {
         await _createMentionNotifications(
