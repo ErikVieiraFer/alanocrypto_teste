@@ -41,41 +41,53 @@
 <body>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) {
-          if (registration.active &&
-              registration.active.scriptURL.includes('flutter_service_worker.js')) {
-            console.log('Removendo flutter_service_worker antigo');
-            registration.unregister();
+      window.addEventListener('load', async () => {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+
+          for (let registration of registrations) {
+            const sw = registration.active || registration.installing || registration.waiting;
+            if (sw) {
+              await registration.unregister();
+            }
           }
+
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          const registration = await navigator.serviceWorker.register(
+            '/firebase-messaging-sw.js',
+            {
+              scope: '/',
+              updateViaCache: 'none'
+            }
+          );
+
+          await navigator.serviceWorker.ready;
+        } catch (error) {
+          console.error('Erro Service Worker:', error);
         }
       });
     }
   </script>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/firebase-messaging-sw.js')
-          .then((registration) => {
-            console.log('Firebase SW registrado:', registration.scope);
-          })
-          .catch((error) => {
-            console.error('Erro ao registrar Firebase SW:', error);
-          });
-      });
-    }
-  </script>
+  <div id="loading" style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0E1116;">
+    <style>
+      .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #00d4aa;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    <div class="loader"></div>
+  </div>
 
-  <script>
-    {{flutter_js}}
-    {{flutter_build_config}}
-
-    _flutter.loader.load({
-      serviceWorkerSettings: {
-        serviceWorkerVersion: null,
-      },
-    });
-  </script>
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
