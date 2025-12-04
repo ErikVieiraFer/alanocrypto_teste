@@ -463,208 +463,220 @@ class SignalCard extends StatelessWidget {
       decoration: AppTheme.signalCard(isLong: isLong),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: signal.typeColor.withAlpha(26),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(14),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Borda colorida à esquerda
+              Container(
+                width: 4,
+                color: isLong ? AppTheme.successGreen : AppTheme.errorRed,
               ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: signal.typeColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    signal.typeLabel,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    signal.coin,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: signal.statusColor,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    signal.statusLabel,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+              // Conteúdo principal
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _InfoRow(
-                        icon: Icons.login,
-                        label: 'Entrada',
-                        value: '\$${signal.entry.toStringAsFixed(2)}',
-                      ),
-                    ),
-                    Expanded(
-                      child: _InfoRow(
-                        icon: Icons.block,
-                        label: 'Stop Loss',
-                        value: '\$${signal.stopLoss.toStringAsFixed(2)}',
-                        color: Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(Icons.flag, size: 16, color: Colors.green),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Alvos:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: signal.targets.asMap().entries.map((entry) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: Colors.green.withAlpha(26),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green.withAlpha(51)),
+                        color: signal.typeColor.withAlpha(26),
                       ),
-                      child: Text(
-                        'T${entry.key + 1}: \$${entry.value.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                          fontSize: 12,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.speed, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Confiança: ${signal.confidence}%',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[700],
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: signal.typeColor,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              signal.typeLabel,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              signal.coin,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: signal.statusColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              signal.statusLabel,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      formatTimestamp(signal.createdAt),
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                    // Body
+                    Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _InfoRow(
+                                  icon: Icons.login,
+                                  label: 'Entrada',
+                                  value: '\$${signal.entry.toStringAsFixed(2)}',
+                                ),
+                              ),
+                              Expanded(
+                                child: _InfoRow(
+                                  icon: Icons.block,
+                                  label: 'Stop Loss',
+                                  value: '\$${signal.stopLoss.toStringAsFixed(2)}',
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              const Icon(Icons.flag, size: 16, color: Colors.green),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Alvos:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: signal.targets.asMap().entries.map((entry) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withAlpha(26),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.green.withAlpha(51)),
+                                ),
+                                child: Text(
+                                  'T${entry.key + 1}: \$${entry.value.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Icon(Icons.speed, size: 16, color: Colors.grey[600]),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Confiança: ${signal.confidence}%',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                formatTimestamp(signal.createdAt),
+                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                              ),
+                            ],
+                          ),
+                          if (signal.profit != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: (signal.profit! >= 0 ? Colors.green : Colors.red)
+                                    .withAlpha(26),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    signal.profit! >= 0
+                                        ? Icons.trending_up
+                                        : Icons.trending_down,
+                                    color: signal.profit! >= 0
+                                        ? Colors.green
+                                        : Colors.red,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Lucro: ${signal.profit!.toStringAsFixed(2)}%',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: signal.profit! >= 0
+                                          ? Colors.green
+                                          : Colors.red,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-                if (signal.profit != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: (signal.profit! >= 0 ? Colors.green : Colors.red)
-                          .withAlpha(26),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          signal.profit! >= 0
-                              ? Icons.trending_up
-                              : Icons.trending_down,
-                          color: signal.profit! >= 0
-                              ? Colors.green
-                              : Colors.red,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Lucro: ${signal.profit!.toStringAsFixed(2)}%',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: signal.profit! >= 0
-                                ? Colors.green
-                                : Colors.red,
+                    // Footer
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.grey[800] : Colors.grey[100],
+                      ),
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: ActionButton(
+                            onPressed: () => onCopy(signal),
+                            label: 'Copiar Sinal',
+                            icon: Icons.copy,
+                            backgroundColor: Colors.transparent,
+                            textColor: Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[800] : Colors.grey[100],
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(14),
-              ),
-            ),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: ActionButton(
-                  onPressed: () => onCopy(signal),
-                  label: 'Copiar Sinal',
-                  icon: Icons.copy,
-                  backgroundColor: Colors.transparent,
-                  textColor: Theme.of(context).colorScheme.primary,
+                  ],
                 ),
               ),
-            ),
+            ],
           ),
-        ],
         ),
       ),
     );

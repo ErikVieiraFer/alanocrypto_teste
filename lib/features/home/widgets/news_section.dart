@@ -15,6 +15,7 @@ class NewsSection extends StatefulWidget {
 
 class _NewsSectionState extends State<NewsSection> {
   final NewsService _newsService = NewsService();
+  final ScrollController _scrollController = ScrollController();
   List<NewsArticleModel> _news = [];
   bool _isLoading = true;
 
@@ -24,20 +25,47 @@ class _NewsSectionState extends State<NewsSection> {
     _loadNews();
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollLeft() {
+    _scrollController.animateTo(
+      (_scrollController.offset - 300).clamp(0.0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _scrollRight() {
+    _scrollController.animateTo(
+      (_scrollController.offset + 300).clamp(0.0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
   Future<void> _loadNews() async {
     setState(() => _isLoading = true);
 
     try {
-      final articles = await _newsService.getNews(limit: 6);
+      final articles = await _newsService.getNews(limit: 20);
+
+      final validArticles = articles.where((article) {
+        return article.title.trim().isNotEmpty &&
+               article.url.trim().isNotEmpty;
+      }).toList();
 
       if (mounted) {
         setState(() {
-          _news = articles;
+          _news = validArticles;
           _isLoading = false;
         });
       }
     } catch (e) {
-      print('❌ Erro ao carregar notícias: $e');
+      debugPrint('❌ Erro ao carregar notícias: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -112,16 +140,77 @@ class _NewsSectionState extends State<NewsSection> {
                         ],
                       ),
                     )
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.only(
-                        left: AppTheme.mobileHorizontalPadding,
-                        right: AppTheme.mobileHorizontalPadding,
-                      ),
-                      itemCount: _news.length,
-                      itemBuilder: (context, index) {
-                        return _NewsCard(article: _news[index]);
-                      },
+                  : Stack(
+                      children: [
+                        ListView.builder(
+                          controller: _scrollController,
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.only(
+                            left: AppTheme.mobileHorizontalPadding,
+                            right: AppTheme.mobileHorizontalPadding,
+                          ),
+                          itemCount: _news.length,
+                          itemBuilder: (context, index) {
+                            return _NewsCard(article: _news[index]);
+                          },
+                        ),
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 48,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  AppTheme.backgroundColor,
+                                  AppTheme.backgroundColor.withValues(alpha: 0),
+                                ],
+                              ),
+                            ),
+                            child: Center(
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.chevron_left,
+                                  color: AppTheme.primaryGreen,
+                                  size: 32,
+                                ),
+                                onPressed: _scrollLeft,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 48,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.centerRight,
+                                end: Alignment.centerLeft,
+                                colors: [
+                                  AppTheme.backgroundColor,
+                                  AppTheme.backgroundColor.withValues(alpha: 0),
+                                ],
+                              ),
+                            ),
+                            child: Center(
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.chevron_right,
+                                  color: AppTheme.primaryGreen,
+                                  size: 32,
+                                ),
+                                onPressed: _scrollRight,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
         ),
       ],

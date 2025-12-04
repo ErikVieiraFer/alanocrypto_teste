@@ -8,8 +8,7 @@ class NewsService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Stream<List<NewsArticleModel>> getNewsStream({int limit = 6}) {
-    // Ler do cache market_cache/news
+  Stream<List<NewsArticleModel>> getNewsStream({int limit = 20}) {
     return _firestore
         .collection('market_cache')
         .doc('news')
@@ -21,13 +20,14 @@ class NewsService {
       final List<dynamic> newsData = data['data'] ?? [];
 
       return newsData
+          .where((item) => _isValidNewsItem(item))
           .take(limit)
           .map((item) => _parseNewsFromCache(item))
           .toList();
     });
   }
 
-  Future<List<NewsArticleModel>> getNews({int limit = 6}) async {
+  Future<List<NewsArticleModel>> getNews({int limit = 20}) async {
     try {
       final doc = await _firestore
           .collection('market_cache')
@@ -40,12 +40,21 @@ class NewsService {
       final List<dynamic> newsData = data['data'] ?? [];
 
       return newsData
+          .where((item) => _isValidNewsItem(item))
           .take(limit)
           .map((item) => _parseNewsFromCache(item))
           .toList();
     } catch (e) {
       throw Exception('Error fetching news: $e');
     }
+  }
+
+  bool _isValidNewsItem(dynamic item) {
+    if (item == null || item is! Map<String, dynamic>) return false;
+    final map = item as Map<String, dynamic>;
+    final title = map['title']?.toString() ?? '';
+    final url = map['url']?.toString() ?? '';
+    return title.trim().isNotEmpty && url.trim().isNotEmpty;
   }
 
   NewsArticleModel _parseNewsFromCache(dynamic item) {

@@ -63,6 +63,7 @@ class Message {
       'replyToUserName': replyToUserName,
       'isEdited': isEdited,
       'mentions': mentions.map((m) => m.toJson()).toList(),
+      'notificationSent': false,
     };
   }
 

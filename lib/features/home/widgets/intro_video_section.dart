@@ -5,7 +5,14 @@ import '../../../models/intro_video_model.dart';
 import '../../../theme/app_theme.dart';
 
 class IntroVideoSection extends StatefulWidget {
-  const IntroVideoSection({super.key});
+  final bool isDrawerOpen;
+  final bool isDialogOpen;
+
+  const IntroVideoSection({
+    super.key,
+    this.isDrawerOpen = false,
+    this.isDialogOpen = false,
+  });
 
   @override
   State<IntroVideoSection> createState() => _IntroVideoSectionState();
@@ -15,6 +22,7 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
   YoutubePlayerController? _controller;
   IntroVideoModel? _videoData;
   bool _isLoading = true;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -50,7 +58,7 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
         if (videoModel.isActive && videoModel.videoUrl.isNotEmpty) {
           final videoId = _extractVideoId(videoModel.videoUrl);
 
-          if (videoId != null) {
+          if (videoId != null && !_isDisposed) {
             final controller = YoutubePlayerController.fromVideoId(
               videoId: videoId,
               autoPlay: false,
@@ -62,26 +70,31 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
               ),
             );
 
-            setState(() {
-              _videoData = videoModel;
-              _controller = controller;
-              _isLoading = false;
-            });
+            if (mounted) {
+              setState(() {
+                _videoData = videoModel;
+                _controller = controller;
+                _isLoading = false;
+              });
+            }
           }
         }
       }
 
-      if (_controller == null) {
+      if (_controller == null && mounted) {
         setState(() => _isLoading = false);
       }
     } catch (e) {
       debugPrint('Erro ao carregar vídeo: $e');
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _controller?.close();
     super.dispose();
   }
@@ -105,42 +118,43 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
       return const SizedBox.shrink();
     }
 
+    // Removido Visibility wrapper que causava erro "disposed EngineFlutterView" no Flutter Web
+    // O drawer/dialog já cobre o vídeo quando aberto
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppTheme.mobileHorizontalPadding),
       decoration: AppTheme.gradientCardDecoration,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: YoutubePlayer(
-              controller: _controller!,
-              aspectRatio: 16 / 9,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: YoutubePlayer(
+                controller: _controller!,
+                aspectRatio: 16 / 9,
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppTheme.paddingMedium),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _videoData!.title,
-                  style: AppTheme.heading3,
-                ),
-                if (_videoData!.description.isNotEmpty) ...[
-                  const SizedBox(height: AppTheme.gapSmall),
+            Padding(
+              padding: const EdgeInsets.all(AppTheme.paddingMedium),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    _videoData!.description,
-                    style: AppTheme.bodyMedium.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
+                    _videoData!.title,
+                    style: AppTheme.heading3,
                   ),
+                  if (_videoData!.description.isNotEmpty) ...[
+                    const SizedBox(height: AppTheme.gapSmall),
+                    Text(
+                      _videoData!.description,
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
     );
   }
 }

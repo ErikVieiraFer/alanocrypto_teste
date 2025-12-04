@@ -44,6 +44,8 @@ class DashboardScreen extends StatefulWidget {
 class DashboardScreenState extends State<DashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late int _currentIndex;
+  bool _isDrawerOpen = false;
+  bool _isDialogOpen = false;
 
   final NotificationService _notificationService = NotificationService();
   //   final AlanoPostService _alanoPostService = AlanoPostService();
@@ -60,23 +62,23 @@ class DashboardScreenState extends State<DashboardScreen> {
   //   static const String _keyLastSignalView = 'last_signal_view';
 
 
-  final List<Widget> _screens = [
-    const HomeScreen(), // 0 - Home (Dashboard)
-    const GroupChatScreen(), // 1 - Comunidade
-    const AlanoPostsScreen(), // 2 - Posts
-    const SignalsScreen(), // 3 - Sinais
-    const ProfileScreen(), // 4 - Perfil
-    const MarketsScreen(), // 5 - Mercados (Novo com integração CoinGecko)
-    const WatchlistScreen(), // 6 - Watchlist
-    const ForexCalculatorScreen(), // 7 - Calculadora Forex
-    const CoursesScreen(), // 8 - Cursos
-    const PortfolioScreen(), // 9 - Portfólio
-    const AIChatScreen(), // 10 - Alano IA
-    const UsefulLinksScreen(), // 11 - Links Úteis
-    const SupportScreen(), // 12 - Suporte
-    const CupulaComingSoonScreen(), // 13 - A Cúpula
-    const EconomicCalendarScreen(), // 14 - Calendário Econômico (Implementado com Trading Economics API)
-    const ManagementScreen(), // 15 - Gerenciamento
+  List<Widget> get _screens => [
+    HomeScreen(isDrawerOpen: _isDrawerOpen, isDialogOpen: _isDialogOpen),
+    const GroupChatScreen(),
+    const AlanoPostsScreen(),
+    const SignalsScreen(),
+    const ProfileScreen(),
+    const MarketsScreen(),
+    const WatchlistScreen(),
+    const ForexCalculatorScreen(),
+    const CoursesScreen(),
+    const PortfolioScreen(),
+    const AIChatScreen(),
+    const UsefulLinksScreen(),
+    const SupportScreen(),
+    const CupulaComingSoonScreen(),
+    const EconomicCalendarScreen(),
+    const ManagementScreen(),
   ];
   // ═══════════════════════════════════════════════════════════
   // MÉTODOS DE GERENCIAMENTO DE ÚLTIMA VISUALIZAÇÃO
@@ -206,12 +208,16 @@ class DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _showFirstTimeDialogs(BuildContext context) async {
-    // Primeiro mostra o diálogo de boas-vindas/notificações
+    setState(() => _isDialogOpen = true);
+
     await WelcomeNotificationDialog.showIfNeeded(context);
 
-    // Depois mostra o diálogo de instalação PWA
     if (context.mounted) {
       await InstallPwaDialog.showIfNeeded(context);
+    }
+
+    if (mounted) {
+      setState(() => _isDialogOpen = false);
     }
   }
 
@@ -319,12 +325,158 @@ class DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildNavItemWithBadge(int index, IconData icon, String label, Stream<int> badgeStream) {
+    final isSelected = _currentIndex == index;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          setState(() => _currentIndex = index);
+          if (index == 1) _resetChatBadge();
+          if (index == 2) _saveLastPostView();
+          if (index == 3) _saveLastSignalView();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? AppTheme.primaryGreen.withOpacity(0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    icon,
+                    color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
+                    size: 22,
+                  ),
+                  StreamBuilder<int>(
+                    stream: badgeStream,
+                    builder: (context, snapshot) {
+                      final count = snapshot.data ?? 0;
+                      if (count == 0 || isSelected) return const SizedBox.shrink();
+                      return Positioned(
+                        top: -6,
+                        right: -10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                          constraints: const BoxConstraints(minWidth: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            count > 99 ? '99+' : count.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? AppTheme.primaryGreen : AppTheme.textSecondary,
+                  fontSize: 9,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Stream<int> _getChatBadgeStream() {
+    if (_userId == null) return Stream.value(0);
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(_userId)
+        .snapshots()
+        .map((doc) => doc.data()?['chatNotificationCount'] ?? 0);
+  }
+
+  Stream<int> _getPostsBadgeStream() {
+    return FirebaseFirestore.instance
+        .collection('alano_posts')
+        .orderBy('createdAt', descending: true)
+        .limit(20)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final prefs = await SharedPreferences.getInstance();
+      final lastView = prefs.getInt(_keyLastPostView) ?? 0;
+      final lastViewDate = DateTime.fromMillisecondsSinceEpoch(lastView);
+      int count = 0;
+      for (final doc in snapshot.docs) {
+        final createdAt = (doc.data()['createdAt'] as Timestamp?)?.toDate();
+        if (createdAt != null && createdAt.isAfter(lastViewDate)) {
+          count++;
+        }
+      }
+      return count;
+    });
+  }
+
+  Stream<int> _getSignalsBadgeStream() {
+    return FirebaseFirestore.instance
+        .collection('signals')
+        .orderBy('createdAt', descending: true)
+        .limit(20)
+        .snapshots()
+        .asyncMap((snapshot) async {
+      final prefs = await SharedPreferences.getInstance();
+      final lastView = prefs.getInt(_keyLastSignalView) ?? 0;
+      final lastViewDate = DateTime.fromMillisecondsSinceEpoch(lastView);
+      int count = 0;
+      for (final doc in snapshot.docs) {
+        final createdAt = (doc.data()['createdAt'] as Timestamp?)?.toDate();
+        if (createdAt != null && createdAt.isAfter(lastViewDate)) {
+          count++;
+        }
+      }
+      return count;
+    });
+  }
+
+  Future<void> _resetChatBadge() async {
+    if (_userId == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(_userId)
+          .update({'chatNotificationCount': 0});
+    } catch (e) {
+      debugPrint('Erro ao resetar badge do chat: $e');
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       drawer: const AppDrawer(),
+      onDrawerChanged: (isOpened) {
+        setState(() => _isDrawerOpen = isOpened);
+      },
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: AppTheme.appBarColor,
@@ -433,10 +585,10 @@ class DashboardScreenState extends State<DashboardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildNavItem(3, Icons.show_chart_rounded, 'Sinais'),
-                _buildNavItem(1, Icons.chat_bubble_rounded, 'Chat'),
-                _buildHomeButton(), // Botão Home no centro
-                _buildNavItem(2, Icons.article_rounded, 'Posts'),
+                _buildNavItemWithBadge(3, Icons.show_chart_rounded, 'Sinais', _getSignalsBadgeStream()),
+                _buildNavItemWithBadge(1, Icons.chat_bubble_rounded, 'Chat', _getChatBadgeStream()),
+                _buildHomeButton(),
+                _buildNavItemWithBadge(2, Icons.article_rounded, 'Posts', _getPostsBadgeStream()),
                 _buildNavItem(4, Icons.person_rounded, 'Perfil'),
               ],
             ),

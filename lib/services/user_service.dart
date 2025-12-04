@@ -163,17 +163,31 @@ class UserService {
         await userRef.update(updates);
         print('✅ Usuário existente atualizado: ${user.email}');
       } else {
-        // Usuário novo - criar com approved: false
         await userRef.set({
           'uid': user.uid,
           'email': user.email ?? '',
           'displayName': user.displayName ?? 'Usuário',
           'photoURL': user.photoURL ?? '',
           'bio': '',
-          'approved': false, // Apenas para usuários novos
+          'approved': false,
           'blocked': false,
           'createdAt': Timestamp.fromDate(DateTime.now()),
           'lastLogin': Timestamp.fromDate(DateTime.now()),
+          'emailNotifications': true,
+          'notificationPreferences': {
+            'posts': true,
+            'postsEmail': true,
+            'signals': true,
+            'signalsEmail': true,
+            'mentions': true,
+            'mentionsEmail': true,
+            'chatMessages': false,
+            'chatMessagesThrottle': {
+              'enabled': true,
+              'maxPerHour': 4,
+              'batchInterval': 15,
+            },
+          },
         });
         print('✅ Novo usuário criado: ${user.email} - Precisa aprovação');
         print('📸 Foto do novo usuário: ${user.photoURL}');
@@ -202,12 +216,27 @@ class UserService {
         'country': 'Brasil',
         'tier': 'Free',
         'bio': '',
-        'approved': false, // Novo usuário precisa aprovação
+        'approved': false,
         'blocked': false,
         'createdAt': FieldValue.serverTimestamp(),
         'lastLogin': FieldValue.serverTimestamp(),
         'accountId': accountId,
         'broker': broker,
+        'emailNotifications': true,
+        'notificationPreferences': {
+          'posts': true,
+          'postsEmail': true,
+          'signals': true,
+          'signalsEmail': true,
+          'mentions': true,
+          'mentionsEmail': true,
+          'chatMessages': false,
+          'chatMessagesThrottle': {
+            'enabled': true,
+            'maxPerHour': 4,
+            'batchInterval': 15,
+          },
+        },
       }, SetOptions(merge: true));
     } catch (e) {
       print('Erro ao criar usuário: $e');

@@ -18,11 +18,16 @@ class NotificationPermissionDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: AppTheme.inputBackground,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -164,7 +169,9 @@ class NotificationPermissionDialog extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'theme/app_theme.dart';
 import 'features/auth/screens/landing_screen.dart';
@@ -17,6 +18,7 @@ import 'features/placeholder/under_development_screen.dart';
 import 'services/auth_service.dart';
 import 'services/user_service.dart';
 import 'services/fcm_service.dart';
+import 'services/notification_preferences_service.dart';
 import 'package:alanoapp/firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -251,15 +253,35 @@ class AuthWrapper extends StatefulWidget {
 
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _fcmInitialized = false;
+  bool _lastAccessUpdated = false;
 
   Future<void> _initializeFcm() async {
     if (!_fcmInitialized) {
       try {
         await FcmService().initialize();
+        await NotificationPreferencesService().initializeDefaultPreferences();
         _fcmInitialized = true;
-        debugPrint('✅ FCM Service inicializado no AuthWrapper');
+        debugPrint('✅ FCM Service e preferências inicializados no AuthWrapper');
       } catch (e) {
         debugPrint('❌ Erro ao inicializar FCM Service: $e');
+      }
+    }
+  }
+
+  Future<void> _updateLastAccess() async {
+    if (!_lastAccessUpdated) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .update({'lastAccess': FieldValue.serverTimestamp()});
+          _lastAccessUpdated = true;
+          debugPrint('✅ lastAccess atualizado para ${user.uid}');
+        }
+      } catch (e) {
+        debugPrint('❌ Erro ao atualizar lastAccess: $e');
       }
     }
   }
@@ -297,8 +319,8 @@ class _AuthWrapperState extends State<AuthWrapper> {
               }
 
               if (approvalSnapshot.hasData && approvalSnapshot.data == true) {
-                // Inicializar FCM após login e aprovação
                 _initializeFcm();
+                _updateLastAccess();
                 return const DashboardScreen();
               }
 

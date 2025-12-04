@@ -165,6 +165,8 @@ class FcmService {
           break;
 
         case 'mention':
+        case 'chat_grouped':
+        case 'chat_batch':
           debugPrint('💬 Navegando para Chat');
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(

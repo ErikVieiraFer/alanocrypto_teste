@@ -15,6 +15,7 @@ class CryptoMarketSection extends StatefulWidget {
 
 class _CryptoMarketSectionState extends State<CryptoMarketSection> {
   final CryptoMarketService _cryptoService = CryptoMarketService();
+  final ScrollController _scrollController = ScrollController();
   List<CryptoDataModel> _cryptos = [];
   bool _isLoading = true;
   StreamSubscription<List<CryptoDataModel>>? _streamSubscription;
@@ -32,6 +33,22 @@ class _CryptoMarketSectionState extends State<CryptoMarketSection> {
         });
       }
     });
+  }
+
+  void _scrollLeft() {
+    _scrollController.animateTo(
+      (_scrollController.offset - 180).clamp(0.0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _scrollRight() {
+    _scrollController.animateTo(
+      (_scrollController.offset + 180).clamp(0.0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   Future<void> _loadCryptos() async {
@@ -52,6 +69,7 @@ class _CryptoMarketSectionState extends State<CryptoMarketSection> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _streamSubscription?.cancel();
     _cryptoService.stopAutoUpdate();
     super.dispose();
@@ -118,16 +136,77 @@ class _CryptoMarketSectionState extends State<CryptoMarketSection> {
                     color: AppTheme.primaryGreen,
                   ),
                 )
-              : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(
-                    left: AppTheme.mobileHorizontalPadding,
-                    right: AppTheme.mobileHorizontalPadding,
-                  ),
-                  itemCount: _cryptos.length,
-                  itemBuilder: (context, index) {
-                    return _CryptoCard(crypto: _cryptos[index]);
-                  },
+              : Stack(
+                  children: [
+                    ListView.builder(
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.only(
+                        left: AppTheme.mobileHorizontalPadding,
+                        right: AppTheme.mobileHorizontalPadding,
+                      ),
+                      itemCount: _cryptos.length,
+                      itemBuilder: (context, index) {
+                        return _CryptoCard(crypto: _cryptos[index]);
+                      },
+                    ),
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 48,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              AppTheme.backgroundColor,
+                              AppTheme.backgroundColor.withValues(alpha: 0),
+                            ],
+                          ),
+                        ),
+                        child: Center(
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.chevron_left,
+                              color: AppTheme.primaryGreen,
+                              size: 32,
+                            ),
+                            onPressed: _scrollLeft,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 48,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerRight,
+                            end: Alignment.centerLeft,
+                            colors: [
+                              AppTheme.backgroundColor,
+                              AppTheme.backgroundColor.withValues(alpha: 0),
+                            ],
+                          ),
+                        ),
+                        child: Center(
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.chevron_right,
+                              color: AppTheme.primaryGreen,
+                              size: 32,
+                            ),
+                            onPressed: _scrollRight,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
         ),
       ],

@@ -235,23 +235,9 @@ class AppTheme {
         ],
       ),
       borderRadius: BorderRadius.circular(16),
-      border: Border(
-        top: BorderSide(
-          color: borderDark.withOpacity(0.3),
-          width: 1,
-        ),
-        right: BorderSide(
-          color: borderDark.withOpacity(0.3),
-          width: 1,
-        ),
-        bottom: BorderSide(
-          color: borderDark.withOpacity(0.3),
-          width: 1,
-        ),
-        left: BorderSide(
-          color: isLong ? successGreen : errorRed,
-          width: 4,
-        ),
+      border: Border.all(
+        color: borderDark.withOpacity(0.3),
+        width: 1,
       ),
       boxShadow: [
         BoxShadow(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../models/message_model.dart';
 import '../../../models/notification_model.dart';
 import '../../../services/chat_service.dart';
@@ -31,6 +32,23 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
   @override
   void initState() {
     super.initState();
+    _resetChatNotificationCounter();
+  }
+
+  Future<void> _resetChatNotificationCounter() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({'chatNotificationCount': 0});
+
+      debugPrint('✅ Contador de chat resetado');
+    } catch (e) {
+      debugPrint('⚠️ Erro ao resetar contador: $e');
+    }
   }
 
   @override

@@ -13,11 +13,35 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handler para notificações em background
 messaging.onBackgroundMessage((payload) => {
-  console.log('📬 Notificação FCM recebida (background - PWA):', payload);
+  console.log('[SW] Background message:', payload);
 
-  // Agora os dados vêm no campo 'data' (não mais 'notification')
+  const notificationType = payload.data?.type;
+
+  if (notificationType === 'chat_grouped') {
+    const count = parseInt(payload.data?.count || '1', 10);
+    const title = payload.data?.title || (count === 1 ? '1 nova mensagem no chat' : `${count} novas mensagens no chat`);
+
+    console.log('[SW] Chat grouped notification');
+    console.log('[SW] Count:', count);
+    console.log('[SW] Tag: chat_general');
+    console.log('[SW] Renotify: true');
+
+    const notificationOptions = {
+      body: 'Toque para ver',
+      icon: '/icons/Icon-192.png',
+      badge: '/icons/Icon-192.png',
+      tag: 'chat_general',
+      data: payload.data,
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+      renotify: true,
+      silent: false,
+    };
+
+    return self.registration.showNotification(`💬 ${title}`, notificationOptions);
+  }
+
   const notificationTitle = payload.data?.notificationTitle || payload.notification?.title || 'AlanoCryptoFX';
   const notificationBody = payload.data?.body || payload.notification?.body || 'Nova notificação';
 
@@ -25,16 +49,14 @@ messaging.onBackgroundMessage((payload) => {
     body: notificationBody,
     icon: '/icons/Icon-192.png',
     badge: '/icons/Icon-192.png',
-    tag: payload.data?.postId || payload.data?.type || 'default', // Tag única para evitar duplicação
+    tag: payload.data?.postId || payload.data?.type || 'default',
     data: payload.data,
     requireInteraction: false,
     vibrate: [200, 100, 200],
-    renotify: false, // Não renotificar se já existe com mesmo tag
+    renotify: false,
   };
 
-  console.log('🔔 Mostrando notificação PWA com tag:', notificationOptions.tag);
-  console.log('🔔 Título:', notificationTitle);
-  console.log('🔔 Corpo:', notificationBody);
+  console.log('[SW] Mostrando notificação:', notificationTitle);
 
   return self.registration.showNotification(notificationTitle, notificationOptions);
 });

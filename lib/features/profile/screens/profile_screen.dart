@@ -10,7 +10,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../models/user_model.dart';
+import '../../../models/notification_preferences.dart';
 import '../../../services/user_service.dart';
+import '../../../services/notification_preferences_service.dart';
 import '../../../theme/app_theme.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -937,7 +939,6 @@ class _SettingsModalState extends State<_SettingsModal> {
         );
       }
     } catch (e) {
-      // Reverter se falhar
       if (mounted) {
         setState(() => _is2FAEnabled = !value);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -948,6 +949,440 @@ class _SettingsModalState extends State<_SettingsModal> {
         );
       }
     }
+  }
+
+  void _showNotificationSettings() {
+    final prefsService = NotificationPreferencesService();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StreamBuilder<NotificationPreferences>(
+        stream: prefsService.getPreferencesStream(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return Container(
+              height: 400,
+              decoration: BoxDecoration(
+                color: AppTheme.inputBackground,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.accentGreen,
+                ),
+              ),
+            );
+          }
+
+          final prefs = snapshot.data!;
+
+          return Container(
+            decoration: BoxDecoration(
+              color: AppTheme.inputBackground,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: AppTheme.accentGreen.withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.notifications_outlined,
+                        color: AppTheme.accentGreen,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Notificações',
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Configure o que você quer receber',
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.close, color: Colors.white54),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildNotificationToggle(
+                          title: 'Posts do Alano',
+                          subtitle: 'Notificar quando Alano publicar novo conteúdo',
+                          icon: Icons.article,
+                          value: prefs.posts,
+                          onChanged: (value) {
+                            prefsService.updateSinglePreference('posts', value);
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildNotificationToggle(
+                          title: 'Novos Sinais',
+                          subtitle: 'Receber alertas de sinais de trading',
+                          icon: Icons.show_chart,
+                          value: prefs.signals,
+                          onChanged: (value) {
+                            prefsService.updateSinglePreference('signals', value);
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildNotificationToggle(
+                          title: 'Menções no Chat',
+                          subtitle: 'Sempre ativo (não configurável)',
+                          icon: Icons.alternate_email,
+                          value: true,
+                          onChanged: null,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildNotificationToggle(
+                          title: 'Mensagens do Chat',
+                          subtitle: 'Notificações instantâneas com agrupamento',
+                          icon: Icons.chat_bubble_outline,
+                          value: prefs.chatMessages,
+                          onChanged: (value) {
+                            if (value) {
+                              _showChatMessagesWarning(() {
+                                prefsService.updateSinglePreference(
+                                  'chatMessages',
+                                  value,
+                                );
+                              });
+                            } else {
+                              prefsService.updateSinglePreference(
+                                'chatMessages',
+                                value,
+                              );
+                            }
+                          },
+                          warning: null,
+                        ),
+                        if (prefs.chatMessages) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.backgroundColor,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppTheme.accentGreen.withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle_outline,
+                                      color: AppTheme.accentGreen,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Ativo com Agrupamento',
+                                      style: TextStyle(
+                                        color: AppTheme.accentGreen,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Notificações instantâneas ativadas.\n1 notificação mostra contador de novas mensagens.',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 12,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNotificationToggle({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool value,
+    required void Function(bool)? onChanged,
+    String? warning,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.accentGreen.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentGreen.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: AppTheme.accentGreen,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: value,
+                onChanged: onChanged,
+                activeColor: AppTheme.accentGreen,
+                activeTrackColor: AppTheme.accentGreen.withValues(alpha: 0.3),
+                inactiveThumbColor: Colors.grey,
+                inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
+              ),
+            ],
+          ),
+          if (warning != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.orange.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      warning,
+                      style: TextStyle(
+                        color: Colors.orange.withValues(alpha: 0.9),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showChatMessagesWarning(VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.inputBackground,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.notifications_active,
+              color: AppTheme.accentGreen,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Notificações do Chat',
+              style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Ative para receber notificações instantâneas de todas as mensagens do chat.',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.accentGreen.withAlpha(25),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppTheme.accentGreen.withAlpha(76),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '✨ Sistema inteligente de agrupamento:',
+                    style: TextStyle(
+                      color: AppTheme.accentGreen,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '• Notificações se atualizam automaticamente\n'
+                    '• 1 notificação mostra contador de mensagens\n'
+                    '• Não gera spam no celular\n'
+                    '• Funciona com app aberto ou fechado',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      height: 1.6,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Se desativado:',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '• Resumo por email 2x ao dia (9h e 17h)\n'
+              '• Você ainda verá o badge no app',
+              style: TextStyle(
+                color: Colors.white54,
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Manter Desativado',
+              style: TextStyle(color: Colors.white54),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              onConfirm();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentGreen,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Ativar Notificações',
+              style: TextStyle(
+                color: AppTheme.backgroundColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -978,7 +1413,43 @@ class _SettingsModalState extends State<_SettingsModal> {
           ),
           const SizedBox(height: 24),
 
-          // Tema
+          InkWell(
+            onTap: _showNotificationSettings,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.backgroundColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.notifications_outlined, color: Colors.white70),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Notificações',
+                          style: TextStyle(color: AppTheme.textPrimary, fontSize: 16),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Gerenciar preferências de notificação',
+                          style: TextStyle(color: Colors.white54, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: Colors.white54),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -998,7 +1469,7 @@ class _SettingsModalState extends State<_SettingsModal> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentGreen.withOpacity(0.2),
+                    color: AppTheme.accentGreen.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -1016,7 +1487,6 @@ class _SettingsModalState extends State<_SettingsModal> {
 
           const SizedBox(height: 12),
 
-          // Toggle 2FA
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -1054,9 +1524,9 @@ class _SettingsModalState extends State<_SettingsModal> {
                     value: _is2FAEnabled,
                     onChanged: _toggle2FA,
                     activeColor: AppTheme.accentGreen,
-                    activeTrackColor: AppTheme.accentGreen.withOpacity(0.3),
+                    activeTrackColor: AppTheme.accentGreen.withValues(alpha: 0.3),
                     inactiveThumbColor: Colors.grey,
-                    inactiveTrackColor: Colors.grey.withOpacity(0.3),
+                    inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
                   ),
               ],
             ),
