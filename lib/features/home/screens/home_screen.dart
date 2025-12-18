@@ -51,7 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
             else
               _buildMobileLayout(),
             const SizedBox(height: AppTheme.mobileSectionSpacing),
-            const NewsSection(),
+            RepaintBoundary(
+              child: const NewsSection(),
+            ),
             const SizedBox(height: AppTheme.bottomSafeArea),
           ],
         ),
@@ -67,7 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
           isDialogOpen: widget.isDialogOpen,
         ),
         const SizedBox(height: AppTheme.mobileSectionSpacing),
-        const MarketListCard(),
+        RepaintBoundary(
+          child: const MarketListCard(),
+        ),
       ],
     );
   }
@@ -76,7 +80,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Vídeo à esquerda (60% da largura)
         Expanded(
           flex: 6,
           child: IntroVideoSection(
@@ -85,10 +88,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 24),
-        // Lista de mercado à direita (40% da largura)
-        const Expanded(
+        Expanded(
           flex: 4,
-          child: MarketListCard(),
+          child: RepaintBoundary(
+            child: const MarketListCard(),
+          ),
         ),
       ],
     );

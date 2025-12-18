@@ -28,6 +28,7 @@ import '../../../widgets/welcome_notification_dialog.dart';
 import '../../../widgets/install_pwa_dialog.dart';
 import '../../../theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:rxdart/rxdart.dart';
 
 class DashboardScreen extends StatefulWidget {
   final int initialIndex;
@@ -48,10 +49,9 @@ class DashboardScreenState extends State<DashboardScreen> {
   bool _isDialogOpen = false;
 
   final NotificationService _notificationService = NotificationService();
-  //   final AlanoPostService _alanoPostService = AlanoPostService();
-  //   final SignalService _signalService = SignalService();
-  //   final ChatService _chatService = ChatService();
   final String? _userId = FirebaseAuth.instance.currentUser?.uid;
+
+  final Set<int> _loadedScreens = {};
 
   // Chaves para SharedPreferences (última visualização)
   static const String _keyLastPostView = 'last_post_view';
@@ -62,24 +62,50 @@ class DashboardScreenState extends State<DashboardScreen> {
   //   static const String _keyLastSignalView = 'last_signal_view';
 
 
-  List<Widget> get _screens => [
-    HomeScreen(isDrawerOpen: _isDrawerOpen, isDialogOpen: _isDialogOpen),
-    const GroupChatScreen(),
-    const AlanoPostsScreen(),
-    const SignalsScreen(),
-    const ProfileScreen(),
-    const MarketsScreen(),
-    const WatchlistScreen(),
-    const ForexCalculatorScreen(),
-    const CoursesScreen(),
-    const PortfolioScreen(),
-    const AIChatScreen(),
-    const UsefulLinksScreen(),
-    const SupportScreen(),
-    const CupulaComingSoonScreen(),
-    const EconomicCalendarScreen(),
-    const ManagementScreen(),
-  ];
+  Widget _buildScreen(int index) {
+    if (!_loadedScreens.contains(index)) {
+      return const SizedBox.shrink();
+    }
+
+    switch (index) {
+      case 0:
+        return HomeScreen(isDrawerOpen: _isDrawerOpen, isDialogOpen: _isDialogOpen);
+      case 1:
+        return const GroupChatScreen();
+      case 2:
+        return const AlanoPostsScreen();
+      case 3:
+        return const SignalsScreen();
+      case 4:
+        return const ProfileScreen();
+      case 5:
+        return const MarketsScreen();
+      case 6:
+        return const WatchlistScreen();
+      case 7:
+        return const ForexCalculatorScreen();
+      case 8:
+        return const CoursesScreen();
+      case 9:
+        return const PortfolioScreen();
+      case 10:
+        return const AIChatScreen();
+      case 11:
+        return const UsefulLinksScreen();
+      case 12:
+        return const SupportScreen();
+      case 13:
+        return const CupulaComingSoonScreen();
+      case 14:
+        return const EconomicCalendarScreen();
+      case 15:
+        return const ManagementScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  List<Widget> get _screens => List.generate(16, (index) => _buildScreen(index));
   // ═══════════════════════════════════════════════════════════
   // MÉTODOS DE GERENCIAMENTO DE ÚLTIMA VISUALIZAÇÃO
   // ═══════════════════════════════════════════════════════════
@@ -172,10 +198,9 @@ class DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
 
-    // Inicializar com o índice fornecido
     _currentIndex = widget.initialIndex;
+    _loadedScreens.add(_currentIndex);
 
-    // Configurar callback de navegação para notificações FCM
     _setupFcmNavigationCallback();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -183,25 +208,29 @@ class DashboardScreenState extends State<DashboardScreen> {
           ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
       if (args != null && args['initialTab'] != null) {
         final int initialTab = args['initialTab'] as int;
-        // Garantir que o índice está dentro do range
-        if (initialTab >= 0 && initialTab < _screens.length) {
+        if (initialTab >= 0 && initialTab < 16) {
           setState(() {
             _currentIndex = initialTab;
+            _loadedScreens.add(initialTab);
           });
         }
       }
 
-      // Mostra os diálogos de primeira vez em sequência
-      _showFirstTimeDialogs(context);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _showFirstTimeDialogs(context);
+        }
+      });
     });
   }
 
   void _setupFcmNavigationCallback() {
     final fcmService = FcmService();
     fcmService.setNavigationCallback((int screenIndex) {
-      if (mounted && screenIndex >= 0 && screenIndex < _screens.length) {
+      if (mounted && screenIndex >= 0 && screenIndex < 16) {
         setState(() {
           _currentIndex = screenIndex;
+          _loadedScreens.add(screenIndex);
         });
       }
     });
@@ -230,19 +259,21 @@ class DashboardScreenState extends State<DashboardScreen> {
 
   // Método público para mudar tabs (usado pelo AppDrawer)
   void changeTab(int index) {
-    if (index >= 0 && index < _screens.length) {
+    if (index >= 0 && index < 16) {
       setState(() {
         _currentIndex = index;
+        _loadedScreens.add(index);
       });
     }
   }
 
   Widget _buildHomeButton() {
-    final isSelected = _currentIndex == 0;
-
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _currentIndex = 0),
+        onTap: () => setState(() {
+          _currentIndex = 0;
+          _loadedScreens.add(0);
+        }),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           child: Column(
@@ -257,20 +288,20 @@ class DashboardScreenState extends State<DashboardScreen> {
                   color: AppTheme.primaryGreen,
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primaryGreen.withOpacity(0.4),
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.4),
                       blurRadius: 20,
                       spreadRadius: 2,
                       offset: const Offset(0, 0),
                     ),
                     BoxShadow(
-                      color: AppTheme.primaryGreen.withOpacity(0.3),
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.3),
                       blurRadius: 40,
                       spreadRadius: 5,
                       offset: const Offset(0, 0),
                     ),
                   ],
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.home_rounded,
                   color: Colors.white,
                   size: 28,
@@ -288,12 +319,15 @@ class DashboardScreenState extends State<DashboardScreen> {
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _currentIndex = index),
+        onTap: () => setState(() {
+          _currentIndex = index;
+          _loadedScreens.add(index);
+        }),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppTheme.primaryGreen.withOpacity(0.15)
+                ? AppTheme.primaryGreen.withValues(alpha: 0.15)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -331,7 +365,10 @@ class DashboardScreenState extends State<DashboardScreen> {
     return Expanded(
       child: GestureDetector(
         onTap: () {
-          setState(() => _currentIndex = index);
+          setState(() {
+            _currentIndex = index;
+            _loadedScreens.add(index);
+          });
           if (index == 1) _resetChatBadge();
           if (index == 2) _saveLastPostView();
           if (index == 3) _saveLastSignalView();
@@ -340,7 +377,7 @@ class DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppTheme.primaryGreen.withOpacity(0.15)
+                ? AppTheme.primaryGreen.withValues(alpha: 0.15)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -411,7 +448,9 @@ class DashboardScreenState extends State<DashboardScreen> {
         .collection('users')
         .doc(_userId)
         .snapshots()
-        .map((doc) => doc.data()?['chatNotificationCount'] ?? 0);
+        .map((doc) => (doc.data()?['chatNotificationCount'] ?? 0) as int)
+        .debounceTime(const Duration(milliseconds: 300))
+        .distinct();
   }
 
   Stream<int> _getPostsBadgeStream() {
@@ -432,7 +471,9 @@ class DashboardScreenState extends State<DashboardScreen> {
         }
       }
       return count;
-    });
+    })
+        .debounceTime(const Duration(milliseconds: 300))
+        .distinct();
   }
 
   Stream<int> _getSignalsBadgeStream() {
@@ -453,7 +494,9 @@ class DashboardScreenState extends State<DashboardScreen> {
         }
       }
       return count;
-    });
+    })
+        .debounceTime(const Duration(milliseconds: 300))
+        .distinct();
   }
 
   Future<void> _resetChatBadge() async {
@@ -573,7 +616,7 @@ class DashboardScreenState extends State<DashboardScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),

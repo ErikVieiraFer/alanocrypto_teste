@@ -147,7 +147,12 @@ void main() {
           options: DefaultFirebaseOptions.currentPlatform,
         );
 
-        // Firebase App Check - opcional para debug
+        FirebaseFirestore.instance.settings = const Settings(
+          persistenceEnabled: true,
+          cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+        );
+        debugPrint('✅ Firestore cache habilitado');
+
         if (!kIsWeb) {
           try {
             await FirebaseAppCheck.instance.activate(
@@ -157,7 +162,6 @@ void main() {
             debugPrint('✅ Firebase App Check ativado');
           } catch (e) {
             debugPrint('⚠️ Firebase App Check não ativado (modo debug): $e');
-            // Continuar sem App Check em desenvolvimento
           }
         }
 
@@ -294,15 +298,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
     return StreamBuilder<User?>(
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            backgroundColor: AppTheme.backgroundColor,
-            body: const Center(
-              child: CircularProgressIndicator(color: AppTheme.accentGreen),
-            ),
-          );
-        }
-
         if (snapshot.hasData && snapshot.data != null) {
           return FutureBuilder<bool>(
             future: userService.isUserApproved(snapshot.data!.uid),
@@ -310,9 +305,22 @@ class _AuthWrapperState extends State<AuthWrapper> {
               if (approvalSnapshot.connectionState == ConnectionState.waiting) {
                 return Scaffold(
                   backgroundColor: AppTheme.backgroundColor,
-                  body: const Center(
-                    child: CircularProgressIndicator(
-                      color: AppTheme.accentGreen,
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        CircularProgressIndicator(
+                          color: AppTheme.primaryGreen,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'Carregando...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
