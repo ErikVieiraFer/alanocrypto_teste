@@ -22,7 +22,7 @@ class SignalService {
   Stream<List<Signal>> getActiveSignals({SignalType? filter}) {
     Query query = _firestore
         .collection('signals')
-        .where('status', isEqualTo: 'active')
+        .where('status', whereIn: ['active', 'Active', 'ativo', 'Ativo'])
         .orderBy('createdAt', descending: true);
 
     if (filter != null) {
@@ -37,7 +37,14 @@ class SignalService {
   Stream<List<Signal>> getCompletedSignals({SignalType? filter}) {
     Query query = _firestore
         .collection('signals')
-        .where('status', whereIn: ['completed', 'stopped'])
+        .where('status', whereIn: [
+          'completed',
+          'Completed',
+          'finalizado',
+          'Finalizado',
+          'stopped',
+          'Stopped',
+        ])
         .orderBy('createdAt', descending: true);
 
     if (filter != null) {
@@ -52,10 +59,11 @@ class SignalService {
   Future<bool> createSignal({
     required String coin,
     required SignalType type,
-    required double entry,
-    required List<double> targets,
-    required double stopLoss,
-    required int confidence,
+    required String entry,
+    required String confidence,
+    String strategy = 'Não especificado',
+    String rsiValue = 'N/A',
+    String timeframe = 'N/A',
   }) async {
     try {
       final newSignal = Signal(
@@ -63,9 +71,10 @@ class SignalService {
         coin: coin,
         type: type,
         entry: entry,
-        targets: targets,
-        stopLoss: stopLoss,
         confidence: confidence,
+        strategy: strategy,
+        rsiValue: rsiValue,
+        timeframe: timeframe,
         status: SignalStatus.active,
         viewedBy: [],
         createdAt: DateTime.now(),
@@ -77,7 +86,6 @@ class SignalService {
       await _createNotificationsForAllUsers(docRef.id, coin);
       return true;
     } catch (e) {
-      print('Erro ao criar sinal: $e');
       return false;
     }
   }
@@ -108,7 +116,7 @@ class SignalService {
 
       await batch.commit();
     } catch (e) {
-      print('Erro ao criar notificações: $e');
+      // Error creating notifications
     }
   }
 
@@ -117,24 +125,39 @@ class SignalService {
       final snapshot = await _firestore.collection('signals').get();
       return snapshot.size;
     } catch (e) {
-      print('Erro ao contar sinais: $e');
       return 0;
     }
   }
 
   String formatSignalText(Signal signal) {
     final buffer = StringBuffer();
-    buffer.writeln('🎯 ${signal.coin}');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('${signal.type == SignalType.long ? '📈' : '📉'} SINAL DE TRADING');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('');
+    buffer.writeln('💰 Moeda: ${signal.formattedCoin}');
     buffer.writeln('📊 Tipo: ${signal.typeLabel}');
-    buffer.writeln('💰 Entrada: \${signal.entry.toStringAsFixed(2)}');
-    buffer.writeln('🎯 Alvos:');
-    for (int i = 0; i < signal.targets.length; i++) {
-      buffer.writeln(
-        '   Alvo ${i + 1}: \${signal.targets[i].toStringAsFixed(2)}',
-      );
+    buffer.writeln('');
+    buffer.writeln('💵 Entrada: \$${signal.entry}');
+    buffer.writeln('');
+    if (signal.strategy != 'Não especificado') {
+      buffer.writeln('📊 Estratégia: ${signal.strategy}');
     }
-    buffer.writeln('🛑 Stop Loss: \${signal.stopLoss.toStringAsFixed(2)}');
-    buffer.writeln('⚡ Confiança: ${signal.confidence}%');
+    if (signal.rsiValue != 'N/A') {
+      buffer.writeln('📈 RSI Atual: ${signal.rsiValue}');
+    }
+    if (signal.timeframe != 'N/A') {
+      buffer.writeln('⏱️ Timeframe: ${signal.timeframe}');
+    }
+    buffer.writeln('');
+    buffer.writeln('${signal.confidenceEmoji} Confiança: ${signal.confidenceLabel}');
+    buffer.writeln('');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('⚠️ AVISO: Este não é um conselho financeiro.');
+    buffer.writeln('Opere por sua conta e risco.');
+    buffer.writeln('');
+    buffer.writeln('📲 AlanoCryptoFX');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━');
 
     return buffer.toString();
   }

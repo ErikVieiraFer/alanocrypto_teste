@@ -9,57 +9,69 @@ class Signal {
   final String id;
   final String coin;
   final SignalType type;
-  final double entry;
-  final List<double> targets;
-  final double stopLoss;
+  final String entry;
   final SignalStatus status;
-  final double? profit;
-  final int confidence;
+  final String confidence;
+  final String strategy;
+  final String rsiValue;
+  final String timeframe;
   final List<String> viewedBy;
   final DateTime createdAt;
   final DateTime? completedAt;
+  final double? profit;
 
   Signal({
     required this.id,
     required this.coin,
     required this.type,
     required this.entry,
-    required this.targets,
-    required this.stopLoss,
     required this.status,
-    this.profit,
     required this.confidence,
+    this.strategy = 'Não especificado',
+    this.rsiValue = 'N/A',
+    this.timeframe = 'N/A',
     required this.viewedBy,
     required this.createdAt,
     this.completedAt,
+    this.profit,
   });
 
   factory Signal.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    SignalType parseType(String? typeStr) {
+      if (typeStr == null) return SignalType.long;
+      final normalized = typeStr.toUpperCase();
+      return normalized == 'SHORT' ? SignalType.short : SignalType.long;
+    }
+
+    SignalStatus parseStatus(String? statusStr) {
+      if (statusStr == null) return SignalStatus.active;
+      final normalized = statusStr.toLowerCase();
+      if (normalized == 'ativo') return SignalStatus.active;
+      if (normalized == 'finalizado' || normalized == 'completed')
+        return SignalStatus.completed;
+      if (normalized == 'stopped') return SignalStatus.stopped;
+      return SignalStatus.active;
+    }
+
     return Signal(
       id: doc.id,
       coin: data['coin'] ?? '',
-      type: SignalType.values.firstWhere(
-        (e) => e.name == data['type'],
-        orElse: () => SignalType.long,
-      ),
-      entry: (data['entry'] ?? 0).toDouble(),
-      targets: List<double>.from(
-        (data['targets'] ?? []).map((e) => (e as num).toDouble()),
-      ),
-      stopLoss: (data['stopLoss'] ?? 0).toDouble(),
-      status: SignalStatus.values.firstWhere(
-        (e) => e.name == data['status'],
-        orElse: () => SignalStatus.active,
-      ),
-      profit: data['profit'] != null
-          ? (data['profit'] as num).toDouble()
-          : null,
-      confidence: data['confidence'] ?? 0,
+      type: parseType(data['type']),
+      entry: data['entry']?.toString() ?? '0',
+      status: parseStatus(data['status']),
+      confidence: data['confidence']?.toString() ?? 'N/A',
+      strategy: data['strategy']?.toString() ?? 'Não especificado',
+      rsiValue: data['rsiValue']?.toString() ?? 'N/A',
+      timeframe: data['timeframe']?.toString() ?? 'N/A',
       viewedBy: List<String>.from(data['viewedBy'] ?? []),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       completedAt: data['completedAt'] != null
           ? (data['completedAt'] as Timestamp).toDate()
+          : null,
+      profit: data['profit'] != null
+          ? (data['profit'] as num).toDouble()
           : null,
     );
   }
@@ -67,18 +79,19 @@ class Signal {
   Map<String, dynamic> toFirestore() {
     return {
       'coin': coin,
-      'type': type.name,
+      'type': typeLabel,
       'entry': entry,
-      'targets': targets,
-      'stopLoss': stopLoss,
-      'status': status.name,
-      'profit': profit,
+      'status': statusLabel,
       'confidence': confidence,
+      'strategy': strategy,
+      'rsiValue': rsiValue,
+      'timeframe': timeframe,
       'viewedBy': viewedBy,
       'createdAt': Timestamp.fromDate(createdAt),
       'completedAt': completedAt != null
           ? Timestamp.fromDate(completedAt!)
           : null,
+      'profit': profit,
     };
   }
 
@@ -110,5 +123,27 @@ class Signal {
       case SignalStatus.stopped:
         return const Color(0xFFF44336);
     }
+  }
+
+  String get formattedCoin {
+    if (coin.length == 6) {
+      return '${coin.substring(0, 3)}/${coin.substring(3)}';
+    }
+    return coin;
+  }
+
+  String get confidenceLabel {
+    final conf = confidence.toLowerCase();
+    if (conf == 'alta' || conf == 'high') return 'Alta';
+    if (conf == 'média' || conf == 'media' || conf == 'medium') return 'Média';
+    if (conf == 'baixa' || conf == 'low') return 'Baixa';
+    return confidence;
+  }
+
+  String get confidenceEmoji {
+    final conf = confidenceLabel.toLowerCase();
+    if (conf == 'alta') return '🔥';
+    if (conf == 'média') return '⚡';
+    return '⚠️';
   }
 }

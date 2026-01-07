@@ -19,6 +19,7 @@ import 'services/auth_service.dart';
 import 'services/user_service.dart';
 import 'services/fcm_service.dart';
 import 'services/notification_preferences_service.dart';
+import 'widgets/loading_screen.dart';
 import 'package:alanoapp/firebase_options.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
@@ -298,32 +299,20 @@ class _AuthWrapperState extends State<AuthWrapper> {
     return StreamBuilder<User?>(
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadingScreen(message: 'Verificando autenticação...');
+        }
+
+        if (snapshot.hasError) {
+          return const LandingScreen();
+        }
+
         if (snapshot.hasData && snapshot.data != null) {
           return FutureBuilder<bool>(
             future: userService.isUserApproved(snapshot.data!.uid),
             builder: (context, approvalSnapshot) {
               if (approvalSnapshot.connectionState == ConnectionState.waiting) {
-                return Scaffold(
-                  backgroundColor: AppTheme.backgroundColor,
-                  body: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        CircularProgressIndicator(
-                          color: AppTheme.primaryGreen,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Carregando...',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+                return const LoadingScreen(message: 'Verificando permissões...');
               }
 
               if (approvalSnapshot.hasData && approvalSnapshot.data == true) {

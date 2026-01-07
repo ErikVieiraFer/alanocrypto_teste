@@ -36,6 +36,9 @@ class LandingScreen extends StatelessWidget {
               'assets/images/alano-hero.jpg',
               fit: BoxFit.cover,
               alignment: Alignment(0.0, -0.5),
+              errorBuilder: (context, error, stackTrace) {
+                return Container(color: AppTheme.backgroundColor);
+              },
             ),
           ),
           Positioned.fill(

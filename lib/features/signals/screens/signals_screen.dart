@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../../models/signal_model.dart';
 import '../../../services/signal_service.dart';
 import '../../../theme/app_theme.dart';
 import '../../../widgets/shimmer_loading.dart';
-import '../../../widgets/haptic_button.dart';
 
 class SignalsScreen extends StatefulWidget {
   const SignalsScreen({super.key});
@@ -15,77 +13,52 @@ class SignalsScreen extends StatefulWidget {
   State<SignalsScreen> createState() => _SignalsScreenState();
 }
 
-class _SignalsScreenState extends State<SignalsScreen>
-    with SingleTickerProviderStateMixin {
+class _SignalsScreenState extends State<SignalsScreen> {
   final SignalService _signalService = SignalService();
   SignalType? _selectedFilter;
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   Future<void> _copySignal(Signal signal) async {
     try {
-      // Formatar targets
-      final targetsText = signal.targets
-          .asMap()
-          .entries
-          .map((e) => '🎯 Alvo ${e.key + 1}: \$${e.value.toStringAsFixed(2)}')
-          .join('\n');
+      final isLong = signal.type == SignalType.long;
+      final typeEmoji = isLong ? '🟢' : '🔴';
+      final typeName = isLong ? 'COMPRA' : 'VENDA';
 
-      // Determinar emoji por tipo
-      final typeEmoji = signal.type == SignalType.long ? '📈' : '📉';
-      final typeName = signal.type == SignalType.long
-          ? 'LONG (Compra)'
-          : 'SHORT (Venda)';
+      final strategyLine = signal.strategy != 'Não especificado'
+          ? '📈 Estratégia: ${signal.strategy}'
+          : '📈 Estratégia: Análise técnica';
 
-      // Formatar confiança
-      String confidenceLevel;
-      String confidenceEmoji;
-      if (signal.confidence >= 80) {
-        confidenceLevel = 'Alta';
-        confidenceEmoji = '🔥';
-      } else if (signal.confidence >= 60) {
-        confidenceLevel = 'Média';
-        confidenceEmoji = '⚡';
-      } else {
-        confidenceLevel = 'Baixa';
-        confidenceEmoji = '⚠️';
-      }
+      final rsiLine = signal.rsiValue != 'N/A'
+          ? '🥇 Entrada Nível 1   ( RSI Atual: ${signal.rsiValue} )'
+          : '🥇 Entrada Nível 1';
 
-      // Montar mensagem formatada
-      final text =
-          '''
-━━━━━━━━━━━━━━━━━━━━
-$typeEmoji SINAL DE TRADING
-━━━━━━━━━━━━━━━━━━━━
+      final timeframeLine = signal.timeframe != 'N/A'
+          ? '⏰ Timeframe: ${signal.timeframe}'
+          : '⏰ Timeframe: Intraday';
 
-💰 Moeda: ${signal.coin}
-📊 Tipo: $typeName
+      final alertMessage = isLong
+          ? '⚡️ Sinal detectado! O RSI indica sobrevenda, oportunidade de entrada inicial.'
+          : '⚡️ Sinal detectado! O RSI indica sobrecompra, oportunidade de entrada inicial.';
 
-💵 Entrada: \$${signal.entry.toStringAsFixed(2)}
+      final text = '''
+🚨 Alerta de Oportunidade! 🚨
 
-$targetsText
+🔥 Análises do Alano Crypto
+🎯 Acabamos de receber uma notificação
 
-🛑 Stop Loss: \$${signal.stopLoss.toStringAsFixed(2)}
+📍 Ativo: ${signal.formattedCoin}
+$timeframeLine
 
-$confidenceEmoji Confiança: $confidenceLevel (${signal.confidence}%)
+$strategyLine
+$rsiLine
+💡 Tipo de operação: $typeEmoji $typeName
+💵 Preço de entrada: ${signal.entry}
 
-━━━━━━━━━━━━━━━━━━━━
-⚠️ AVISO: Este não é um conselho financeiro.
-Opere por sua conta e risco.
+$alertMessage
 
-📲 AlanoCryptoFX
-━━━━━━━━━━━━━━━━━━━━
+🔥 Azulou, ganhou! Aproveite essa oportunidade no mercado.
+💬 Qualquer dúvida, fale no grupo ou no suporte!
+🟠 SUPORTE ALANO CRYPTO 🦎
+https://bit.ly/suportealanocripto
       '''
               .trim();
 
@@ -168,7 +141,7 @@ Opere por sua conta e risco.
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: Row(
                       children: [
                         Expanded(
@@ -211,38 +184,18 @@ Opere por sua conta e risco.
                       ],
                     ),
                   ),
-                  TabBar(
-                    controller: _tabController,
-                    tabs: const [
-                      Tab(text: 'Ativos'),
-                      Tab(text: 'Histórico'),
-                    ],
-                  ),
                 ],
               ),
             ),
           ),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _SignalsTab(
-                  stream: _signalService.getActiveSignals(
-                    filter: _selectedFilter,
-                  ),
-                  emptyMessage: 'Nenhum sinal ativo',
-                  onCopy: _copySignal,
-                  formatTimestamp: _formatTimestamp,
-                ),
-                _SignalsTab(
-                  stream: _signalService.getCompletedSignals(
-                    filter: _selectedFilter,
-                  ),
-                  emptyMessage: 'Nenhum sinal finalizado',
-                  onCopy: _copySignal,
-                  formatTimestamp: _formatTimestamp,
-                ),
-              ],
+            child: _SignalsTab(
+              stream: _signalService.getActiveSignals(
+                filter: _selectedFilter,
+              ),
+              emptyMessage: 'Nenhum sinal disponível',
+              onCopy: _copySignal,
+              formatTimestamp: _formatTimestamp,
             ),
           ),
         ],
@@ -506,7 +459,7 @@ class SignalCard extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              signal.coin,
+                              signal.formattedCoin,
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -540,72 +493,90 @@ class SignalCard extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _InfoRow(
-                                  icon: Icons.login,
-                                  label: 'Entrada',
-                                  value: '\$${signal.entry.toStringAsFixed(2)}',
+                          if (signal.strategy != 'Não especificado') ...[
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withAlpha(26),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Colors.blue.withAlpha(51),
                                 ),
                               ),
-                              Expanded(
-                                child: _InfoRow(
-                                  icon: Icons.block,
-                                  label: 'Stop Loss',
-                                  value: '\$${signal.stopLoss.toStringAsFixed(2)}',
-                                  color: Colors.red,
-                                ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.lightbulb_outline,
+                                    size: 18,
+                                    color: Colors.blue,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Estratégia',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue[700],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          signal.strategy,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey[800],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          _InfoRow(
+                            icon: Icons.login,
+                            label: 'Entrada',
+                            value: '\$${signal.entry}',
                           ),
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              const Icon(Icons.flag, size: 16, color: Colors.green),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Alvos:',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: signal.targets.asMap().entries.map((entry) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withAlpha(26),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.green.withAlpha(51)),
-                                ),
-                                child: Text(
-                                  'T${entry.key + 1}: \$${entry.value.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green,
-                                    fontSize: 12,
+                              if (signal.rsiValue != 'N/A')
+                                Expanded(
+                                  child: _InfoRow(
+                                    icon: Icons.show_chart,
+                                    label: 'RSI Atual',
+                                    value: signal.rsiValue,
+                                    color: Colors.orange,
                                   ),
                                 ),
-                              );
-                            }).toList(),
+                              if (signal.timeframe != 'N/A')
+                                Expanded(
+                                  child: _InfoRow(
+                                    icon: Icons.access_time,
+                                    label: 'Timeframe',
+                                    value: signal.timeframe,
+                                    color: Colors.purple,
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(height: 12),
                           Row(
                             children: [
-                              Icon(Icons.speed, size: 16, color: Colors.grey[600]),
+                              Text(
+                                signal.confidenceEmoji,
+                                style: const TextStyle(fontSize: 18),
+                              ),
                               const SizedBox(width: 8),
                               Text(
-                                'Confiança: ${signal.confidence}%',
+                                'Confiança: ${signal.confidenceLabel}',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.grey[700],
@@ -655,19 +626,33 @@ class SignalCard extends StatelessWidget {
                       ),
                     ),
                     // Footer
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.grey[800] : Colors.grey[100],
-                      ),
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: ActionButton(
-                            onPressed: () => onCopy(signal),
-                            label: 'Copiar Sinal',
-                            icon: Icons.copy,
-                            backgroundColor: Colors.transparent,
-                            textColor: Theme.of(context).colorScheme.primary,
+                    InkWell(
+                      onTap: () => onCopy(signal),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey[800] : Colors.grey[100],
+                        ),
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.copy,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Copiar Sinal',
+                                  style: TextStyle(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
