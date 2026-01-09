@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
+import 'cupula_chat_preview.dart';
+import 'cupula_lives_preview.dart';
+import 'cupula_posts_preview.dart';
 
 class CupulaComingSoonScreen extends StatelessWidget {
   const CupulaComingSoonScreen({Key? key}) : super(key: key);
@@ -167,7 +170,193 @@ class CupulaComingSoonScreen extends StatelessWidget {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 48),
+
+              // Título da seção de features
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'O que você terá acesso:',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Cards de features
+              _FeatureCard(
+                emoji: '💬',
+                title: 'Chat Exclusivo',
+                description: 'Converse com membros premium e participe de discussões exclusivas do Calango',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CupulaChatPreview()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              _FeatureCard(
+                emoji: '📺',
+                title: 'Lives ao Vivo',
+                description: 'Assista análises em tempo real e operações ao vivo',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CupulaLivesPreview()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              _FeatureCard(
+                emoji: '📰',
+                title: 'Posts Premium',
+                description: 'Conteúdo exclusivo e estratégias avançadas do mercado',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CupulaPostsPreview()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              _FeatureCard(
+                emoji: '📊',
+                title: 'Sinais Premium',
+                description: 'Sinais com análises detalhadas, stop loss e take profit',
+                onTap: () {
+                  print('Sinais Premium - Fazer no sábado');
+                },
+              ),
+
+              const SizedBox(height: 48),
+
+              // CTA final
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.primaryGreen,
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      '🦎',
+                      style: TextStyle(fontSize: 48),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Venha fazer parte do grupo exclusivo do Calango!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureCard extends StatelessWidget {
+  final String emoji;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+
+  const _FeatureCard({
+    Key? key,
+    required this.emoji,
+    required this.title,
+    required this.description,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.primaryGreen.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 32),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'Ver prévia >',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.primaryGreen,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
