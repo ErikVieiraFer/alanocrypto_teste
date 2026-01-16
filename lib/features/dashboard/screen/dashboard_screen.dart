@@ -16,7 +16,8 @@ import 'package:alanoapp/features/courses/screens/courses_screen.dart';
 import 'package:alanoapp/features/portfolio/screens/portfolio_screen.dart';
 import 'package:alanoapp/features/links/screens/useful_links_screen.dart';
 import 'package:alanoapp/features/support/screens/support_screen.dart';
-import 'package:alanoapp/features/cupula/screens/cupula_coming_soon_screen.dart';
+import 'package:alanoapp/features/cupula/screens/cupula_main_screen.dart';
+import 'package:alanoapp/features/cupula/screens/cupula_sales_screen.dart';
 import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_screen.dart';
 // import 'package:alanoapp/features/economic_calendar/screens/economic_calendar_coming_soon_screen.dart'; // DESABILITADO - Funcionalidade implementada
 import 'package:alanoapp/features/management/screens/management_screen.dart';
@@ -95,17 +96,19 @@ class DashboardScreenState extends State<DashboardScreen> {
       case 12:
         return const SupportScreen();
       case 13:
-        return const CupulaComingSoonScreen();
+        return const CupulaSalesScreen();
       case 14:
         return const EconomicCalendarScreen();
       case 15:
         return const ManagementScreen();
+      case 16:
+        return const CupulaMainScreen();
       default:
         return const SizedBox.shrink();
     }
   }
 
-  List<Widget> get _screens => List.generate(16, (index) => _buildScreen(index));
+  List<Widget> get _screens => List.generate(17, (index) => _buildScreen(index));
   // ═══════════════════════════════════════════════════════════
   // MÉTODOS DE GERENCIAMENTO DE ÚLTIMA VISUALIZAÇÃO
   // ═══════════════════════════════════════════════════════════

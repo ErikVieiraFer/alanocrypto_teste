@@ -3,6 +3,7 @@ import '../../../theme/app_theme.dart';
 import 'cupula_chat_preview.dart';
 import 'cupula_lives_preview.dart';
 import 'cupula_posts_preview.dart';
+import 'cupula_signals_preview.dart';
 
 class CupulaComingSoonScreen extends StatelessWidget {
   const CupulaComingSoonScreen({Key? key}) : super(key: key);
@@ -236,7 +237,10 @@ class CupulaComingSoonScreen extends StatelessWidget {
                 title: 'Sinais Premium',
                 description: 'Sinais com análises detalhadas, stop loss e take profit',
                 onTap: () {
-                  print('Sinais Premium - Fazer no sábado');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CupulaSignalsPreview()),
+                  );
                 },
               ),
 

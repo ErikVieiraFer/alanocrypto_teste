@@ -13,6 +13,7 @@ class UserModel {
   final DateTime createdAt;
   final DateTime lastLogin;
   final bool isApproved;
+  final bool isAdmin;           // Se é administrador
   final String? accountId;      // ID/Número da conta
   final String? broker;         // Corretora
 
@@ -29,6 +30,7 @@ class UserModel {
     required this.createdAt,
     required this.lastLogin,
     required this.isApproved,
+    this.isAdmin = false,
     this.accountId,
     this.broker,
   });
@@ -48,6 +50,7 @@ class UserModel {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       lastLogin: (data['lastLogin'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isApproved: data['approved'] ?? false,
+      isAdmin: data['isAdmin'] ?? false,
       accountId: data['accountId'],
       broker: data['broker'],
     );
@@ -66,6 +69,7 @@ class UserModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'lastLogin': Timestamp.fromDate(lastLogin),
       'approved': isApproved,
+      'isAdmin': isAdmin,
       'accountId': accountId,
       'broker': broker,
     };
@@ -84,6 +88,7 @@ class UserModel {
     DateTime? createdAt,
     DateTime? lastLogin,
     bool? isApproved,
+    bool? isAdmin,
     String? accountId,
     String? broker,
   }) {
@@ -100,6 +105,7 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       lastLogin: lastLogin ?? this.lastLogin,
       isApproved: isApproved ?? this.isApproved,
+      isAdmin: isAdmin ?? this.isAdmin,
       accountId: accountId ?? this.accountId,
       broker: broker ?? this.broker,
     );

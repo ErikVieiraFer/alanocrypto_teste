@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -142,6 +143,15 @@ void main() {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+
+      // Carregar variáveis de ambiente
+      try {
+        await dotenv.load(fileName: ".env");
+        debugPrint('✅ .env carregado com sucesso');
+        debugPrint('📋 ADMIN_UID do .env: "${dotenv.env['ADMIN_UID']}"');
+      } catch (e) {
+        debugPrint('❌ Erro ao carregar .env: $e');
+      }
 
       try {
         await Firebase.initializeApp(

@@ -14,6 +14,7 @@ import '../../../models/notification_preferences.dart';
 import '../../../services/user_service.dart';
 import '../../../services/notification_preferences_service.dart';
 import '../../../theme/app_theme.dart';
+import '../../../utils/admin_helper.dart';
 
 class ProfileScreen extends StatelessWidget {
   final String? userId;
@@ -255,10 +256,37 @@ class _InfoSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final formattedPhone = user.phone != null && user.phone!.isNotEmpty ? user.phone! : 'Não informado';
+    final isAdmin = AdminHelper.isCurrentUserAdmin();
+    final showAllData = isOwnProfile || isAdmin; // Admin vê tudo
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // BADGE ADMIN - Mostra quando admin está vendo perfil de outro usuário
+        if (isAdmin && !isOwnProfile) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.red.shade800, Colors.red.shade600],
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.admin_panel_settings, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Text(
+                  'VISÃO ADMIN - Dados completos',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+
         const Text(
           'Informações Pessoais',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
@@ -278,20 +306,21 @@ class _InfoSection extends StatelessWidget {
                 // Nome - SEMPRE VISÍVEL
                 _InfoTile(icon: Icons.person_outline, label: 'Nome Completo', value: user.displayName),
 
-                // Email - APENAS PRÓPRIO PERFIL
-                if (isOwnProfile)
+                // Email - próprio perfil OU admin
+                if (showAllData)
                   _InfoTile(icon: Icons.email_outlined, label: 'Email', value: user.email, canCopy: true),
 
-                // Telefone - APENAS PRÓPRIO PERFIL
-                if (isOwnProfile)
+                // Telefone - próprio perfil OU admin
+                if (showAllData)
                   _InfoTile(icon: Icons.phone_outlined, label: 'Telefone', value: formattedPhone, canCopy: true),
 
-                // Telegram - Visível no próprio perfil (editável) ou se preenchido (apenas visualização)
-                if (isOwnProfile || (user.telegram != null && user.telegram!.isNotEmpty))
+                // Telegram - próprio perfil OU admin OU se preenchido
+                if (showAllData || (user.telegram != null && user.telegram!.isNotEmpty))
                   _InfoTile(
                     icon: FontAwesomeIcons.telegram,
                     label: 'Telegram',
                     value: user.telegram ?? 'Não informado',
+                    canCopy: user.telegram != null && user.telegram!.isNotEmpty,
                   ),
 
                 // País - SEMPRE VISÍVEL
@@ -300,22 +329,39 @@ class _InfoSection extends StatelessWidget {
                 // Plano - SEMPRE VISÍVEL
                 _InfoTile(icon: Icons.star_outline, label: 'Plano', value: user.tier),
 
-                // ID da Conta - APENAS PRÓPRIO PERFIL (sempre visível para editar)
-                if (isOwnProfile)
+                // ID da Conta - próprio perfil OU admin
+                if (showAllData)
                   _InfoTile(
                     icon: Icons.numbers,
                     label: 'ID da Conta',
                     value: user.accountId ?? 'Não informado',
-                    onTap: () => _showEditAccountIdDialog(context, user),
+                    onTap: isOwnProfile ? () => _showEditAccountIdDialog(context, user) : null,
+                    canCopy: user.accountId != null && user.accountId!.isNotEmpty,
                   ),
 
-                // Corretora - APENAS PRÓPRIO PERFIL (sempre visível para editar)
-                if (isOwnProfile)
+                // Corretora - próprio perfil OU admin
+                if (showAllData)
                   _InfoTile(
                     icon: Icons.business,
                     label: 'Corretora',
                     value: user.broker ?? 'Não informada',
-                    onTap: () => _showEditBrokerDialog(context, user),
+                    onTap: isOwnProfile ? () => _showEditBrokerDialog(context, user) : null,
+                  ),
+
+                // Data de criação - APENAS ADMIN vendo outro perfil
+                if (isAdmin && !isOwnProfile)
+                  _InfoTile(
+                    icon: Icons.calendar_today,
+                    label: 'Membro desde',
+                    value: DateFormat('dd/MM/yyyy HH:mm').format(user.createdAt),
+                  ),
+
+                // Status aprovação - APENAS ADMIN
+                if (isAdmin && !isOwnProfile)
+                  _InfoTile(
+                    icon: user.isApproved ? Icons.verified : Icons.pending,
+                    label: 'Status',
+                    value: user.isApproved ? 'Aprovado' : 'Pendente',
                   ),
               ],
             );

@@ -1,8 +1,27 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
+import '../widgets/cupula_widgets.dart';
 
-class CupulaLivesPreview extends StatelessWidget {
+class CupulaLivesPreview extends StatefulWidget {
   const CupulaLivesPreview({super.key});
+
+  @override
+  State<CupulaLivesPreview> createState() => _CupulaLivesPreviewState();
+}
+
+class _CupulaLivesPreviewState extends State<CupulaLivesPreview> {
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Simular loading de 1 segundo
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,65 +63,51 @@ class CupulaLivesPreview extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: AppTheme.appBarColor,
         title: Row(
           children: [
             Text('📺'),
             SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Lives ao Vivo',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                Text(
-                  'Prévia - Em breve',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
+            Text(
+              'Lives ao Vivo',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
           ],
         ),
       ),
-      body: Column(
-        children: [
-          // Banner de prévia
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12),
-            color: AppTheme.greenTransparent20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.info_outline, color: AppTheme.primaryGreen, size: 18),
-                SizedBox(width: 8),
-                Text(
-                  'Esta é apenas uma prévia das lives premium',
-                  style: TextStyle(color: AppTheme.primaryGreen, fontSize: 13),
-                ),
-              ],
-            ),
-          ),
-          // Lista de lives
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.all(16),
+      body: _isLoading
+          ? ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: 3,
+              itemBuilder: (context, index) => const SkeletonCard(),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
               itemCount: mockLives.length,
               itemBuilder: (context, index) {
                 final live = mockLives[index];
                 final isLive = live['isLive'] as bool;
 
-                return Padding(
-                  padding: EdgeInsets.only(bottom: 16),
-                  child: Container(
+                return TweenAnimationBuilder<double>(
+                  duration: Duration(milliseconds: 300 + (index * 100)),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  builder: (context, value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 20 * (1 - value)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: Container(
                     decoration: BoxDecoration(
                       color: AppTheme.cardDark,
                       borderRadius: BorderRadius.circular(12),
@@ -140,38 +145,10 @@ class CupulaLivesPreview extends StatelessWidget {
                             ),
                             // Badge de status
                             if (isLive)
-                              Positioned(
+                              const Positioned(
                                 top: 12,
                                 left: 12,
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.errorRed,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      SizedBox(width: 6),
-                                      Text(
-                                        'AO VIVO',
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                child: LiveBadge(),
                               ),
                             // Viewers count
                             if (live['viewers'] != null)
@@ -285,12 +262,10 @@ class CupulaLivesPreview extends StatelessWidget {
                       ],
                     ),
                   ),
+                  ),
                 );
               },
             ),
-          ),
-        ],
-      ),
     );
   }
 }

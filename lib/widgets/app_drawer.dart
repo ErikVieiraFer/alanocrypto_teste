@@ -324,7 +324,7 @@ class _AppDrawerState extends State<AppDrawer> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _changeTab(context, 13), // Index 13 = A Cúpula
+          onTap: () => _changeTab(context, 13),
           borderRadius: BorderRadius.circular(16),
           splashColor: Colors.white.withOpacity(0.1),
           child: Container(

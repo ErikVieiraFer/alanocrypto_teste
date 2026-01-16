@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,6 +7,7 @@ import '../../../models/notification_model.dart';
 import '../../../services/chat_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../services/user_service.dart';
+import '../../../utils/admin_helper.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_input.dart';
 import '../../profile/screens/profile_screen.dart';
@@ -172,7 +174,15 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
 
   void _showMessageOptions(Message message) {
     final isMyMessage = message.userId == _currentUser?.uid;
+    final isAdmin = AdminHelper.isCurrentUserAdmin();
     final theme = Theme.of(context);
+
+    // DEBUG
+    debugPrint('📋 _showMessageOptions:');
+    debugPrint('   isMyMessage: $isMyMessage');
+    debugPrint('   isAdmin: $isAdmin');
+    debugPrint('   Mostrar deletar: ${isMyMessage || isAdmin}');
+    debugPrint('   Mostrar banir: ${isAdmin && !isMyMessage}');
 
     showModalBottomSheet(
       context: context,
@@ -239,6 +249,9 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                   _showEditDialog(message);
                 },
               ),
+            ],
+            // DELETAR: próprias mensagens OU admin
+            if (isMyMessage || isAdmin)
               ListTile(
                 leading: const Icon(Icons.delete, color: Colors.red),
                 title: const Text(
@@ -247,10 +260,26 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  _deleteMessage(message);
+                  if (isAdmin && !isMyMessage) {
+                    _deleteMessageAsAdmin(message);
+                  } else {
+                    _deleteMessage(message);
+                  }
                 },
               ),
-            ],
+            // BANIR: só admin, não pode banir a si mesmo
+            if (isAdmin && !isMyMessage)
+              ListTile(
+                leading: const Icon(Icons.block, color: Colors.red),
+                title: const Text(
+                  'Banir usuário',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _banUser(message.userId, message.userName);
+                },
+              ),
           ],
         ),
       ),
@@ -346,6 +375,104 @@ class _GroupChatScreenState extends State<GroupChatScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Erro ao deletar mensagem: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  /// Deletar mensagem como ADMIN (qualquer mensagem)
+  Future<void> _deleteMessageAsAdmin(Message message) async {
+    if (!AdminHelper.isCurrentUserAdmin()) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Deletar mensagem (Admin)'),
+        content: Text('Deletar mensagem de ${message.userName}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Deletar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        // Deletar diretamente do Firestore (admin bypass)
+        // Coleção correta: chat_messages
+        await FirebaseFirestore.instance
+            .collection('chat_messages')
+            .doc(message.id)
+            .delete();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Mensagem deletada (Admin)')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao deletar: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  /// Banir usuário (só admin)
+  Future<void> _banUser(String userId, String userName) async {
+    if (!AdminHelper.isCurrentUserAdmin()) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Banir usuário'),
+        content: Text('Banir $userName?\n\nEle não poderá mais enviar mensagens.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Banir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('banned_users')
+            .doc(userId)
+            .set({
+          'userId': userId,
+          'userName': userName,
+          'bannedAt': FieldValue.serverTimestamp(),
+          'bannedBy': _currentUser?.uid,
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$userName foi banido'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao banir: $e')),
           );
         }
       }
