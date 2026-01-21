@@ -487,7 +487,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
         color: AppTheme.cardDark,
         border: Border(
           bottom: BorderSide(
-            color: AppTheme.borderDark.withOpacity(0.3),
+            color: AppTheme.borderDark.withValues(alpha: 0.3),
           ),
         ),
       ),
@@ -604,7 +604,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
         color: AppTheme.cardDark,
         border: Border(
           top: BorderSide(
-            color: AppTheme.borderDark.withOpacity(0.3),
+            color: AppTheme.borderDark.withValues(alpha: 0.3),
           ),
         ),
       ),
@@ -925,7 +925,7 @@ class _MessageBubble extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryGreen.withOpacity(0.5),
+                              color: AppTheme.primaryGreen.withValues(alpha: 0.5),
                               blurRadius: 8,
                             ),
                           ],
@@ -959,12 +959,12 @@ class _MessageBubble extends StatelessWidget {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: isMe
-                          ? AppTheme.primaryGreen.withOpacity(0.1)
+                          ? AppTheme.primaryGreen.withValues(alpha: 0.1)
                           : AppTheme.cardMedium,
                       borderRadius: BorderRadius.circular(12),
                       border: isMe
                           ? Border.all(
-                              color: AppTheme.primaryGreen.withOpacity(0.3),
+                              color: AppTheme.primaryGreen.withValues(alpha: 0.3),
                             )
                           : null,
                     ),
@@ -977,7 +977,7 @@ class _MessageBubble extends StatelessWidget {
                             padding: const EdgeInsets.all(8),
                             margin: const EdgeInsets.only(bottom: 8),
                             decoration: BoxDecoration(
-                              color: AppTheme.backgroundColor.withOpacity(0.5),
+                              color: AppTheme.backgroundColor.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(8),
                               border: Border(
                                 left: BorderSide(
@@ -1066,7 +1066,7 @@ class _MessageBubble extends StatelessWidget {
                             '(editada)',
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.textSecondary.withOpacity(0.7),
+                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
                               fontStyle: FontStyle.italic,
                             ),
                           ),

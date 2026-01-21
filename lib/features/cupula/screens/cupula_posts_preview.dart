@@ -90,7 +90,7 @@ class _CupulaPostsPreviewState extends State<CupulaPostsPreview> {
         color: AppTheme.cardDark,
         border: Border(
           bottom: BorderSide(
-            color: AppTheme.borderDark.withOpacity(0.3),
+            color: AppTheme.borderDark.withValues(alpha: 0.3),
           ),
         ),
       ),
@@ -199,27 +199,43 @@ class _CupulaPostsPreviewState extends State<CupulaPostsPreview> {
 
   Widget _buildEmpty() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.article_outlined, size: 64, color: AppTheme.textSecondary),
-          SizedBox(height: 16),
-          Text(
-            'Nenhum post encontrado',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppTheme.textPrimary,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.article_outlined,
+                size: 64,
+                color: AppTheme.primaryGreen,
+              ),
             ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Aguarde novos conteúdos!',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
+            const SizedBox(height: 24),
+            const Text(
+              'Nenhum post exclusivo ainda',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            const Text(
+              'Posts premium serão publicados aqui.\nAguarde novos conteúdos!',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -281,7 +297,7 @@ class _PostCard extends StatelessWidget {
             color: AppTheme.cardDark,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppTheme.borderDark.withOpacity(0.3),
+              color: AppTheme.borderDark.withValues(alpha: 0.3),
             ),
           ),
           child: Column(

@@ -148,7 +148,7 @@ class _CupulaMainScreenState extends State<CupulaMainScreen> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withOpacity(0.2),
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -189,7 +189,7 @@ class _CupulaMainScreenState extends State<CupulaMainScreen> {
           color: AppTheme.cardDark,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -303,10 +303,10 @@ class _HomeButtonState extends State<_HomeButton> {
         duration: const Duration(milliseconds: 100),
         child: Container(
           decoration: BoxDecoration(
-            color: AppTheme.primaryGreen.withOpacity(0.15),
+            color: AppTheme.primaryGreen.withValues(alpha: 0.15),
             shape: BoxShape.circle,
             border: Border.all(
-              color: AppTheme.primaryGreen.withOpacity(0.3),
+              color: AppTheme.primaryGreen.withValues(alpha: 0.3),
               width: 1,
             ),
           ),

@@ -11,10 +11,31 @@ class UserService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Stream<UserModel?> getUserStream(String userId) {
-    return _firestore.collection('users').doc(userId).snapshots().map((doc) {
-      if (!doc.exists) return null;
-      return UserModel.fromFirestore(doc);
-    });
+    print('🔵 UserService.getUserStream() - userId: $userId');
+
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .snapshots()
+        .map((doc) {
+          print('📄 getUserStream snapshot recebido - exists: ${doc.exists}');
+          if (!doc.exists) {
+            print('⚠️ getUserStream: documento não existe');
+            return null;
+          }
+          try {
+            final user = UserModel.fromFirestore(doc);
+            print('✅ getUserStream: UserModel criado - ${user.displayName}');
+            return user;
+          } catch (e) {
+            print('❌ getUserStream: Erro ao criar UserModel: $e');
+            rethrow;
+          }
+        })
+        .handleError((error) {
+          print('❌ getUserStream handleError: $error');
+          throw error;
+        });
   }
 
   Future<UserModel?> getUser(String userId) async {

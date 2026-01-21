@@ -63,7 +63,7 @@ class CupulaSalesScreen extends StatelessWidget {
                             emoji: '📊',
                             title: 'Sinais Premium',
                             description: 'Análises técnicas detalhadas com stop loss, take profit e estratégias comprovadas',
-                            gradientColors: [AppTheme.primaryGreen.withOpacity(0.25), AppTheme.primaryGreen.withOpacity(0.08)],
+                            gradientColors: [AppTheme.primaryGreen.withValues(alpha: 0.25), AppTheme.primaryGreen.withValues(alpha: 0.08)],
                             badge: 'Mais Popular',
                             badgeColor: AppTheme.primaryGreen,
                           ),
@@ -71,19 +71,19 @@ class CupulaSalesScreen extends StatelessWidget {
                             emoji: '💬',
                             title: 'Chat Exclusivo',
                             description: 'Converse com membros premium e interaja diretamente com o Calango',
-                            gradientColors: [AppTheme.primaryGreen.withOpacity(0.25), AppTheme.primaryGreen.withOpacity(0.08)],
+                            gradientColors: [AppTheme.primaryGreen.withValues(alpha: 0.25), AppTheme.primaryGreen.withValues(alpha: 0.08)],
                           ),
                           _FeatureCard(
                             emoji: '📰',
                             title: 'Posts Premium',
                             description: 'Conteúdo educativo exclusivo com estratégias avançadas do mercado',
-                            gradientColors: [AppTheme.primaryGreen.withOpacity(0.25), AppTheme.primaryGreen.withOpacity(0.08)],
+                            gradientColors: [AppTheme.primaryGreen.withValues(alpha: 0.25), AppTheme.primaryGreen.withValues(alpha: 0.08)],
                           ),
                           _FeatureCard(
                             emoji: '📺',
                             title: 'Lives ao Vivo',
                             description: 'Análises de mercado em tempo real e operações ao vivo com o Calango',
-                            gradientColors: [AppTheme.primaryGreen.withOpacity(0.25), AppTheme.primaryGreen.withOpacity(0.08)],
+                            gradientColors: [AppTheme.primaryGreen.withValues(alpha: 0.25), AppTheme.primaryGreen.withValues(alpha: 0.08)],
                             badge: 'Novo',
                             badgeColor: AppTheme.primaryGreen,
                             emojiOffsetY: -12.0, // Move o emoji da TV para cima
@@ -118,13 +118,13 @@ class CupulaSalesScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: kNeonGreen.withOpacity(0.6),
+                            color: kNeonGreen.withValues(alpha: 0.6),
                             blurRadius: 24,
                             spreadRadius: 2,
                             offset: Offset(0, 8),
                           ),
                           BoxShadow(
-                            color: kNeonGreen.withOpacity(0.3),
+                            color: kNeonGreen.withValues(alpha: 0.3),
                             blurRadius: 40,
                             spreadRadius: 0,
                             offset: Offset(0, 12),
@@ -196,7 +196,7 @@ class CupulaSalesScreen extends StatelessWidget {
                   // Divisor
                   Row(
                     children: [
-                      Expanded(child: Divider(color: AppTheme.borderDark.withOpacity(0.3))),
+                      Expanded(child: Divider(color: AppTheme.borderDark.withValues(alpha: 0.3))),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
@@ -208,7 +208,7 @@ class CupulaSalesScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Expanded(child: Divider(color: AppTheme.borderDark.withOpacity(0.3))),
+                      Expanded(child: Divider(color: AppTheme.borderDark.withValues(alpha: 0.3))),
                     ],
                   ),
                   SizedBox(height: 20),
@@ -279,10 +279,10 @@ class CupulaSalesScreen extends StatelessWidget {
                   margin: EdgeInsets.symmetric(horizontal: 20),
                   padding: EdgeInsets.all(bannerPadding),
                   decoration: BoxDecoration(
-                    color: AppTheme.warningOrange.withOpacity(0.1),
+                    color: AppTheme.warningOrange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppTheme.warningOrange.withOpacity(0.3),
+                      color: AppTheme.warningOrange.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
@@ -423,7 +423,7 @@ class _HeroSectionState extends State<_HeroSection> with SingleTickerProviderSta
                 Container(
                   width: 1,
                   height: 50,
-                  color: AppTheme.borderDark.withOpacity(0.3),
+                  color: AppTheme.borderDark.withValues(alpha: 0.3),
                 ),
                 _StatisticItem(
                   value: '85%',
@@ -459,13 +459,13 @@ class _StatisticItem extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                kNeonGreen.withOpacity(0.2),
-                kNeonGreen.withOpacity(0.1),
+                kNeonGreen.withValues(alpha: 0.2),
+                kNeonGreen.withValues(alpha: 0.1),
               ],
             ),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: kNeonGreen.withOpacity(0.3),
+              color: kNeonGreen.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -526,7 +526,7 @@ class _ComparisonSection extends StatelessWidget {
               color: AppTheme.cardDark,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppTheme.borderDark.withOpacity(0.3),
+                color: AppTheme.borderDark.withValues(alpha: 0.3),
               ),
             ),
             child: Column(
@@ -558,7 +558,7 @@ class _ComparisonSection extends StatelessWidget {
                       Container(
                         width: 1,
                         height: 30,
-                        color: AppTheme.borderDark.withOpacity(0.3),
+                        color: AppTheme.borderDark.withValues(alpha: 0.3),
                       ),
                       Expanded(
                         child: Container(
@@ -566,18 +566,18 @@ class _ComparisonSection extends StatelessWidget {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                kNeonGreen.withOpacity(0.3),
-                                kNeonGreen.withOpacity(0.15),
+                                kNeonGreen.withValues(alpha: 0.3),
+                                kNeonGreen.withValues(alpha: 0.15),
                               ],
                             ),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: kNeonGreen.withOpacity(0.5),
+                              color: kNeonGreen.withValues(alpha: 0.5),
                               width: 1,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: kNeonGreen.withOpacity(0.2),
+                                color: kNeonGreen.withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 spreadRadius: 0,
                               ),
@@ -657,7 +657,7 @@ class _ComparisonRow extends StatelessWidget {
         border: !isLast
             ? Border(
                 bottom: BorderSide(
-                  color: AppTheme.borderDark.withOpacity(0.2),
+                  color: AppTheme.borderDark.withValues(alpha: 0.2),
                   width: 1,
                 ),
               )
@@ -672,7 +672,7 @@ class _ComparisonRow extends StatelessWidget {
               children: [
                 Icon(
                   hasFree ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                  color: hasFree ? AppTheme.successGreen : AppTheme.textSecondary.withOpacity(0.5),
+                  color: hasFree ? AppTheme.successGreen : AppTheme.textSecondary.withValues(alpha: 0.5),
                   size: 18,
                 ),
                 SizedBox(width: 8),
@@ -693,7 +693,7 @@ class _ComparisonRow extends StatelessWidget {
           Container(
             width: 1,
             height: 30,
-            color: AppTheme.borderDark.withOpacity(0.2),
+            color: AppTheme.borderDark.withValues(alpha: 0.2),
           ),
 
           // Coluna Premium
@@ -703,7 +703,7 @@ class _ComparisonRow extends StatelessWidget {
               children: [
                 Icon(
                   hasPremium ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                  color: hasPremium ? kNeonGreen : AppTheme.textSecondary.withOpacity(0.5),
+                  color: hasPremium ? kNeonGreen : AppTheme.textSecondary.withValues(alpha: 0.5),
                   size: 18,
                 ),
                 SizedBox(width: 8),
@@ -763,24 +763,24 @@ class _FeatureCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            gradientColors[0].withOpacity(0.15),
-            gradientColors[1].withOpacity(0.05),
+            gradientColors[0].withValues(alpha: 0.15),
+            gradientColors[1].withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: gradientColors[0].withOpacity(0.3),
+          color: gradientColors[0].withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: gradientColors[0].withOpacity(0.2),
+            color: gradientColors[0].withValues(alpha: 0.2),
             blurRadius: 12,
             spreadRadius: 0,
             offset: Offset(0, 4),
           ),
           BoxShadow(
-            color: gradientColors[0].withOpacity(0.1),
+            color: gradientColors[0].withValues(alpha: 0.1),
             blurRadius: 24,
             spreadRadius: 0,
             offset: Offset(0, 8),
@@ -799,13 +799,13 @@ class _FeatureCard extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  gradientColors[0].withOpacity(0.3),
-                  gradientColors[1].withOpacity(0.2),
+                  gradientColors[0].withValues(alpha: 0.3),
+                  gradientColors[1].withValues(alpha: 0.2),
                 ],
               ),
               shape: BoxShape.circle,
               border: Border.all(
-                color: gradientColors[0].withOpacity(0.4),
+                color: gradientColors[0].withValues(alpha: 0.4),
                 width: 2,
               ),
             ),
@@ -844,13 +844,13 @@ class _FeatureCard extends StatelessWidget {
                       gradient: LinearGradient(
                         colors: [
                           kNeonGreen,
-                          kNeonGreen.withOpacity(0.8),
+                          kNeonGreen.withValues(alpha: 0.8),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: kNeonGreen.withOpacity(0.6),
+                          color: kNeonGreen.withValues(alpha: 0.6),
                           blurRadius: 12,
                           spreadRadius: 1,
                           offset: Offset(0, 2),
@@ -946,8 +946,8 @@ class _PulsatingPriceState extends State<_PulsatingPrice>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppTheme.primaryGreen.withOpacity(0.3),
-                  AppTheme.primaryGreen.withOpacity(0.1),
+                  AppTheme.primaryGreen.withValues(alpha: 0.3),
+                  AppTheme.primaryGreen.withValues(alpha: 0.1),
                 ],
               ),
               borderRadius: BorderRadius.circular(24),
@@ -957,13 +957,13 @@ class _PulsatingPriceState extends State<_PulsatingPrice>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryGreen.withOpacity(0.4),
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.4),
                   blurRadius: 24,
                   spreadRadius: 0,
                   offset: Offset(0, 8),
                 ),
                 BoxShadow(
-                  color: AppTheme.primaryGreen.withOpacity(0.2),
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.2),
                   blurRadius: 40,
                   spreadRadius: 0,
                   offset: Offset(0, 12),
@@ -1062,13 +1062,13 @@ class _PulsatingPriceState extends State<_PulsatingPrice>
                     gradient: LinearGradient(
                       colors: [
                         AppTheme.successGreen,
-                        AppTheme.successGreen.withOpacity(0.8),
+                        AppTheme.successGreen.withValues(alpha: 0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.successGreen.withOpacity(0.4),
+                        color: AppTheme.successGreen.withValues(alpha: 0.4),
                         blurRadius: 12,
                         offset: Offset(0, 4),
                       ),
@@ -1099,10 +1099,10 @@ class _PulsatingPriceState extends State<_PulsatingPrice>
                 Container(
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppTheme.backgroundColor.withOpacity(0.5),
+                    color: AppTheme.backgroundColor.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppTheme.primaryGreen.withOpacity(0.3),
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Column(
@@ -1143,7 +1143,7 @@ class _PulsatingPriceState extends State<_PulsatingPrice>
                 Container(
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.cardDark.withOpacity(0.5),
+                    color: AppTheme.cardDark.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(

@@ -24,8 +24,10 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveUserId = userId ?? FirebaseAuth.instance.currentUser?.uid;
+    debugPrint('🔵 ProfileScreen.build() - userId: $userId, effectiveUserId: $effectiveUserId');
 
     if (effectiveUserId == null) {
+      debugPrint('❌ ProfileScreen: effectiveUserId é null');
       return const Scaffold(
         body: Center(child: Text('Usuário não autenticado')),
       );
@@ -34,21 +36,60 @@ class ProfileScreen extends StatelessWidget {
     return StreamBuilder<UserModel?>(
       stream: UserService().getUserStream(effectiveUserId),
       builder: (context, snapshot) {
+        debugPrint('🔵 ProfileScreen StreamBuilder - state: ${snapshot.connectionState}, hasData: ${snapshot.hasData}, hasError: ${snapshot.hasError}');
+
+        if (snapshot.hasError) {
+          debugPrint('❌ ProfileScreen StreamBuilder error: ${snapshot.error}');
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             backgroundColor: AppTheme.backgroundColor,
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+
+        if (snapshot.hasError) {
           return Scaffold(
             backgroundColor: AppTheme.backgroundColor,
-            body: Center(child: Text('Erro ao carregar perfil: ${snapshot.error}')),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    const Text('Erro ao carregar perfil', style: TextStyle(color: Colors.white, fontSize: 18)),
+                    const SizedBox(height: 8),
+                    Text('${snapshot.error}', style: const TextStyle(color: Colors.white70, fontSize: 12), textAlign: TextAlign.center),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          debugPrint('⚠️ ProfileScreen: snapshot sem dados');
+          return Scaffold(
+            backgroundColor: AppTheme.backgroundColor,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.person_off, size: 64, color: Colors.white54),
+                  SizedBox(height: 16),
+                  Text('Perfil não encontrado', style: TextStyle(color: Colors.white, fontSize: 18)),
+                ],
+              ),
+            ),
           );
         }
 
         final user = snapshot.data!;
         final isOwnProfile = user.uid == FirebaseAuth.instance.currentUser?.uid;
+        debugPrint('✅ ProfileScreen: user carregado - ${user.displayName}, isOwnProfile: $isOwnProfile');
 
         return Scaffold(
           backgroundColor: AppTheme.backgroundColor,
@@ -117,6 +158,8 @@ class _ProfileView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🔵 _ProfileView.build() - user: ${user.displayName}, isOwnProfile: $isOwnProfile');
+
     return Container(
       color: AppTheme.backgroundColor,
       child: SingleChildScrollView(
@@ -164,8 +207,18 @@ class _UserInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🔵 _UserInfoCard.build() - user: ${user.displayName}');
+
     final initials = user.displayName.isNotEmpty ? user.displayName[0].toUpperCase() : '?';
-    final memberSince = DateFormat('dd/MM/yyyy').format(user.createdAt);
+
+    // Proteger DateFormat (pode falhar em produção web)
+    String memberSince;
+    try {
+      memberSince = DateFormat('dd/MM/yyyy').format(user.createdAt);
+    } catch (e) {
+      debugPrint('❌ _UserInfoCard: Erro no DateFormat: $e');
+      memberSince = '${user.createdAt.day}/${user.createdAt.month}/${user.createdAt.year}';
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -253,10 +306,32 @@ class _InfoSection extends StatelessWidget {
 
   const _InfoSection({required this.user, required this.isOwnProfile});
 
+  // Helper para formatar data com fallback
+  String _formatDate(DateTime date) {
+    try {
+      return DateFormat('dd/MM/yyyy HH:mm').format(date);
+    } catch (e) {
+      debugPrint('❌ _InfoSection._formatDate erro: $e');
+      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    debugPrint('🔵 _InfoSection.build() - user: ${user.displayName}');
+
     final formattedPhone = user.phone != null && user.phone!.isNotEmpty ? user.phone! : 'Não informado';
-    final isAdmin = AdminHelper.isCurrentUserAdmin();
+
+    // Proteger chamada do AdminHelper (pode falhar em produção web)
+    bool isAdmin = false;
+    try {
+      isAdmin = AdminHelper.isCurrentUserAdmin();
+      debugPrint('🔐 _InfoSection: isAdmin = $isAdmin');
+    } catch (e) {
+      debugPrint('❌ _InfoSection: Erro ao verificar admin: $e');
+      isAdmin = false;
+    }
+
     final showAllData = isOwnProfile || isAdmin; // Admin vê tudo
 
     return Column(
@@ -353,7 +428,7 @@ class _InfoSection extends StatelessWidget {
                   _InfoTile(
                     icon: Icons.calendar_today,
                     label: 'Membro desde',
-                    value: DateFormat('dd/MM/yyyy HH:mm').format(user.createdAt),
+                    value: _formatDate(user.createdAt),
                   ),
 
                 // Status aprovação - APENAS ADMIN

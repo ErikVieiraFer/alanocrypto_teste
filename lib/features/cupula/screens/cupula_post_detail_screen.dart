@@ -74,7 +74,7 @@ class CupulaPostDetailScreen extends StatelessWidget {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.backgroundColor.withOpacity(0.7),
+                  color: AppTheme.backgroundColor.withValues(alpha: 0.7),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -89,7 +89,7 @@ class CupulaPostDetailScreen extends StatelessWidget {
                 icon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppTheme.backgroundColor.withOpacity(0.7),
+                    color: AppTheme.backgroundColor.withValues(alpha: 0.7),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -283,7 +283,7 @@ class CupulaPostDetailScreen extends StatelessWidget {
                       color: AppTheme.cardDark,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppTheme.primaryGreen.withOpacity(0.3),
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
@@ -291,7 +291,7 @@ class CupulaPostDetailScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryGreen.withOpacity(0.1),
+                            color: AppTheme.primaryGreen.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(

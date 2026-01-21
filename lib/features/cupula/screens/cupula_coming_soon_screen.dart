@@ -28,18 +28,18 @@ class CupulaComingSoonScreen extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: [
                       AppTheme.primaryGreen,
-                      AppTheme.primaryGreen.withOpacity(0.7),
+                      AppTheme.primaryGreen.withValues(alpha: 0.7),
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primaryGreen.withOpacity(0.4),
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.4),
                       blurRadius: 30,
                       spreadRadius: 10,
                       offset: const Offset(0, 0),
                     ),
                     BoxShadow(
-                      color: AppTheme.primaryGreen.withOpacity(0.2),
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.2),
                       blurRadius: 60,
                       spreadRadius: 20,
                       offset: const Offset(0, 0),
@@ -73,10 +73,10 @@ class CupulaComingSoonScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppTheme.primaryGreen.withOpacity(0.3),
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -97,7 +97,7 @@ class CupulaComingSoonScreen extends StatelessWidget {
               Text(
                 'Estamos preparando algo exclusivo para você.',
                 style: AppTheme.bodyLarge.copyWith(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -107,7 +107,7 @@ class CupulaComingSoonScreen extends StatelessWidget {
               Text(
                 'Fique ligado para novidades!',
                 style: AppTheme.bodyMedium.copyWith(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -123,22 +123,22 @@ class CupulaComingSoonScreen extends StatelessWidget {
                     end: Alignment.bottomRight,
                     colors: [
                       AppTheme.cardDark,
-                      AppTheme.cardDark.withOpacity(0.95),
+                      AppTheme.cardDark.withValues(alpha: 0.95),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppTheme.borderDark.withOpacity(0.3),
+                    color: AppTheme.borderDark.withValues(alpha: 0.3),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
+                      color: Colors.black.withValues(alpha: 0.12),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
                     BoxShadow(
-                      color: AppTheme.primaryGreen.withOpacity(0.05),
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.05),
                       blurRadius: 24,
                       spreadRadius: -4,
                       offset: const Offset(0, 12),
@@ -164,7 +164,7 @@ class CupulaComingSoonScreen extends StatelessWidget {
                     Text(
                       'Ative as notificações para ser o primeiro a saber quando A Cúpula estiver disponível.',
                       style: AppTheme.bodyMedium.copyWith(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -250,7 +250,7 @@ class CupulaComingSoonScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: AppTheme.primaryGreen,
@@ -305,7 +305,7 @@ class _FeatureCard extends StatelessWidget {
         color: AppTheme.cardDark,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppTheme.primaryGreen.withOpacity(0.3),
+          color: AppTheme.primaryGreen.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

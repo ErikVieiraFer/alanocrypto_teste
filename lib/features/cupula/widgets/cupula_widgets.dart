@@ -172,11 +172,11 @@ class _LiveBadgeState extends State<LiveBadge>
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(_animation.value),
+                  color: Colors.white.withValues(alpha: _animation.value),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.white.withOpacity(_animation.value * 0.5),
+                      color: Colors.white.withValues(alpha: _animation.value * 0.5),
                       blurRadius: 4,
                       spreadRadius: 1,
                     ),
@@ -219,7 +219,7 @@ class PremiumBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFFD700).withOpacity(0.3),
+            color: const Color(0xFFFFD700).withValues(alpha: 0.3),
             blurRadius: 8,
             spreadRadius: 1,
           ),
