@@ -182,6 +182,37 @@ class CupulaLiveChatService {
     }
   }
 
+  Future<bool> deleteMessage(String liveId, String messageId) async {
+    final user = currentUser;
+    if (user == null) return false;
+
+    try {
+      final docRef = _firestore
+          .collection('cupula_live_chats')
+          .doc(liveId)
+          .collection('messages')
+          .doc(messageId);
+
+      final doc = await docRef.get();
+      if (!doc.exists) return false;
+
+      final data = doc.data() as Map<String, dynamic>;
+      final oderId = data['oderId'] as String?;
+
+      if (oderId != user.uid) {
+        debugPrint('❌ Usuário não tem permissão para deletar esta mensagem');
+        return false;
+      }
+
+      await docRef.delete();
+      debugPrint('🗑️ Mensagem $messageId deletada com sucesso');
+      return true;
+    } catch (e) {
+      debugPrint('❌ Erro ao deletar mensagem: $e');
+      return false;
+    }
+  }
+
   Stream<int> getViewersCount(String liveId) {
     return _firestore
         .collection('cupula_live_chats')
@@ -202,5 +233,35 @@ class CupulaLiveChatService {
           }
           return uniqueUsers.length;
         });
+  }
+
+  Future<int> cleanTestMessages(String liveId) async {
+    try {
+      final messagesRef = _firestore
+          .collection('cupula_live_chats')
+          .doc(liveId)
+          .collection('messages');
+
+      final snapshot = await messagesRef.get();
+      int deletedCount = 0;
+
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final oderName = (data['oderName'] as String?)?.toLowerCase() ?? '';
+        final oderId = (data['oderId'] as String?)?.toLowerCase() ?? '';
+
+        if (oderName == 'teste' || oderId == 'teste') {
+          await doc.reference.delete();
+          deletedCount++;
+          debugPrint('🗑️ Mensagem de teste deletada: ${doc.id}');
+        }
+      }
+
+      debugPrint('✅ Total de mensagens de teste deletadas: $deletedCount');
+      return deletedCount;
+    } catch (e) {
+      debugPrint('❌ Erro ao limpar mensagens de teste: $e');
+      return 0;
+    }
   }
 }

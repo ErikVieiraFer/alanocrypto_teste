@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../theme/app_theme.dart';
+import '../../../services/notification_service.dart';
+import '../../notifications/screens/notifications_screen.dart';
+import '../../profile/screens/profile_screen.dart';
 import 'cupula_signals_preview.dart';
 import 'cupula_chat_preview.dart';
 import 'cupula_posts_preview.dart';
@@ -16,6 +20,8 @@ class CupulaMainScreen extends StatefulWidget {
 class _CupulaMainScreenState extends State<CupulaMainScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
+  final NotificationService _notificationService = NotificationService();
+  final String? _userId = FirebaseAuth.instance.currentUser?.uid;
 
   final List<Widget> _screens = const [
     CupulaSignalsPreview(),
@@ -34,6 +40,20 @@ class _CupulaMainScreenState extends State<CupulaMainScreen> {
   void dispose() {
     _pageController.dispose();
     super.dispose();
+  }
+
+  void _navigateToNotifications() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+    );
+  }
+
+  void _navigateToProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ProfileScreen()),
+    );
   }
 
   @override
@@ -80,49 +100,71 @@ class _CupulaMainScreenState extends State<CupulaMainScreen> {
           },
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // TODO: Abrir notificações
+          StreamBuilder<int>(
+            stream: _notificationService.getGlobalUnreadCountStream(),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: AppTheme.accentGreen,
+                    ),
+                    onPressed: _navigateToNotifications,
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              );
             },
           ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(context, '/profile');
-              },
-              child: StreamBuilder<User?>(
-                stream: FirebaseAuth.instance.authStateChanges(),
-                builder: (context, snapshot) {
-                  final user = snapshot.data;
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(_userId)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                final photoURL = snapshot.data?.get('photoURL') as String?;
+                final displayName = snapshot.data?.get('displayName') as String?;
 
-                  if (user?.photoURL != null && user!.photoURL!.isNotEmpty) {
-                    // Foto real do usuário
-                    return CircleAvatar(
-                      radius: 16,
-                      backgroundImage: NetworkImage(user.photoURL!),
-                    );
-                  } else {
-                    // Inicial do nome
-                    final initial = user?.displayName?.isNotEmpty == true
-                        ? user!.displayName![0].toUpperCase()
-                        : '?';
-                    return CircleAvatar(
-                      radius: 16,
-                      backgroundColor: AppTheme.primaryGreen,
-                      child: Text(
-                        initial,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
+                return GestureDetector(
+                  onTap: _navigateToProfile,
+                  child: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppTheme.primaryGreen,
+                    backgroundImage: photoURL != null && photoURL.isNotEmpty
+                        ? NetworkImage(photoURL)
+                        : null,
+                    child: photoURL == null || photoURL.isEmpty
+                        ? Text(
+                            displayName?.isNotEmpty == true
+                                ? displayName![0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          )
+                        : null,
+                  ),
+                );
+              },
             ),
           ),
         ],

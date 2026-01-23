@@ -94,6 +94,8 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
   }
 
   void _showReactionMenu(LiveChatMessage message) {
+    final isMyMessage = message.oderId == _chatService.currentUser?.uid;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.cardDark,
@@ -151,9 +153,94 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
                   );
                 }).toList(),
               ),
+              if (isMyMessage) ...[
+                const SizedBox(height: 20),
+                const Divider(color: AppTheme.borderDark),
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmDeleteMessage(message);
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorRed.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.errorRed.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.delete_outline, color: AppTheme.errorRed, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Excluir mensagem',
+                          style: TextStyle(
+                            color: AppTheme.errorRed,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _confirmDeleteMessage(LiveChatMessage message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.cardDark,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Excluir mensagem?',
+          style: TextStyle(color: AppTheme.textPrimary),
+        ),
+        content: const Text(
+          'Esta ação não pode ser desfeita.',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              Navigator.pop(context);
+              final success = await _chatService.deleteMessage(
+                widget.live.id,
+                message.id,
+              );
+              if (mounted && success) {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Mensagem excluída'),
+                    backgroundColor: AppTheme.primaryGreen,
+                  ),
+                );
+              }
+            },
+            child: const Text(
+              'Excluir',
+              style: TextStyle(color: AppTheme.errorRed),
+            ),
+          ),
+        ],
       ),
     );
   }
