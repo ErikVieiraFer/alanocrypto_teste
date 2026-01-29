@@ -3,12 +3,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../theme/app_theme.dart';
 import '../../../services/notification_service.dart';
+import '../../../services/payment_service.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 import 'cupula_signals_preview.dart';
 import 'cupula_chat_preview.dart';
 import 'cupula_posts_preview.dart';
 import 'cupula_lives_preview.dart';
+import 'cupula_sales_screen.dart';
 
 class CupulaMainScreen extends StatefulWidget {
   const CupulaMainScreen({super.key});
@@ -21,7 +23,10 @@ class _CupulaMainScreenState extends State<CupulaMainScreen> {
   int _currentIndex = 0;
   late PageController _pageController;
   final NotificationService _notificationService = NotificationService();
+  final PaymentService _paymentService = PaymentService();
   final String? _userId = FirebaseAuth.instance.currentUser?.uid;
+  bool _hasAccess = false;
+  bool _isCheckingAccess = true;
 
   final List<Widget> _screens = const [
     CupulaSignalsPreview(),
@@ -34,6 +39,31 @@ class _CupulaMainScreenState extends State<CupulaMainScreen> {
   void initState() {
     super.initState();
     _pageController = PageController();
+    _checkAccess();
+  }
+
+  Future<void> _checkAccess() async {
+    debugPrint('🏛️ CupulaMainScreen: _checkAccess() iniciado');
+
+    final hasAccess = await _paymentService.hasAccess();
+    debugPrint('🏛️ CupulaMainScreen: hasAccess = $hasAccess');
+
+    if (!hasAccess && mounted) {
+      debugPrint('🏛️ CupulaMainScreen: ❌ SEM ACESSO - mostrando CupulaSalesScreen');
+      setState(() {
+        _hasAccess = false;
+        _isCheckingAccess = false;
+      });
+      return;
+    }
+
+    if (mounted) {
+      debugPrint('🏛️ CupulaMainScreen: ✅ ACESSO LIBERADO - mostrando conteúdo');
+      setState(() {
+        _hasAccess = hasAccess;
+        _isCheckingAccess = false;
+      });
+    }
   }
 
   @override
@@ -56,8 +86,53 @@ class _CupulaMainScreenState extends State<CupulaMainScreen> {
     );
   }
 
+  void _goBack() {
+    // Tenta fazer pop se possível (veio via Navigator.push do drawer)
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      // Se não pode fazer pop (está no IndexedStack), navega para dashboard/home
+      Navigator.of(context).pushReplacementNamed('/dashboard');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isCheckingAccess) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: AppTheme.primaryGreen),
+              SizedBox(height: 16),
+              Text(
+                'Verificando acesso...',
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!_hasAccess) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        appBar: AppBar(
+          backgroundColor: AppTheme.appBarColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => _goBack(),
+          ),
+          title: const Text('A Cúpula', style: TextStyle(color: Colors.white)),
+        ),
+        body: const CupulaSalesScreen(),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppTheme.appBarColor,
@@ -95,9 +170,7 @@ class _CupulaMainScreenState extends State<CupulaMainScreen> {
           ],
         ),
         leading: _HomeButton(
-          onTap: () {
-            Navigator.pop(context);
-          },
+          onTap: _goBack,
         ),
         actions: [
           StreamBuilder<int>(
@@ -169,62 +242,14 @@ class _CupulaMainScreenState extends State<CupulaMainScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Banner de prévia melhorado
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.greenTransparent20,
-                  AppTheme.greenTransparent10,
-                  AppTheme.greenTransparent20,
-                ],
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.info_outline,
-                    color: AppTheme.primaryGreen,
-                    size: 14,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Prévia - A Cúpula em breve',
-                  style: TextStyle(
-                    color: AppTheme.primaryGreen,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Conteúdo das abas
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-              children: _screens,
-            ),
-          ),
-        ],
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        children: _screens,
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

@@ -7,6 +7,8 @@ import '../../../theme/app_theme.dart';
 import '../../../widgets/shimmer_loading.dart';
 import '../widgets/cupula_widgets.dart';
 
+const Color _kNeonGreen = Color(0xFF00FF88);
+
 class CupulaSignalsPreview extends StatefulWidget {
   const CupulaSignalsPreview({super.key});
 
@@ -14,9 +16,30 @@ class CupulaSignalsPreview extends StatefulWidget {
   State<CupulaSignalsPreview> createState() => _CupulaSignalsPreviewState();
 }
 
-class _CupulaSignalsPreviewState extends State<CupulaSignalsPreview> {
+class _CupulaSignalsPreviewState extends State<CupulaSignalsPreview>
+    with SingleTickerProviderStateMixin {
   final SignalService _signalService = SignalService();
-  SignalType? _selectedFilter;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   Future<void> _copySignal(Signal signal) async {
     try {
@@ -61,7 +84,7 @@ $alertMessage
 🟠 SUPORTE ALANO CRYPTO 🦎
 https://bit.ly/suportealanocripto
       '''
-              .trim();
+          .trim();
 
       await Clipboard.setData(ClipboardData(text: text));
 
@@ -70,9 +93,9 @@ https://bit.ly/suportealanocripto
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.green),
-                SizedBox(width: 8),
-                Expanded(
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                const Expanded(
                   child: Text(
                     'Sinal copiado! Cole em qualquer lugar.',
                     style: TextStyle(fontWeight: FontWeight.w600),
@@ -80,11 +103,11 @@ https://bit.ly/suportealanocripto
                 ),
               ],
             ),
-            backgroundColor: Colors.green.shade700,
-            duration: Duration(seconds: 3),
+            backgroundColor: _kNeonGreen.withValues(alpha: 0.9),
+            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
         );
@@ -93,7 +116,7 @@ https://bit.ly/suportealanocripto
       debugPrint('Erro ao copiar sinal: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Erro ao copiar sinal'),
             backgroundColor: Colors.red,
           ),
@@ -108,148 +131,141 @@ https://bit.ly/suportealanocripto
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: Column(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              border: Border(
-                bottom: BorderSide(
-                  color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-                ),
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.show_chart, size: 28),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Sinais Premium',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _FilterChip(
-                            label: 'Todos',
-                            isSelected: _selectedFilter == null,
-                            onTap: () {
-                              setState(() {
-                                _selectedFilter = null;
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _FilterChip(
-                            label: 'LONG',
-                            isSelected: _selectedFilter == SignalType.long,
-                            color: const Color(0xFF4CAF50),
-                            onTap: () {
-                              setState(() {
-                                _selectedFilter = SignalType.long;
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _FilterChip(
-                            label: 'SHORT',
-                            isSelected: _selectedFilter == SignalType.short,
-                            color: const Color(0xFFF44336),
-                            onTap: () {
-                              setState(() {
-                                _selectedFilter = SignalType.short;
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          _buildHeader(),
           Expanded(
-            child: _SignalsTab(
-              stream: _signalService.getActiveSignals(
-                filter: _selectedFilter,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: _SignalsTab(
+                stream: _signalService.getActiveSignals(),
+                emptyMessage: 'Nenhum sinal premium disponível',
+                onCopy: _copySignal,
+                formatTimestamp: _formatTimestamp,
               ),
-              emptyMessage: 'Nenhum sinal premium disponível',
-              onCopy: _copySignal,
-              formatTimestamp: _formatTimestamp,
             ),
           ),
         ],
       ),
     );
   }
-}
 
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final Color? color;
-  final VoidCallback onTap;
-
-  const _FilterChip({
-    required this.label,
-    required this.isSelected,
-    this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final chipColor = color ?? Theme.of(context).colorScheme.primary;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? chipColor.withAlpha(26)
-              : (isDark ? Colors.grey[800] : Colors.grey[200]),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? chipColor : Colors.transparent,
-            width: 2,
-          ),
+  Widget _buildHeader() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.cardDark,
+            AppTheme.backgroundColor,
+          ],
         ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? chipColor : null,
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _kNeonGreen.withValues(alpha: 0.3),
+                          _kNeonGreen.withValues(alpha: 0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _kNeonGreen.withValues(alpha: 0.5),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.show_chart_rounded,
+                      color: _kNeonGreen,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Sinais Premium',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Operações exclusivas da Cúpula',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildStatsChip(),
+                ],
+              ),
             ),
-          ),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildStatsChip() {
+    return StreamBuilder<List<Signal>>(
+      stream: _signalService.getActiveSignals(),
+      builder: (context, snapshot) {
+        final total = snapshot.data?.length ?? 0;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: _kNeonGreen.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: _kNeonGreen.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.trending_up_rounded,
+                color: _kNeonGreen,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '$total ativos',
+                style: const TextStyle(
+                  color: _kNeonGreen,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
 }
 
 class _SignalsTab extends StatelessWidget {
@@ -283,114 +299,170 @@ class _SignalsTab extends StatelessWidget {
 
           if (errorMessage.contains('index') ||
               errorMessage.contains('FAILED_PRECONDITION')) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.build_circle_outlined,
-                      size: 64,
-                      color: Colors.orange[400],
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Índice do banco de dados em construção',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Aguarde alguns minutos e tente novamente',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const CupulaSignalsPreview(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Tentar Novamente'),
-                    ),
-                  ],
-                ),
-              ),
+            return _buildErrorState(
+              context,
+              icon: Icons.build_circle_outlined,
+              iconColor: Colors.orange,
+              title: 'Índice do banco de dados em construção',
+              subtitle: 'Aguarde alguns minutos e tente novamente',
+              showRetry: true,
             );
           }
 
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Erro ao carregar sinais',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    errorMessage,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
+          return _buildErrorState(
+            context,
+            icon: Icons.error_outline,
+            iconColor: Colors.red,
+            title: 'Erro ao carregar sinais',
+            subtitle: errorMessage,
+            showRetry: false,
           );
         }
 
         final signals = snapshot.data ?? [];
 
         if (signals.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.show_chart_outlined,
-                  size: 64,
-                  color: Colors.grey[400],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  emptyMessage,
-                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                ),
-              ],
-            ),
-          );
+          return _buildEmptyState();
         }
 
         return RefreshIndicator(
+          color: _kNeonGreen,
           onRefresh: () async {},
           child: ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: signals.length,
             itemBuilder: (context, index) {
-              return SignalCard(
-                signal: signals[index],
-                onCopy: onCopy,
-                formatTimestamp: formatTimestamp,
+              return TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: Duration(milliseconds: 300 + (index * 50)),
+                curve: Curves.easeOut,
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, 20 * (1 - value)),
+                    child: Opacity(
+                      opacity: value,
+                      child: child,
+                    ),
+                  );
+                },
+                child: SignalCard(
+                  signal: signals[index],
+                  onCopy: onCopy,
+                  formatTimestamp: formatTimestamp,
+                ),
               );
             },
           ),
         );
       },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: _kNeonGreen.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.show_chart_rounded,
+              size: 48,
+              color: _kNeonGreen.withValues(alpha: 0.5),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            emptyMessage,
+            style: TextStyle(
+              fontSize: 16,
+              color: AppTheme.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Novos sinais serão postados em breve',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required bool showRetry,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 48, color: iconColor),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 14, color: AppTheme.textSecondary),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (showRetry) ...[
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CupulaSignalsPreview(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Tentar Novamente'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _kNeonGreen,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -409,262 +481,346 @@ class SignalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isLong = signal.type == SignalType.long;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: AppTheme.signalCard(isLong: isLong),
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: (isLong ? AppTheme.successGreen : AppTheme.errorRed).withValues(alpha: 0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (isLong ? AppTheme.successGreen : AppTheme.errorRed).withValues(alpha: 0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Borda colorida à esquerda
               Container(
                 width: 4,
-                color: isLong ? AppTheme.successGreen : AppTheme.errorRed,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      isLong ? AppTheme.successGreen : AppTheme.errorRed,
+                      (isLong ? AppTheme.successGreen : AppTheme.errorRed).withValues(alpha: 0.5),
+                    ],
+                  ),
+                ),
               ),
-              // Conteúdo principal
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header
-                    Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: signal.typeColor.withAlpha(26),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: signal.typeColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              signal.typeLabel,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              signal.formattedCoin,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          // TODO: Depois adicionar condição: if (signal.tier == 'premium')
-                          const PremiumBadge(),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: signal.statusColor,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              signal.statusLabel,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Body
-                    Padding(
-                      padding: const EdgeInsets.all(18),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (signal.strategy != 'Não especificado') ...[
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withAlpha(26),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: Colors.blue.withAlpha(51),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.lightbulb_outline,
-                                    size: 18,
-                                    color: Colors.blue,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Estratégia',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.blue[700],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          signal.strategy,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            color: Colors.grey[800],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                          _InfoRow(
-                            icon: Icons.login,
-                            label: 'Entrada',
-                            value: '\$${signal.entry}',
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              if (signal.rsiValue != 'N/A')
-                                Expanded(
-                                  child: _InfoRow(
-                                    icon: Icons.show_chart,
-                                    label: 'RSI Atual',
-                                    value: signal.rsiValue,
-                                    color: Colors.orange,
-                                  ),
-                                ),
-                              if (signal.timeframe != 'N/A')
-                                Expanded(
-                                  child: _InfoRow(
-                                    icon: Icons.access_time,
-                                    label: 'Timeframe',
-                                    value: signal.timeframe,
-                                    color: Colors.purple,
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Text(
-                                signal.confidenceEmoji,
-                                style: const TextStyle(fontSize: 18),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Confiança: ${signal.confidenceLabel}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey[700],
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                formatTimestamp(signal.createdAt),
-                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                              ),
-                            ],
-                          ),
-                          if (signal.profit != null) ...[
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: (signal.profit! >= 0 ? Colors.green : Colors.red)
-                                    .withAlpha(26),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    signal.profit! >= 0
-                                        ? Icons.trending_up
-                                        : Icons.trending_down,
-                                    color: signal.profit! >= 0
-                                        ? Colors.green
-                                        : Colors.red,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Lucro: ${signal.profit!.toStringAsFixed(2)}%',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: signal.profit! >= 0
-                                          ? Colors.green
-                                          : Colors.red,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    // Footer
-                    InkWell(
-                      onTap: () => onCopy(signal),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.grey[800] : Colors.grey[100],
-                        ),
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.copy,
-                                  color: Theme.of(context).colorScheme.primary,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Copiar Sinal',
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                    _buildCardHeader(isLong),
+                    _buildCardBody(),
+                    _buildCardFooter(context),
                   ],
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardHeader(bool isLong) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            signal.typeColor.withValues(alpha: 0.15),
+            signal.typeColor.withValues(alpha: 0.05),
+          ],
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  signal.typeColor,
+                  signal.typeColor.withValues(alpha: 0.8),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: signal.typeColor.withValues(alpha: 0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isLong ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                  color: Colors.white,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  signal.typeLabel,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              signal.formattedCoin,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const PremiumBadge(),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: signal.statusColor.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: signal.statusColor.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Text(
+              signal.statusLabel,
+              style: TextStyle(
+                color: signal.statusColor,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardBody() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (signal.strategy != 'Não especificado') ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Colors.blue.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.lightbulb_outline,
+                      size: 16,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Estratégia',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          signal.strategy,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+          _InfoRow(
+            icon: Icons.login_rounded,
+            label: 'Entrada',
+            value: '\$${signal.entry}',
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (signal.rsiValue != 'N/A')
+                Expanded(
+                  child: _InfoRow(
+                    icon: Icons.show_chart_rounded,
+                    label: 'RSI Atual',
+                    value: signal.rsiValue,
+                    color: Colors.orange,
+                  ),
+                ),
+              if (signal.timeframe != 'N/A')
+                Expanded(
+                  child: _InfoRow(
+                    icon: Icons.access_time_rounded,
+                    label: 'Timeframe',
+                    value: signal.timeframe,
+                    color: Colors.purple,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: AppTheme.backgroundColor.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  signal.confidenceEmoji,
+                  style: const TextStyle(fontSize: 18),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Confiança: ${signal.confidenceLabel}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.schedule_rounded,
+                  size: 14,
+                  color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  formatTimestamp(signal.createdAt),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (signal.profit != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: (signal.profit! >= 0 ? Colors.green : Colors.red)
+                    .withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: (signal.profit! >= 0 ? Colors.green : Colors.red)
+                      .withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    signal.profit! >= 0 ? Icons.trending_up : Icons.trending_down,
+                    color: signal.profit! >= 0 ? Colors.green : Colors.red,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Lucro: ${signal.profit!.toStringAsFixed(2)}%',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: signal.profit! >= 0 ? Colors.green : Colors.red,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCardFooter(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onCopy(signal),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                _kNeonGreen.withValues(alpha: 0.15),
+                _kNeonGreen.withValues(alpha: 0.05),
+              ],
+            ),
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.copy_rounded,
+                    color: _kNeonGreen,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Copiar Sinal',
+                    style: TextStyle(
+                      color: _kNeonGreen,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -687,20 +843,36 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? _kNeonGreen;
+
     return Row(
       children: [
-        Icon(icon, size: 16, color: color ?? Colors.grey[600]),
-        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: effectiveColor.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 14, color: effectiveColor),
+        ),
+        const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
-              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 10,
+                color: AppTheme.textSecondary.withValues(alpha: 0.8),
+              ),
             ),
             Text(
               value,
-              style: TextStyle(fontWeight: FontWeight.bold, color: color),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: effectiveColor,
+                fontSize: 14,
+              ),
             ),
           ],
         ),

@@ -46,6 +46,30 @@ app.*.map.json
 
 # Secret files
 .env
+*.env
 assets/.env
+**/.env
 CLAUDE.md
-.claude
+.claude/
+
+# Firebase Security Rules
+firestore.rules
+storage.rules
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Android Keys
+*.keystore
+*.jks
+key.properties
+google-services.json
+
+# iOS Keys
+GoogleService-Info.plist
+
+# Windows
+Thumbs.db

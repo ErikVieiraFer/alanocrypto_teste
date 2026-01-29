@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:alanoapp/theme/app_theme.dart';
 import '../features/dashboard/screen/dashboard_screen.dart';
+import '../services/payment_service.dart';
+import '../features/cupula/screens/cupula_sales_screen.dart';
+import '../features/cupula/screens/cupula_main_screen.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({Key? key}) : super(key: key);
@@ -11,6 +14,62 @@ class AppDrawer extends StatefulWidget {
 }
 
 class _AppDrawerState extends State<AppDrawer> {
+  final PaymentService _paymentService = PaymentService();
+  bool _isCheckingAccess = false;
+
+  Future<void> _handleCupulaTap(BuildContext context) async {
+    if (_isCheckingAccess) return;
+
+    debugPrint('🏛️ Drawer: Navegando para Cúpula...');
+    setState(() => _isCheckingAccess = true);
+
+    try {
+      final hasAccess = await _paymentService.hasAccess();
+      debugPrint('🏛️ Drawer: hasAccess = $hasAccess');
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+
+      if (!mounted) return;
+
+      if (hasAccess) {
+        debugPrint('🏛️ Drawer: Usuário tem acesso, abrindo CupulaMainScreen (fullscreen)');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const CupulaMainScreen(),
+            fullscreenDialog: true,
+          ),
+        );
+      } else {
+        debugPrint('🏛️ Drawer: Usuário não tem acesso, abrindo CupulaSalesScreen');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (routeContext) => Scaffold(
+              backgroundColor: AppTheme.backgroundColor,
+              appBar: AppBar(
+                backgroundColor: AppTheme.appBarColor,
+                elevation: 0,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Navigator.pop(routeContext),
+                ),
+                title: const Text('A Cúpula', style: TextStyle(color: Colors.white)),
+              ),
+              body: const CupulaSalesScreen(),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckingAccess = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -21,8 +80,8 @@ class _AppDrawerState extends State<AppDrawer> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              AppTheme.backgroundColor.withOpacity(0.98),
-              AppTheme.cardDark.withOpacity(0.98),
+              AppTheme.backgroundColor.withValues(alpha:0.98),
+              AppTheme.cardDark.withValues(alpha:0.98),
             ],
           ),
           borderRadius: const BorderRadius.only(
@@ -163,13 +222,13 @@ class _AppDrawerState extends State<AppDrawer> {
           end: Alignment.bottomRight,
           colors: [
             AppTheme.primaryGreen,
-            AppTheme.primaryGreen.withOpacity(0.7),
+            AppTheme.primaryGreen.withValues(alpha:0.7),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryGreen.withOpacity(0.3),
+            color: AppTheme.primaryGreen.withValues(alpha:0.3),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -181,7 +240,7 @@ class _AppDrawerState extends State<AppDrawer> {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha:0.2),
               shape: BoxShape.circle,
             ),
             child: ClipOval(
@@ -266,13 +325,13 @@ class _AppDrawerState extends State<AppDrawer> {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
-          splashColor: AppTheme.primaryGreen.withOpacity(0.1),
+          splashColor: AppTheme.primaryGreen.withValues(alpha:0.1),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppTheme.borderDark.withOpacity(0.3),
+                color: AppTheme.borderDark.withValues(alpha:0.3),
                 width: 1,
               ),
             ),
@@ -282,7 +341,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withOpacity(0.1),
+                    color: AppTheme.primaryGreen.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -324,9 +383,9 @@ class _AppDrawerState extends State<AppDrawer> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _changeTab(context, 13),
+          onTap: _isCheckingAccess ? null : () => _handleCupulaTap(context),
           borderRadius: BorderRadius.circular(16),
-          splashColor: Colors.white.withOpacity(0.1),
+          splashColor: Colors.white.withValues(alpha:0.1),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
@@ -335,23 +394,23 @@ class _AppDrawerState extends State<AppDrawer> {
                 end: Alignment.bottomRight,
                 colors: [
                   AppTheme.primaryGreen,
-                  AppTheme.primaryGreen.withOpacity(0.7),
+                  AppTheme.primaryGreen.withValues(alpha:0.7),
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppTheme.primaryGreen.withOpacity(0.5),
+                color: AppTheme.primaryGreen.withValues(alpha:0.5),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryGreen.withOpacity(0.4),
+                  color: AppTheme.primaryGreen.withValues(alpha:0.4),
                   blurRadius: 20,
                   spreadRadius: 2,
                   offset: const Offset(0, 8),
                 ),
                 BoxShadow(
-                  color: AppTheme.primaryGreen.withOpacity(0.3),
+                  color: AppTheme.primaryGreen.withValues(alpha:0.3),
                   blurRadius: 40,
                   spreadRadius: 5,
                   offset: const Offset(0, 0),
@@ -364,7 +423,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha:0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -385,11 +444,21 @@ class _AppDrawerState extends State<AppDrawer> {
                     ),
                   ),
                 ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: Colors.white.withOpacity(0.8),
-                  size: 16,
-                ),
+                if (_isCheckingAccess)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                else
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.white.withValues(alpha:0.8),
+                    size: 16,
+                  ),
               ],
             ),
           ),
@@ -439,10 +508,10 @@ class _AppDrawerState extends State<AppDrawer> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: Colors.red.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: Colors.red.withOpacity(0.3),
+                color: Colors.red.withValues(alpha:0.3),
                 width: 1,
               ),
             ),
@@ -466,7 +535,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 ),
                 Icon(
                   Icons.arrow_forward_ios,
-                  color: Colors.red.shade400.withOpacity(0.6),
+                  color: Colors.red.shade400.withValues(alpha:0.6),
                   size: 16,
                 ),
               ],

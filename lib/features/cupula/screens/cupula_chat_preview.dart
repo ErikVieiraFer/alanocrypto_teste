@@ -10,6 +10,9 @@ import '../../../services/cupula_chat_service.dart';
 import '../../../utils/admin_helper.dart';
 import '../widgets/cupula_widgets.dart';
 
+// Neon green color constant for consistency
+const Color _kNeonGreen = Color(0xFF00FF88);
+
 class CupulaChatPreview extends StatefulWidget {
   const CupulaChatPreview({super.key});
 
@@ -17,22 +20,38 @@ class CupulaChatPreview extends StatefulWidget {
   State<CupulaChatPreview> createState() => _CupulaChatPreviewState();
 }
 
-class _CupulaChatPreviewState extends State<CupulaChatPreview> {
+class _CupulaChatPreviewState extends State<CupulaChatPreview>
+    with SingleTickerProviderStateMixin {
   final CupulaChatService _chatService = CupulaChatService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
 
+  late AnimationController _headerAnimController;
+  late Animation<double> _headerFadeAnim;
+
   File? _selectedImage;
   bool _isUploading = false;
-
-  // Reply state
   Map<String, dynamic>? _replyingTo;
+
+  @override
+  void initState() {
+    super.initState();
+    _headerAnimController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _headerFadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _headerAnimController, curve: Curves.easeOut),
+    );
+    _headerAnimController.forward();
+  }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _headerAnimController.dispose();
     super.dispose();
   }
 
@@ -70,10 +89,8 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
     final imageToSend = _selectedImage;
     final replyTo = _replyingTo;
 
-    // Validar se tem pelo menos texto ou imagem
     if (messageText.isEmpty && imageToSend == null) return;
 
-    // Limpar input, imagem e reply imediatamente
     _messageController.clear();
     setState(() {
       _selectedImage = null;
@@ -84,12 +101,10 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
     try {
       String? imageUrl;
 
-      // Upload da imagem se existir
       if (imageToSend != null) {
         imageUrl = await _chatService.uploadImage(imageToSend);
       }
 
-      // Enviar mensagem
       await _chatService.sendMessage(
         message: messageText,
         imageUrl: imageUrl,
@@ -98,7 +113,6 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
         replyToMessage: replyTo?['message'],
       );
 
-      // Scroll para o final após enviar
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -110,7 +124,6 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
       });
     } catch (e) {
       if (mounted) {
-        // Usuário banido
         if (e.toString().contains('bloqueado')) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -146,7 +159,6 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
   }) {
     final isAdmin = AdminHelper.isCurrentUserAdmin();
 
-    // DEBUG: Verificar valores
     debugPrint('📋 _showMessageOptions chamado:');
     debugPrint('   messageId: $messageId');
     debugPrint('   messageUserId: $messageUserId');
@@ -157,93 +169,134 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.cardDark,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Responder (todos)
-            ListTile(
-              leading: const Icon(Icons.reply, color: AppTheme.primaryGreen),
-              title: const Text(
-                'Responder',
-                style: TextStyle(color: AppTheme.textPrimary),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _replyingTo = {
-                    'id': messageId,
-                    'userName': userName,
-                    'message': message,
-                  };
-                });
-              },
-            ),
-
-            // Copiar (todos)
-            ListTile(
-              leading: const Icon(Icons.copy, color: AppTheme.textSecondary),
-              title: const Text(
-                'Copiar texto',
-                style: TextStyle(color: AppTheme.textPrimary),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                Clipboard.setData(ClipboardData(text: message));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Texto copiado!')),
-                );
-              },
-            ),
-
-            // Editar (só minhas mensagens)
-            if (isMe)
-              ListTile(
-                leading: const Icon(Icons.edit, color: AppTheme.infoBlue),
-                title: const Text(
-                  'Editar',
-                  style: TextStyle(color: AppTheme.textPrimary),
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppTheme.cardDark,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(
+            color: _kNeonGreen.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
                 ),
+              ),
+              const SizedBox(height: 16),
+
+              // Responder
+              _buildOptionTile(
+                icon: Icons.reply_rounded,
+                label: 'Responder',
+                color: _kNeonGreen,
                 onTap: () {
                   Navigator.pop(context);
-                  _showEditDialog(messageId, message);
+                  setState(() {
+                    _replyingTo = {
+                      'id': messageId,
+                      'userName': userName,
+                      'message': message,
+                    };
+                  });
                 },
               ),
 
-            // Deletar (minhas mensagens OU admin)
-            if (isMe || isAdmin)
-              ListTile(
-                leading: const Icon(Icons.delete, color: AppTheme.errorRed),
-                title: const Text(
-                  'Deletar',
-                  style: TextStyle(color: AppTheme.errorRed),
-                ),
-                onTap: () async {
+              // Copiar
+              _buildOptionTile(
+                icon: Icons.copy_rounded,
+                label: 'Copiar texto',
+                color: AppTheme.textSecondary,
+                onTap: () {
                   Navigator.pop(context);
-                  await _deleteMessageWithConfirm(messageId, isAdmin && !isMe);
+                  Clipboard.setData(ClipboardData(text: message));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Texto copiado!'),
+                      backgroundColor: _kNeonGreen.withValues(alpha: 0.8),
+                    ),
+                  );
                 },
               ),
 
-            // BANIR USUÁRIO (só admin, não pode banir a si mesmo)
-            if (isAdmin && !isMe)
-              ListTile(
-                leading: const Icon(Icons.block, color: AppTheme.errorRed),
-                title: const Text(
-                  'Banir usuário',
-                  style: TextStyle(color: AppTheme.errorRed),
+              // Editar (só minhas mensagens)
+              if (isMe)
+                _buildOptionTile(
+                  icon: Icons.edit_rounded,
+                  label: 'Editar',
+                  color: AppTheme.infoBlue,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showEditDialog(messageId, message);
+                  },
                 ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _banUserWithConfirm(messageUserId, userName);
-                },
-              ),
-          ],
+
+              // Deletar (minhas mensagens OU admin)
+              if (isMe || isAdmin)
+                _buildOptionTile(
+                  icon: Icons.delete_rounded,
+                  label: 'Deletar',
+                  color: AppTheme.errorRed,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _deleteMessageWithConfirm(messageId, isAdmin && !isMe);
+                  },
+                ),
+
+              // BANIR USUÁRIO (só admin, não pode banir a si mesmo)
+              if (isAdmin && !isMe)
+                _buildOptionTile(
+                  icon: Icons.block_rounded,
+                  label: 'Banir usuário',
+                  color: AppTheme.errorRed,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _banUserWithConfirm(messageUserId, userName);
+                  },
+                ),
+
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildOptionTile({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: color, size: 20),
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 
@@ -252,6 +305,12 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: AppTheme.errorRed.withValues(alpha: 0.3),
+          ),
+        ),
         title: const Text(
           'Deletar mensagem',
           style: TextStyle(color: AppTheme.textPrimary),
@@ -263,13 +322,22 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorRed,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             child: const Text(
               'Deletar',
-              style: TextStyle(color: AppTheme.errorRed),
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -303,6 +371,12 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: AppTheme.errorRed.withValues(alpha: 0.3),
+          ),
+        ),
         title: const Text(
           'Banir usuário',
           style: TextStyle(color: AppTheme.textPrimary),
@@ -314,13 +388,22 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.errorRed,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             child: const Text(
               'Banir',
-              style: TextStyle(color: AppTheme.errorRed),
+              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -347,15 +430,31 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppTheme.cardDark,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: _kNeonGreen.withValues(alpha: 0.3),
+          ),
+        ),
         title: const Text(
           'Editar mensagem',
           style: TextStyle(color: AppTheme.textPrimary),
         ),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'Digite a nova mensagem',
-            hintStyle: TextStyle(color: AppTheme.textSecondary),
+            hintStyle: const TextStyle(color: AppTheme.textSecondary),
+            filled: true,
+            fillColor: AppTheme.backgroundColor,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: _kNeonGreen.withValues(alpha: 0.5)),
+            ),
           ),
           style: const TextStyle(color: AppTheme.textPrimary),
           maxLines: null,
@@ -364,11 +463,23 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Salvar'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kNeonGreen,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Salvar',
+              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -400,33 +511,25 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
       backgroundColor: AppTheme.backgroundColor,
       body: Column(
         children: [
-          // Header
           _buildHeader(),
-
-          // Lista de mensagens
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _chatService.getMessages(),
               builder: (context, snapshot) {
-                // Loading
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return _buildLoadingSkeleton();
                 }
 
-                // Erro
                 if (snapshot.hasError) {
                   return _buildError();
                 }
 
-                // Vazio
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return _buildEmpty();
                 }
 
-                // Mensagens
                 final messages = snapshot.data!.docs;
 
-                // Scroll para o final ao carregar
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (_scrollController.hasClients) {
                     _scrollController.jumpTo(
@@ -446,25 +549,39 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
                     final currentUserId = _chatService.currentUser?.uid ?? '';
                     final isMe = userId == currentUserId && userId.isNotEmpty;
 
-                    return _MessageBubble(
-                      messageId: doc.id,
-                      userId: userId,
-                      userName: data['userName'] ?? 'Usuário',
-                      userPhotoUrl: data['userPhotoUrl'] as String?,
-                      message: data['message'] ?? '',
-                      timestamp: data['createdAt'] as Timestamp?,
-                      editedAt: data['editedAt'] as Timestamp?,
-                      imageUrl: data['imageUrl'] as String?,
-                      replyToUserName: data['replyToUserName'] as String?,
-                      replyToMessage: data['replyToMessage'] as String?,
-                      isAdmin: data['isAdmin'] ?? false,
-                      isMe: isMe,
-                      onLongPress: () => _showMessageOptions(
+                    return TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: Duration(milliseconds: 300 + (index % 5) * 50),
+                      curve: Curves.easeOutCubic,
+                      builder: (context, value, child) {
+                        return Transform.translate(
+                          offset: Offset(0, 20 * (1 - value)),
+                          child: Opacity(
+                            opacity: value,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _MessageBubble(
                         messageId: doc.id,
-                        messageUserId: userId,
-                        message: data['message'] ?? '',
+                        userId: userId,
                         userName: data['userName'] ?? 'Usuário',
+                        userPhotoUrl: data['userPhotoUrl'] as String?,
+                        message: data['message'] ?? '',
+                        timestamp: data['createdAt'] as Timestamp?,
+                        editedAt: data['editedAt'] as Timestamp?,
+                        imageUrl: data['imageUrl'] as String?,
+                        replyToUserName: data['replyToUserName'] as String?,
+                        replyToMessage: data['replyToMessage'] as String?,
+                        isAdmin: data['isAdmin'] ?? false,
                         isMe: isMe,
+                        onLongPress: () => _showMessageOptions(
+                          messageId: doc.id,
+                          messageUserId: userId,
+                          message: data['message'] ?? '',
+                          userName: data['userName'] ?? 'Usuário',
+                          isMe: isMe,
+                        ),
                       ),
                     );
                   },
@@ -472,8 +589,6 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
               },
             ),
           ),
-
-          // Input de mensagem
           _buildMessageInput(),
         ],
       ),
@@ -481,47 +596,135 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.cardDark,
-        border: Border(
-          bottom: BorderSide(
-            color: AppTheme.borderDark.withValues(alpha: 0.3),
+    return FadeTransition(
+      opacity: _headerFadeAnim,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _kNeonGreen.withValues(alpha: 0.15),
+              _kNeonGreen.withValues(alpha: 0.05),
+              Colors.transparent,
+            ],
+          ),
+          border: Border(
+            bottom: BorderSide(
+              color: _kNeonGreen.withValues(alpha: 0.2),
+              width: 1,
+            ),
           ),
         ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Row(
-          children: [
-            const Icon(
-              Icons.chat_bubble,
-              color: AppTheme.primaryGreen,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'Chat Exclusivo',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+        child: SafeArea(
+          bottom: false,
+          child: Row(
+            children: [
+              // Icon container with glow
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      _kNeonGreen.withValues(alpha: 0.3),
+                      _kNeonGreen.withValues(alpha: 0.1),
+                    ],
                   ),
-                ),
-                Text(
-                  'Membros premium conectados',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: _kNeonGreen.withValues(alpha: 0.4),
+                    width: 1,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _kNeonGreen.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      spreadRadius: 0,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+                child: const Icon(
+                  Icons.forum_rounded,
+                  color: _kNeonGreen,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Chat Exclusivo',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Membros da Cúpula',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Online indicator chip
+              StreamBuilder<QuerySnapshot>(
+                stream: _chatService.getMessages(),
+                builder: (context, snapshot) {
+                  final memberCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _kNeonGreen.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _kNeonGreen.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _kNeonGreen,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: _kNeonGreen.withValues(alpha: 0.5),
+                                blurRadius: 6,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '$memberCount msgs',
+                          style: const TextStyle(
+                            color: _kNeonGreen,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -530,69 +733,97 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
   Widget _buildReplyPreview() {
     if (_replyingTo == null) return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border(
-          left: BorderSide(
-            color: AppTheme.primaryGreen,
-            width: 3,
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 10 * (1 - value)),
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: _kNeonGreen.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _kNeonGreen.withValues(alpha: 0.3),
           ),
         ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.reply,
-                      size: 16,
-                      color: AppTheme.primaryGreen,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Respondendo a ${_replyingTo!['userName']}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                        color: AppTheme.primaryGreen,
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _kNeonGreen,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.reply_rounded,
+                        size: 14,
+                        color: _kNeonGreen,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _replyingTo!['message'],
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textSecondary,
+                      const SizedBox(width: 6),
+                      Text(
+                        'Respondendo a ${_replyingTo!['userName']}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: _kNeonGreen,
+                        ),
+                      ),
+                    ],
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 4),
+                  Text(
+                    _replyingTo!['message'],
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _replyingTo = null;
+                });
+              },
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppTheme.errorRed.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: AppTheme.errorRed,
+                  size: 16,
+                ),
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.close,
-              color: AppTheme.errorRed,
-              size: 20,
-            ),
-            onPressed: () {
-              setState(() {
-                _replyingTo = null;
-              });
-            },
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -604,54 +835,100 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
         color: AppTheme.cardDark,
         border: Border(
           top: BorderSide(
-            color: AppTheme.borderDark.withValues(alpha: 0.3),
+            color: _kNeonGreen.withValues(alpha: 0.15),
+            width: 1,
           ),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
         child: Column(
           children: [
-            // Preview do reply
             _buildReplyPreview(),
             // Preview da imagem selecionada
             if (_selectedImage != null) ...[
-              Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.backgroundColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.file(
-                        _selectedImage!,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                      ),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 200),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: 0.9 + (0.1 * value),
+                    child: Opacity(
+                      opacity: value,
+                      child: child,
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Imagem selecionada',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 14,
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppTheme.backgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _kNeonGreen.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          _selectedImage!,
+                          width: 70,
+                          height: 70,
+                          fit: BoxFit.cover,
                         ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        color: AppTheme.errorRed,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Imagem selecionada',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Pronta para enviar',
+                              style: TextStyle(
+                                color: _kNeonGreen.withValues(alpha: 0.8),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      onPressed: _removeSelectedImage,
-                    ),
-                  ],
+                      GestureDetector(
+                        onTap: _removeSelectedImage,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppTheme.errorRed.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            color: AppTheme.errorRed,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -659,54 +936,92 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
             Row(
               children: [
                 // Botão de imagem
-                IconButton(
-                  icon: const Icon(
-                    Icons.image,
-                    color: AppTheme.primaryGreen,
-                  ),
-                  onPressed: _isUploading ? null : _pickImage,
-                ),
-                const SizedBox(width: 8),
-                // TextField
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    style: const TextStyle(color: AppTheme.textPrimary),
-                    enabled: !_isUploading,
-                    decoration: InputDecoration(
-                      hintText: _isUploading
-                          ? 'Enviando...'
-                          : 'Digite sua mensagem...',
-                      hintStyle: const TextStyle(color: AppTheme.textSecondary),
-                      filled: true,
-                      fillColor: AppTheme.backgroundColor,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+                GestureDetector(
+                  onTap: _isUploading ? null : _pickImage,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _kNeonGreen.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _kNeonGreen.withValues(alpha: 0.3),
                       ),
                     ),
-                    maxLines: null,
-                    textInputAction: TextInputAction.send,
-                    textCapitalization: TextCapitalization.sentences,
-                    onSubmitted: (_) => _sendMessage(),
+                    child: Icon(
+                      Icons.image_rounded,
+                      color: _isUploading
+                          ? AppTheme.textTertiary
+                          : _kNeonGreen,
+                      size: 22,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
+                // TextField
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.backgroundColor,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: _kNeonGreen.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: TextField(
+                      controller: _messageController,
+                      style: const TextStyle(color: Colors.white),
+                      enabled: !_isUploading,
+                      decoration: InputDecoration(
+                        hintText: _isUploading
+                            ? 'Enviando...'
+                            : 'Digite sua mensagem...',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.4),
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                      ),
+                      maxLines: null,
+                      textInputAction: TextInputAction.send,
+                      textCapitalization: TextCapitalization.sentences,
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
                 // Botão enviar
                 GestureDetector(
                   onTap: _isUploading ? null : _sendMessage,
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: _isUploading
-                          ? AppTheme.textTertiary
-                          : AppTheme.primaryGreen,
+                      gradient: _isUploading
+                          ? null
+                          : LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                _kNeonGreen,
+                                _kNeonGreen.withValues(alpha: 0.8),
+                              ],
+                            ),
+                      color: _isUploading ? AppTheme.textTertiary : null,
                       shape: BoxShape.circle,
+                      boxShadow: _isUploading
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: _kNeonGreen.withValues(alpha: 0.4),
+                                blurRadius: 12,
+                                spreadRadius: 0,
+                              ),
+                            ],
                     ),
                     child: _isUploading
                         ? const Center(
@@ -720,8 +1035,8 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
                             ),
                           )
                         : const Icon(
-                            Icons.send,
-                            color: Colors.white,
+                            Icons.send_rounded,
+                            color: Colors.black,
                             size: 20,
                           ),
                   ),
@@ -739,28 +1054,38 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
       padding: const EdgeInsets.all(16),
       itemCount: 5,
       itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SkeletonLoader(
-                width: 40,
-                height: 40,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    SkeletonLoader(width: 100, height: 14),
-                    SizedBox(height: 8),
-                    SkeletonLoader(width: double.infinity, height: 40),
-                  ],
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: Duration(milliseconds: 300 + index * 100),
+          builder: (context, value, child) {
+            return Opacity(
+              opacity: value * 0.5,
+              child: child,
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonLoader(
+                  width: 44,
+                  height: 44,
+                  borderRadius: BorderRadius.circular(22),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      SkeletonLoader(width: 100, height: 14),
+                      SizedBox(height: 8),
+                      SkeletonLoader(width: double.infinity, height: 50),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -771,18 +1096,35 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppTheme.errorRed,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppTheme.errorRed.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.error_outline_rounded,
+              size: 40,
+              color: AppTheme.errorRed,
+            ),
           ),
-          SizedBox(height: 16),
-          Text(
+          const SizedBox(height: 20),
+          const Text(
             'Erro ao carregar mensagens',
             style: TextStyle(
-              fontSize: 16,
-              color: AppTheme.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tente novamente mais tarde',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white.withValues(alpha: 0.6),
             ),
           ),
         ],
@@ -794,26 +1136,72 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview> {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 64,
-            color: AppTheme.textSecondary,
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Nenhuma mensagem ainda',
-            style: TextStyle(
-              fontSize: 16,
-              color: AppTheme.textPrimary,
+        children: [
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  _kNeonGreen.withValues(alpha: 0.2),
+                  _kNeonGreen.withValues(alpha: 0.05),
+                ],
+              ),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 48,
+              color: _kNeonGreen,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 24),
+          const Text(
+            'Nenhuma mensagem ainda',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
           Text(
             'Seja o primeiro a enviar uma mensagem!',
             style: TextStyle(
               fontSize: 14,
-              color: AppTheme.textSecondary,
+              color: Colors.white.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            decoration: BoxDecoration(
+              color: _kNeonGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _kNeonGreen.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: _kNeonGreen,
+                  size: 20,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Use o campo abaixo',
+                  style: TextStyle(
+                    color: _kNeonGreen,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -864,35 +1252,61 @@ class _MessageBubble extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
-          userPhotoUrl != null && userPhotoUrl!.isNotEmpty
-              ? CircleAvatar(
-                  radius: 20,
-                  backgroundImage: NetworkImage(userPhotoUrl!),
-                  backgroundColor: isAdmin
-                      ? AppTheme.primaryGreen
-                      : AppTheme.cardMedium,
-                )
-              : Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isAdmin
-                        ? AppTheme.primaryGreen
-                        : AppTheme.cardMedium,
+          // Avatar with glow for admin
+          Container(
+            decoration: isAdmin
+                ? BoxDecoration(
                     shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      userName.isNotEmpty ? userName[0].toUpperCase() : '?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _kNeonGreen.withValues(alpha: 0.4),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                      ),
+                    ],
+                  )
+                : null,
+            child: userPhotoUrl != null && userPhotoUrl!.isNotEmpty
+                ? CircleAvatar(
+                    radius: 22,
+                    backgroundImage: NetworkImage(userPhotoUrl!),
+                    backgroundColor: isAdmin ? _kNeonGreen : AppTheme.cardMedium,
+                  )
+                : Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      gradient: isAdmin
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                _kNeonGreen,
+                                _kNeonGreen.withValues(alpha: 0.7),
+                              ],
+                            )
+                          : null,
+                      color: isAdmin ? null : AppTheme.cardMedium,
+                      shape: BoxShape.circle,
+                      border: isMe && !isAdmin
+                          ? Border.all(
+                              color: _kNeonGreen.withValues(alpha: 0.5),
+                              width: 2,
+                            )
+                          : null,
+                    ),
+                    child: Center(
+                      child: Text(
+                        userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                        style: TextStyle(
+                          color: isAdmin ? Colors.black : Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
                     ),
                   ),
-                ),
+          ),
           const SizedBox(width: 12),
 
           // Conteúdo da mensagem
@@ -905,27 +1319,30 @@ class _MessageBubble extends StatelessWidget {
                   children: [
                     Text(
                       userName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: isAdmin ? _kNeonGreen : Colors.white,
                         fontSize: 14,
                       ),
                     ),
                     if (isAdmin) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [AppTheme.primaryGreen, AppTheme.successGreen],
+                          gradient: LinearGradient(
+                            colors: [
+                              _kNeonGreen,
+                              _kNeonGreen.withValues(alpha: 0.7),
+                            ],
                           ),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(6),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryGreen.withValues(alpha: 0.5),
+                              color: _kNeonGreen.withValues(alpha: 0.4),
                               blurRadius: 8,
                             ),
                           ],
@@ -933,8 +1350,30 @@ class _MessageBubble extends StatelessWidget {
                         child: const Text(
                           'ADMIN',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: Colors.black,
                             fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                    if (isMe && !isAdmin) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _kNeonGreen.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'VOCÊ',
+                          style: TextStyle(
+                            color: _kNeonGreen,
+                            fontSize: 9,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -943,9 +1382,9 @@ class _MessageBubble extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       time,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppTheme.textSecondary,
+                        color: Colors.white.withValues(alpha: 0.4),
                       ),
                     ),
                   ],
@@ -956,17 +1395,29 @@ class _MessageBubble extends StatelessWidget {
                 GestureDetector(
                   onLongPress: onLongPress,
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: isMe
-                          ? AppTheme.primaryGreen.withValues(alpha: 0.1)
-                          : AppTheme.cardMedium,
-                      borderRadius: BorderRadius.circular(12),
-                      border: isMe
-                          ? Border.all(
-                              color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                      gradient: isMe
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                _kNeonGreen.withValues(alpha: 0.15),
+                                _kNeonGreen.withValues(alpha: 0.05),
+                              ],
                             )
                           : null,
+                      color: isMe ? null : AppTheme.cardMedium,
+                      borderRadius: BorderRadius.circular(16),
+                      border: isMe
+                          ? Border.all(
+                              color: _kNeonGreen.withValues(alpha: 0.3),
+                            )
+                          : isAdmin
+                              ? Border.all(
+                                  color: _kNeonGreen.withValues(alpha: 0.2),
+                                )
+                              : null,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -974,14 +1425,14 @@ class _MessageBubble extends StatelessWidget {
                         // Preview do reply (se existir)
                         if (replyToMessage != null && replyToMessage!.isNotEmpty) ...[
                           Container(
-                            padding: const EdgeInsets.all(8),
-                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(10),
+                            margin: const EdgeInsets.only(bottom: 10),
                             decoration: BoxDecoration(
-                              color: AppTheme.backgroundColor.withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.black.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
                               border: Border(
                                 left: BorderSide(
-                                  color: AppTheme.primaryGreen,
+                                  color: _kNeonGreen,
                                   width: 3,
                                 ),
                               ),
@@ -994,15 +1445,15 @@ class _MessageBubble extends StatelessWidget {
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
-                                    color: AppTheme.primaryGreen,
+                                    color: _kNeonGreen,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   replyToMessage!,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: AppTheme.textSecondary,
+                                    color: Colors.white.withValues(alpha: 0.6),
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -1014,32 +1465,39 @@ class _MessageBubble extends StatelessWidget {
                         // Imagem (se existir)
                         if (imageUrl != null && imageUrl!.isNotEmpty) ...[
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             child: Image.network(
                               imageUrl!,
-                              width: 200,
+                              width: 220,
                               fit: BoxFit.cover,
                               loadingBuilder: (context, child, loadingProgress) {
                                 if (loadingProgress == null) return child;
                                 return Container(
-                                  width: 200,
-                                  height: 200,
-                                  color: AppTheme.cardMedium,
-                                  child: const Center(
+                                  width: 220,
+                                  height: 180,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.cardDark,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Center(
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
+                                      color: _kNeonGreen,
                                     ),
                                   ),
                                 );
                               },
                               errorBuilder: (context, error, stackTrace) {
                                 return Container(
-                                  width: 200,
+                                  width: 220,
                                   height: 100,
-                                  color: AppTheme.cardMedium,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.cardDark,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                   child: const Center(
                                     child: Icon(
-                                      Icons.broken_image,
+                                      Icons.broken_image_rounded,
                                       color: AppTheme.textTertiary,
                                       size: 32,
                                     ),
@@ -1048,25 +1506,25 @@ class _MessageBubble extends StatelessWidget {
                               },
                             ),
                           ),
-                          if (message.isNotEmpty) const SizedBox(height: 8),
+                          if (message.isNotEmpty) const SizedBox(height: 10),
                         ],
                         // Texto (se existir)
                         if (message.isNotEmpty)
                           Text(
                             message,
                             style: const TextStyle(
-                              color: AppTheme.textPrimary,
+                              color: Colors.white,
                               fontSize: 14,
                               height: 1.4,
                             ),
                           ),
                         if (editedAt != null) ...[
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 6),
                           Text(
                             '(editada)',
                             style: TextStyle(
                               fontSize: 11,
-                              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                              color: Colors.white.withValues(alpha: 0.4),
                               fontStyle: FontStyle.italic,
                             ),
                           ),

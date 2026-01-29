@@ -260,13 +260,16 @@ class DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Método público para mudar tabs (usado pelo AppDrawer)
   void changeTab(int index) {
-    if (index >= 0 && index < 16) {
+    debugPrint('🔄 Dashboard: changeTab($index) chamado');
+    if (index >= 0 && index < 17) {
       setState(() {
         _currentIndex = index;
         _loadedScreens.add(index);
       });
+      debugPrint('🔄 Dashboard: _currentIndex atualizado para $index');
+    } else {
+      debugPrint('❌ Dashboard: índice $index fora do range válido (0-16)');
     }
   }
 
@@ -580,11 +583,11 @@ class DashboardScreenState extends State<DashboardScreen> {
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      // Toggle entre Perfil (index 4) e Home (index 0)
                       if (_currentIndex == 4) {
-                        _currentIndex = 0; // Se já está no perfil, vai pra Home
+                        _currentIndex = 0;
                       } else {
-                        _currentIndex = 4; // Se não está no perfil, vai pro Perfil
+                        _loadedScreens.add(4);
+                        _currentIndex = 4;
                       }
                     });
                   },

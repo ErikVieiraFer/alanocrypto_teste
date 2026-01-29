@@ -19,7 +19,6 @@ class CupulaPostDetailScreen extends StatelessWidget {
   String get title => postData['title'] ?? '';
   String get excerpt => postData['excerpt'] ?? '';
   String get content => postData['content'] ?? '';
-  String get category => postData['category'] ?? '';
   String? get imageUrl => postData['imageUrl'];
   String get authorName => postData['authorName'] ?? 'Alano';
   int get views => postData['views'] ?? 0;
@@ -27,32 +26,6 @@ class CupulaPostDetailScreen extends StatelessWidget {
   DateTime? get createdAt {
     final timestamp = postData['createdAt'] as Timestamp?;
     return timestamp?.toDate();
-  }
-
-  String get categoryEmoji {
-    switch (category.toLowerCase()) {
-      case 'estratégia':
-        return '📈';
-      case 'análise':
-        return '💹';
-      case 'educação':
-        return '📚';
-      default:
-        return '📰';
-    }
-  }
-
-  Color get categoryColor {
-    switch (category.toLowerCase()) {
-      case 'estratégia':
-        return AppTheme.primaryGreen;
-      case 'análise':
-        return Colors.blue;
-      case 'educação':
-        return Colors.purple;
-      default:
-        return AppTheme.primaryGreen;
-    }
   }
 
   @override
@@ -113,10 +86,11 @@ class CupulaPostDetailScreen extends StatelessWidget {
                       ),
                       errorWidget: (context, url, error) => Container(
                         color: AppTheme.cardMedium,
-                        child: Center(
-                          child: Text(
-                            categoryEmoji,
-                            style: const TextStyle(fontSize: 80),
+                        child: const Center(
+                          child: Icon(
+                            Icons.article_rounded,
+                            size: 80,
+                            color: AppTheme.primaryGreen,
                           ),
                         ),
                       ),
@@ -132,7 +106,6 @@ class CupulaPostDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Categoria + Data
                   Row(
                     children: [
                       Container(
@@ -141,16 +114,27 @@ class CupulaPostDetailScreen extends StatelessWidget {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: categoryColor,
+                          color: AppTheme.primaryGreen,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: Text(
-                          category,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.workspace_premium,
+                              size: 14,
+                              color: Colors.black,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'PREMIUM',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 12),
