@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import '../utils/admin_helper.dart';
 
 class CupulaChatService {
@@ -18,8 +19,7 @@ class CupulaChatService {
         .snapshots();
   }
 
-  /// Upload de imagem para o chat
-  Future<String?> uploadImage(File imageFile) async {
+  Future<String?> uploadImage(dynamic imageData) async {
     try {
       final user = _auth.currentUser;
       if (user == null) return null;
@@ -27,7 +27,15 @@ class CupulaChatService {
       final fileName = '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = _storage.ref().child('cupula_chat').child(fileName);
 
-      final uploadTask = ref.putFile(imageFile);
+      UploadTask uploadTask;
+      if (imageData is Uint8List) {
+        uploadTask = ref.putData(imageData, SettableMetadata(contentType: 'image/jpeg'));
+      } else if (imageData is File) {
+        uploadTask = ref.putFile(imageData, SettableMetadata(contentType: 'image/jpeg'));
+      } else {
+        throw Exception('Tipo de imagem inválido');
+      }
+
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
@@ -41,22 +49,25 @@ class CupulaChatService {
   Future<void> sendMessage({
     required String message,
     String? imageUrl,
+    String? audioUrl,
+    int? audioDurationSeconds,
+    String? videoUrl,
+    int? videoDurationSeconds,
     String? replyToId,
     String? replyToUserName,
     String? replyToMessage,
+    List<Map<String, dynamic>>? mentions,
   }) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
-    // VERIFICAR SE ESTÁ BANIDO
     final isBanned = await isUserBanned(user.uid);
     if (isBanned) {
       throw Exception('Você foi bloqueado e não pode enviar mensagens.');
     }
 
-    if (message.trim().isEmpty && imageUrl == null) return;
+    if (message.trim().isEmpty && imageUrl == null && audioUrl == null && videoUrl == null) return;
 
-    // Buscar dados completos do usuário no Firestore
     final userData = await getUserData(user.uid);
 
     await _firestore.collection('cupula_chat').add({
@@ -68,10 +79,33 @@ class CupulaChatService {
       'isAdmin': userData?['isAdmin'] ?? false,
       'editedAt': null,
       'imageUrl': imageUrl,
+      'audioUrl': audioUrl,
+      'audioDurationSeconds': audioDurationSeconds,
+      'videoUrl': videoUrl,
+      'videoDurationSeconds': videoDurationSeconds,
       'replyTo': replyToId,
       'replyToUserName': replyToUserName,
       'replyToMessage': replyToMessage,
+      'mentions': mentions ?? [],
+      'reactions': {},
     });
+
+    if (mentions != null && mentions.isNotEmpty) {
+      final senderName = userData?['displayName'] ?? user.displayName ?? 'Usuário';
+      for (final mention in mentions) {
+        final mentionedUserId = mention['userId'] as String?;
+        if (mentionedUserId != null && mentionedUserId != user.uid) {
+          await _firestore.collection('notifications').add({
+            'userId': mentionedUserId,
+            'type': 'cupula_mention',
+            'title': 'Você foi mencionado na Cúpula',
+            'body': '$senderName mencionou você',
+            'read': false,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+    }
   }
 
   /// Editar mensagem (apenas próprias mensagens)
@@ -228,11 +262,53 @@ class CupulaChatService {
     }
   }
 
-  /// Listar usuários banidos (só admin)
   Stream<QuerySnapshot> getBannedUsers() {
     return _firestore
         .collection('banned_users')
         .orderBy('bannedAt', descending: true)
         .snapshots();
+  }
+
+  Future<void> toggleReaction(String messageId, String emoji) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final docRef = _firestore.collection('cupula_chat').doc(messageId);
+    final doc = await docRef.get();
+
+    if (!doc.exists) return;
+
+    final data = doc.data() ?? {};
+    final reactions = Map<String, List<dynamic>>.from(data['reactions'] ?? {});
+
+    if (reactions[emoji]?.contains(user.uid) ?? false) {
+      reactions[emoji]!.remove(user.uid);
+      if (reactions[emoji]!.isEmpty) reactions.remove(emoji);
+    } else {
+      reactions[emoji] = [...(reactions[emoji] ?? []), user.uid];
+    }
+
+    await docRef.update({'reactions': reactions});
+  }
+
+  Future<List<Map<String, dynamic>>> getMentionableUsers() async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('isPremium', isEqualTo: true)
+          .limit(50)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'userId': doc.id,
+          'displayName': data['displayName'] ?? 'Usuário',
+          'photoURL': data['photoURL'],
+        };
+      }).toList();
+    } catch (e) {
+      return [];
+    }
   }
 }

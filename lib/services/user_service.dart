@@ -267,7 +267,19 @@ class UserService {
   Future<bool> isUserApproved(String userId) async {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
-      return doc.data()?['approved'] ?? false;
+      final data = doc.data();
+      if (data == null) return false;
+
+      final isApproved = data['approved'] == true;
+      if (!isApproved) return false;
+
+      if (data['lifetimeAccess'] == true) return true;
+
+      final accessUntil = data['accessUntil'];
+      if (accessUntil == null) return true;
+
+      final expirationDate = (accessUntil as Timestamp).toDate();
+      return expirationDate.isAfter(DateTime.now());
     } catch (e) {
       print('Erro ao verificar aprovação: $e');
       return false;

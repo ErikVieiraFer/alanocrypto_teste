@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:universal_html/html.dart' as html;
 
 class PaymentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -65,19 +66,35 @@ class PaymentService {
     final result = await createCheckout();
 
     final checkoutUrl = result['checkoutUrl'] as String?;
-    final sandboxUrl = result['sandboxUrl'] as String?;
-    final urlToOpen = checkoutUrl ?? sandboxUrl;
 
-    if (urlToOpen == null) {
+    if (checkoutUrl == null) {
       throw Exception('URL de pagamento não disponível.');
     }
 
     try {
-      final uri = Uri.parse(urlToOpen);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (kIsWeb) {
+        final userAgent = html.window.navigator.userAgent.toLowerCase();
+        final isSafari = userAgent.contains('safari') &&
+                         !userAgent.contains('chrome') &&
+                         !userAgent.contains('crios');
+        final isIOS = userAgent.contains('iphone') ||
+                      userAgent.contains('ipad') ||
+                      userAgent.contains('ipod');
+
+        debugPrint('🌐 PaymentService: userAgent=$userAgent, isSafari=$isSafari, isIOS=$isIOS');
+
+        if (isSafari || isIOS) {
+          html.window.location.href = checkoutUrl;
+        } else {
+          html.window.open(checkoutUrl, '_blank');
+        }
       } else {
-        throw Exception('Não foi possível abrir o navegador.');
+        final uri = Uri.parse(checkoutUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          throw Exception('Não foi possível abrir o navegador.');
+        }
       }
     } catch (e) {
       debugPrint('❌ PaymentService: Erro ao abrir URL: $e');

@@ -5,10 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import '../../../theme/app_theme.dart';
 import '../../../services/cupula_chat_service.dart';
+import '../../../services/media_service.dart';
 import '../../../utils/admin_helper.dart';
 import '../widgets/cupula_widgets.dart';
+import '../../../widgets/audio_player_widget.dart';
+import '../../../widgets/audio_recorder_widget.dart';
+import '../../../widgets/video_player_widget.dart';
 
 // Neon green color constant for consistency
 const Color _kNeonGreen = Color(0xFF00FF88);
@@ -23,6 +28,7 @@ class CupulaChatPreview extends StatefulWidget {
 class _CupulaChatPreviewState extends State<CupulaChatPreview>
     with SingleTickerProviderStateMixin {
   final CupulaChatService _chatService = CupulaChatService();
+  final MediaService _mediaService = MediaService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
@@ -30,9 +36,15 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
   late AnimationController _headerAnimController;
   late Animation<double> _headerFadeAnim;
 
-  File? _selectedImage;
+  Uint8List? _selectedImageBytes;
   bool _isUploading = false;
   Map<String, dynamic>? _replyingTo;
+  bool _isRecordingAudio = false;
+
+  bool _showMentionList = false;
+  String _mentionQuery = '';
+  List<Map<String, dynamic>> _mentionableUsers = [];
+  List<Map<String, dynamic>> _mentionedUsers = [];
 
   @override
   void initState() {
@@ -65,8 +77,9 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
       );
 
       if (pickedFile != null) {
+        final bytes = await pickedFile.readAsBytes();
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _selectedImageBytes = bytes;
         });
       }
     } catch (e) {
@@ -80,22 +93,209 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
 
   void _removeSelectedImage() {
     setState(() {
-      _selectedImage = null;
+      _selectedImageBytes = null;
     });
+  }
+
+  void _toggleAudioRecording() {
+    setState(() {
+      _isRecordingAudio = !_isRecordingAudio;
+    });
+  }
+
+  Future<void> _loadMentionableUsers() async {
+    final users = await _chatService.getMentionableUsers();
+    setState(() {
+      _mentionableUsers = users;
+    });
+  }
+
+  void _onTextChanged(String text) {
+    final cursorPos = _messageController.selection.baseOffset;
+    if (cursorPos < 0 || cursorPos > text.length) {
+      setState(() => _showMentionList = false);
+      return;
+    }
+
+    final textBeforeCursor = text.substring(0, cursorPos);
+    final lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex != -1) {
+      final query = textBeforeCursor.substring(lastAtIndex + 1);
+      if (!query.contains(' ') && query.length < 20) {
+        setState(() {
+          _showMentionList = true;
+          _mentionQuery = query.toLowerCase();
+        });
+        if (_mentionableUsers.isEmpty) {
+          _loadMentionableUsers();
+        }
+        return;
+      }
+    }
+    setState(() => _showMentionList = false);
+  }
+
+  void _insertMention(Map<String, dynamic> user) {
+    final text = _messageController.text;
+    final cursorPos = _messageController.selection.baseOffset;
+    final lastAtIndex = text.substring(0, cursorPos).lastIndexOf('@');
+
+    final displayName = user['displayName'] as String? ?? 'Usuário';
+    final newText = '${text.substring(0, lastAtIndex)}@$displayName ${text.substring(cursorPos)}';
+
+    _messageController.text = newText;
+    _messageController.selection = TextSelection.collapsed(
+      offset: lastAtIndex + displayName.length + 2,
+    );
+
+    setState(() {
+      _showMentionList = false;
+      _mentionedUsers.add(user);
+    });
+  }
+
+  Future<void> _sendAudioMessage(dynamic audioData, int durationSeconds) async {
+    debugPrint('🎤 _sendAudioMessage chamado. Tipo: ${audioData.runtimeType}, Duração: $durationSeconds');
+
+    setState(() {
+      _isRecordingAudio = false;
+      _isUploading = true;
+    });
+
+    try {
+      Uint8List audioBytes;
+
+      if (audioData is Uint8List) {
+        audioBytes = audioData;
+        debugPrint('🎤 audioData já é Uint8List: ${audioBytes.length} bytes');
+      } else if (audioData is String) {
+        if (kIsWeb) {
+          debugPrint('🎤 Web: URL de áudio: $audioData');
+          final response = await http.get(Uri.parse(audioData));
+          if (response.statusCode == 200) {
+            audioBytes = response.bodyBytes;
+            debugPrint('🎤 Web: áudio baixado: ${audioBytes.length} bytes');
+          } else {
+            throw Exception('Erro ao baixar áudio: ${response.statusCode}');
+          }
+        } else {
+          final file = File(audioData);
+          audioBytes = await file.readAsBytes();
+          debugPrint('🎤 Arquivo lido: ${audioBytes.length} bytes');
+        }
+      } else {
+        throw Exception('Tipo de áudio inválido: ${audioData.runtimeType}');
+      }
+
+      final audioUrl = await _mediaService.uploadAudio(
+        audioBytes,
+        _chatService.currentUser?.uid ?? 'unknown',
+      );
+
+      await _chatService.sendMessage(
+        message: '',
+        audioUrl: audioUrl,
+        audioDurationSeconds: durationSeconds,
+      );
+
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      debugPrint('🎤 Erro ao enviar áudio: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao enviar áudio: $e'),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickAndSendVideo() async {
+    try {
+      final XFile? pickedFile = await _imagePicker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(minutes: 2),
+      );
+
+      if (pickedFile == null) return;
+
+      setState(() {
+        _isUploading = true;
+      });
+
+      final videoBytes = await pickedFile.readAsBytes();
+      debugPrint('🎥 Vídeo selecionado: ${videoBytes.length} bytes');
+
+      final videoUrl = await _mediaService.uploadVideo(
+        videoBytes,
+        _chatService.currentUser?.uid ?? 'unknown',
+      );
+
+      await _chatService.sendMessage(
+        message: '',
+        videoUrl: videoUrl,
+      );
+
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      debugPrint('🎥 Erro ao enviar vídeo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao enviar vídeo: $e'),
+            backgroundColor: AppTheme.errorRed,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
   }
 
   void _sendMessage() async {
     final messageText = _messageController.text.trim();
-    final imageToSend = _selectedImage;
+    final imageToSend = _selectedImageBytes;
     final replyTo = _replyingTo;
+    final mentions = List<Map<String, dynamic>>.from(_mentionedUsers);
 
     if (messageText.isEmpty && imageToSend == null) return;
 
     _messageController.clear();
     setState(() {
-      _selectedImage = null;
+      _selectedImageBytes = null;
       _replyingTo = null;
       _isUploading = true;
+      _mentionedUsers.clear();
+      _showMentionList = false;
     });
 
     try {
@@ -111,6 +311,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
         replyToId: replyTo?['id'],
         replyToUserName: replyTo?['userName'],
         replyToMessage: replyTo?['message'],
+        mentions: mentions,
       );
 
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -193,7 +394,15 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+
+              _buildReactionPicker(messageId),
+
+              const Divider(
+                color: Colors.white12,
+                height: 1,
+              ),
+              const SizedBox(height: 8),
 
               // Responder
               _buildOptionTile(
@@ -269,6 +478,42 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildReactionPicker(String messageId) {
+    const emojis = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: emojis.map((emoji) {
+          return GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+              _chatService.toggleReaction(messageId, emoji);
+            },
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  emoji,
+                  style: const TextStyle(fontSize: 24),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -571,8 +816,14 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                         timestamp: data['createdAt'] as Timestamp?,
                         editedAt: data['editedAt'] as Timestamp?,
                         imageUrl: data['imageUrl'] as String?,
+                        audioUrl: data['audioUrl'] as String?,
+                        audioDurationSeconds: data['audioDurationSeconds'] as int?,
+                        videoUrl: data['videoUrl'] as String?,
+                        videoDurationSeconds: data['videoDurationSeconds'] as int?,
                         replyToUserName: data['replyToUserName'] as String?,
                         replyToMessage: data['replyToMessage'] as String?,
+                        reactions: data['reactions'] as Map<String, dynamic>?,
+                        currentUserId: currentUserId,
                         isAdmin: data['isAdmin'] ?? false,
                         isMe: isMe,
                         onLongPress: () => _showMessageOptions(
@@ -582,6 +833,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                           userName: data['userName'] ?? 'Usuário',
                           isMe: isMe,
                         ),
+                        onReaction: (emoji) => _chatService.toggleReaction(doc.id, emoji),
                       ),
                     );
                   },
@@ -828,6 +1080,96 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
     );
   }
 
+  Widget _buildMentionList() {
+    if (!_showMentionList) return const SizedBox.shrink();
+
+    final filteredUsers = _mentionableUsers.where((user) {
+      final name = (user['displayName'] as String? ?? '').toLowerCase();
+      return name.contains(_mentionQuery);
+    }).toList();
+
+    if (filteredUsers.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 200),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _kNeonGreen.withValues(alpha: 0.3),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: ListView.builder(
+        shrinkWrap: true,
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        itemCount: filteredUsers.length,
+        itemBuilder: (context, index) {
+          final user = filteredUsers[index];
+          final displayName = user['displayName'] as String? ?? 'Usuário';
+          final photoUrl = user['photoURL'] as String?;
+
+          return InkWell(
+            onTap: () => _insertMention(user),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  if (photoUrl != null && photoUrl.isNotEmpty)
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundImage: NetworkImage(photoUrl),
+                      backgroundColor: AppTheme.cardMedium,
+                    )
+                  else
+                    Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: _kNeonGreen.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+                          style: const TextStyle(
+                            color: _kNeonGreen,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.verified_rounded,
+                    color: _kNeonGreen.withValues(alpha: 0.6),
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildMessageInput() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -851,9 +1193,19 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
         top: false,
         child: Column(
           children: [
-            _buildReplyPreview(),
-            // Preview da imagem selecionada
-            if (_selectedImage != null) ...[
+            if (_isRecordingAudio) ...[
+              AudioRecorderWidget(
+                onRecordingComplete: _sendAudioMessage,
+                onCancel: () {
+                  setState(() {
+                    _isRecordingAudio = false;
+                  });
+                },
+              ),
+            ] else ...[
+              _buildMentionList(),
+              _buildReplyPreview(),
+              if (_selectedImageBytes != null) ...[
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
                 duration: const Duration(milliseconds: 200),
@@ -880,8 +1232,8 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          _selectedImage!,
+                        child: Image.memory(
+                          _selectedImageBytes!,
                           width: 70,
                           height: 70,
                           fit: BoxFit.cover,
@@ -892,19 +1244,29 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Imagem selecionada',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.image_rounded,
+                                  color: _kNeonGreen,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                const Text(
+                                  'Imagem selecionada',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Pronta para enviar',
+                              'Escreva uma legenda abaixo',
                               style: TextStyle(
-                                color: _kNeonGreen.withValues(alpha: 0.8),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 12,
                               ),
                             ),
@@ -957,8 +1319,53 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                     ),
                   ),
                 ),
+                if (AdminHelper.isCurrentUserAdmin()) ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _isUploading ? null : _toggleAudioRecording,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _kNeonGreen.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _kNeonGreen.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.mic_rounded,
+                        color: _isUploading
+                            ? AppTheme.textTertiary
+                            : _kNeonGreen,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _isUploading ? null : _pickAndSendVideo,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: _kNeonGreen.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _kNeonGreen.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.videocam_rounded,
+                        color: _isUploading
+                            ? AppTheme.textTertiary
+                            : _kNeonGreen,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(width: 10),
-                // TextField
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
@@ -972,10 +1379,13 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                       controller: _messageController,
                       style: const TextStyle(color: Colors.white),
                       enabled: !_isUploading,
+                      onChanged: _onTextChanged,
                       decoration: InputDecoration(
                         hintText: _isUploading
                             ? 'Enviando...'
-                            : 'Digite sua mensagem...',
+                            : _selectedImageBytes != null
+                                ? 'Adicionar legenda (opcional)...'
+                                : 'Digite sua mensagem...',
                         hintStyle: TextStyle(
                           color: Colors.white.withValues(alpha: 0.4),
                         ),
@@ -1043,6 +1453,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                 ),
               ],
             ),
+            ],
           ],
         ),
       ),
@@ -1219,11 +1630,18 @@ class _MessageBubble extends StatelessWidget {
   final Timestamp? timestamp;
   final Timestamp? editedAt;
   final String? imageUrl;
+  final String? audioUrl;
+  final int? audioDurationSeconds;
+  final String? videoUrl;
+  final int? videoDurationSeconds;
   final String? replyToUserName;
   final String? replyToMessage;
+  final Map<String, dynamic>? reactions;
+  final String? currentUserId;
   final bool isAdmin;
   final bool isMe;
   final VoidCallback onLongPress;
+  final Function(String emoji) onReaction;
 
   const _MessageBubble({
     required this.messageId,
@@ -1234,11 +1652,18 @@ class _MessageBubble extends StatelessWidget {
     this.timestamp,
     this.editedAt,
     this.imageUrl,
+    this.audioUrl,
+    this.audioDurationSeconds,
+    this.videoUrl,
+    this.videoDurationSeconds,
     this.replyToUserName,
     this.replyToMessage,
+    this.reactions,
+    this.currentUserId,
     required this.isAdmin,
     required this.isMe,
     required this.onLongPress,
+    required this.onReaction,
   });
 
   @override
@@ -1508,16 +1933,22 @@ class _MessageBubble extends StatelessWidget {
                           ),
                           if (message.isNotEmpty) const SizedBox(height: 10),
                         ],
-                        // Texto (se existir)
-                        if (message.isNotEmpty)
-                          Text(
-                            message,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              height: 1.4,
-                            ),
+                        if (audioUrl != null && audioUrl!.isNotEmpty) ...[
+                          AudioPlayerWidget(
+                            audioUrl: audioUrl!,
+                            durationSeconds: audioDurationSeconds ?? 0,
                           ),
+                          if (message.isNotEmpty) const SizedBox(height: 10),
+                        ],
+                        if (videoUrl != null && videoUrl!.isNotEmpty) ...[
+                          VideoPlayerWidget(
+                            videoUrl: videoUrl!,
+                            durationSeconds: videoDurationSeconds,
+                          ),
+                          if (message.isNotEmpty) const SizedBox(height: 10),
+                        ],
+                        if (message.isNotEmpty)
+                          _buildMessageText(message),
                         if (editedAt != null) ...[
                           const SizedBox(height: 6),
                           Text(
@@ -1533,10 +1964,127 @@ class _MessageBubble extends StatelessWidget {
                     ),
                   ),
                 ),
+                _buildReactions(),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMessageText(String text) {
+    final mentionRegex = RegExp(r'@(\w+)');
+    final matches = mentionRegex.allMatches(text);
+
+    if (matches.isEmpty) {
+      return Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          height: 1.4,
+        ),
+      );
+    }
+
+    final spans = <TextSpan>[];
+    int lastEnd = 0;
+
+    for (final match in matches) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: text.substring(lastEnd, match.start),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ));
+      }
+
+      spans.add(TextSpan(
+        text: match.group(0),
+        style: const TextStyle(
+          color: _kNeonGreen,
+          fontSize: 14,
+          height: 1.4,
+          fontWeight: FontWeight.bold,
+        ),
+      ));
+
+      lastEnd = match.end;
+    }
+
+    if (lastEnd < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastEnd),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          height: 1.4,
+        ),
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+    );
+  }
+
+  Widget _buildReactions() {
+    if (reactions == null || reactions!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: reactions!.entries.map((entry) {
+          final emoji = entry.key;
+          final users = entry.value as List<dynamic>? ?? [];
+          if (users.isEmpty) return const SizedBox.shrink();
+
+          final hasReacted = currentUserId != null && users.contains(currentUserId);
+
+          return GestureDetector(
+            onTap: () => onReaction(emoji),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: hasReacted
+                    ? _kNeonGreen.withValues(alpha: 0.2)
+                    : Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: hasReacted
+                      ? _kNeonGreen.withValues(alpha: 0.5)
+                      : Colors.white.withValues(alpha: 0.15),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    emoji,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${users.length}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: hasReacted ? _kNeonGreen : Colors.white.withValues(alpha: 0.7),
+                      fontWeight: hasReacted ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
