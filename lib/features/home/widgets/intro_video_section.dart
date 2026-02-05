@@ -118,43 +118,36 @@ class _IntroVideoSectionState extends State<IntroVideoSection> {
       return const SizedBox.shrink();
     }
 
-    // Removido Visibility wrapper que causava erro "disposed EngineFlutterView" no Flutter Web
-    // O drawer/dialog já cobre o vídeo quando aberto
     return Container(
       decoration: AppTheme.gradientCardDecoration,
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: YoutubePlayer(
-                controller: _controller!,
-                aspectRatio: 16 / 9,
-              ),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: YoutubePlayer(
+              controller: _controller!,
+              aspectRatio: 16 / 9,
             ),
-            Padding(
-              padding: const EdgeInsets.all(AppTheme.paddingMedium),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppTheme.paddingMedium),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_videoData!.title, style: AppTheme.heading3),
+                if (_videoData!.description.isNotEmpty) ...[
+                  const SizedBox(height: AppTheme.gapSmall),
                   Text(
-                    _videoData!.title,
-                    style: AppTheme.heading3,
+                    _videoData!.description,
+                    style: AppTheme.bodyMedium.copyWith(color: AppTheme.textSecondary),
                   ),
-                  if (_videoData!.description.isNotEmpty) ...[
-                    const SizedBox(height: AppTheme.gapSmall),
-                    Text(
-                      _videoData!.description,
-                      style: AppTheme.bodyMedium.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }

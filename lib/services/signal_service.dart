@@ -5,10 +5,18 @@ import '../models/notification_model.dart';
 class SignalService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Stream<List<Signal>> getSignals({SignalType? filter}) {
-    Query query = _firestore
-        .collection('signals')
-        .orderBy('createdAt', descending: true);
+  Stream<List<Signal>> getSignals({SignalType? filter, int? lastMinutes}) {
+    final cutoffTime = lastMinutes != null
+        ? DateTime.now().subtract(Duration(minutes: lastMinutes))
+        : null;
+
+    Query query = _firestore.collection('signals');
+
+    if (cutoffTime != null) {
+      query = query.where('createdAt', isGreaterThan: Timestamp.fromDate(cutoffTime));
+    }
+
+    query = query.orderBy('createdAt', descending: true);
 
     if (filter != null) {
       query = query.where('type', isEqualTo: filter.name);
@@ -19,18 +27,23 @@ class SignalService {
     });
   }
 
-  Stream<List<Signal>> getActiveSignals({SignalType? filter}) {
+  Stream<List<Signal>> getActiveSignals({SignalType? filter, int lastMinutes = 30}) {
+    final cutoffTime = DateTime.now().subtract(Duration(minutes: lastMinutes));
+
     Query query = _firestore
         .collection('signals')
-        .where('status', whereIn: ['active', 'Active', 'ativo', 'Ativo'])
+        .where('status', isEqualTo: 'active')
+        .where('createdAt', isGreaterThan: Timestamp.fromDate(cutoffTime))
         .orderBy('createdAt', descending: true);
 
-    if (filter != null) {
-      query = query.where('type', isEqualTo: filter.name);
-    }
-
     return query.snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) => Signal.fromFirestore(doc)).toList();
+      var signals = snapshot.docs.map((doc) => Signal.fromFirestore(doc)).toList();
+
+      if (filter != null) {
+        signals = signals.where((s) => s.type == filter).toList();
+      }
+
+      return signals;
     });
   }
 

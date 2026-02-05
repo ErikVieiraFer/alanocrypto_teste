@@ -1,71 +1,30 @@
-import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AdminHelper {
-  static final AdminHelper _instance = AdminHelper._internal();
-  factory AdminHelper() => _instance;
-  AdminHelper._internal();
-
-  // UIDs dos admins - FALLBACK hardcoded para web (dotenv pode falhar)
-  static const List<String> _fallbackAdminUids = [
-    'MSnKrBPj5uZK3JK8LsB8CeHLdb82', // Erik
-    'XHMsmRONXcOp3vm7VM3326P1DSt2', // Alano
+  static const List<String> _adminUids = [
+    'MSnKrBPj5uZK3JK8LsB8CeHLdb82',
+    'XHMsmRONXcOp3vm7VM3326P1DSt2',
   ];
 
-  // Lista de UIDs dos admins (do .env com fallback)
-  static List<String> get adminUids {
-    try {
-      final List<String> uids = [];
+  static bool? _cachedIsAdmin;
 
-      // Tentar carregar do .env
-      final envUid1 = dotenv.env['ADMIN_UID'];
-      final envUid2 = dotenv.env['ADMIN_UID_2'];
+  static List<String> get adminUids => _adminUids;
 
-      if (envUid1 != null && envUid1.isNotEmpty) {
-        uids.add(envUid1);
-      }
-      if (envUid2 != null && envUid2.isNotEmpty) {
-        uids.add(envUid2);
-      }
-
-      // Se nenhum UID foi carregado, usa fallback
-      if (uids.isEmpty) {
-        debugPrint('⚠️ AdminHelper: .env ADMIN_UIDs vazios, usando fallback');
-        return _fallbackAdminUids;
-      }
-
-      return uids;
-    } catch (e) {
-      debugPrint('❌ AdminHelper.adminUids erro: $e - usando fallback');
-      return _fallbackAdminUids;
-    }
-  }
-
-  // Verificar se usuário atual é admin
-  static bool isCurrentUserAdmin() {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        debugPrint('❌ AdminHelper: Nenhum usuário logado');
-        return false;
-      }
-
-      final isAdmin = adminUids.contains(user.uid);
-      debugPrint('🔐 AdminHelper.isCurrentUserAdmin():');
-      debugPrint('   User UID: ${user.uid}');
-      debugPrint('   Admin UIDs: $adminUids');
-      debugPrint('   É admin: $isAdmin');
-
-      return isAdmin;
-    } catch (e) {
-      debugPrint('❌ AdminHelper.isCurrentUserAdmin() erro: $e');
-      return false;
-    }
-  }
-
-  // Verificar se um UID específico é admin
   static bool isAdmin(String uid) {
-    return adminUids.contains(uid);
+    return _adminUids.contains(uid);
+  }
+
+  static bool isCurrentUserAdmin() {
+    if (_cachedIsAdmin != null) return _cachedIsAdmin!;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+
+    _cachedIsAdmin = _adminUids.contains(user.uid);
+    return _cachedIsAdmin!;
+  }
+
+  static void clearCache() {
+    _cachedIsAdmin = null;
   }
 }

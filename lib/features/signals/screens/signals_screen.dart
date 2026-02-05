@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -16,6 +17,26 @@ class SignalsScreen extends StatefulWidget {
 class _SignalsScreenState extends State<SignalsScreen> {
   final SignalService _signalService = SignalService();
   SignalType? _selectedFilter;
+  late Timer _refreshTimer;
+  int _refreshKey = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      if (mounted) {
+        setState(() {
+          _refreshKey++;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer.cancel();
+    super.dispose();
+  }
 
   Future<void> _copySignal(Signal signal) async {
     try {
@@ -189,11 +210,12 @@ https://bit.ly/suportealanocripto
             ),
           ),
           Expanded(
+            key: ValueKey(_refreshKey),
             child: _SignalsTab(
               stream: _signalService.getActiveSignals(
                 filter: _selectedFilter,
               ),
-              emptyMessage: 'Nenhum sinal disponível',
+              emptyMessage: 'Nenhum sinal ativo nos últimos 30 minutos',
               onCopy: _copySignal,
               formatTimestamp: _formatTimestamp,
             ),
@@ -394,7 +416,7 @@ class _SignalsTab extends StatelessWidget {
   }
 }
 
-class SignalCard extends StatelessWidget {
+class SignalCard extends StatefulWidget {
   final Signal signal;
   final Function(Signal) onCopy;
   final String Function(DateTime) formatTimestamp;
@@ -407,9 +429,76 @@ class SignalCard extends StatelessWidget {
   });
 
   @override
+  State<SignalCard> createState() => _SignalCardState();
+}
+
+class _SignalCardState extends State<SignalCard> {
+  late Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  Widget _buildTimeRemaining() {
+    final expiresAt = widget.signal.createdAt.add(const Duration(minutes: 30));
+    final remaining = expiresAt.difference(DateTime.now());
+
+    if (remaining.isNegative) return const SizedBox.shrink();
+
+    final minutes = remaining.inMinutes;
+    final seconds = remaining.inSeconds % 60;
+    final isUrgent = minutes < 5;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isUrgent
+            ? Colors.red.withValues(alpha: 0.2)
+            : const Color(0xFF00FF88).withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isUrgent
+              ? Colors.red.withValues(alpha: 0.5)
+              : const Color(0xFF00FF88).withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.timer_outlined,
+            size: 14,
+            color: isUrgent ? Colors.red : const Color(0xFF00FF88),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${minutes}m ${seconds.toString().padLeft(2, '0')}s',
+            style: TextStyle(
+              color: isUrgent ? Colors.red : const Color(0xFF00FF88),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isLong = signal.type == SignalType.long;
+    final isLong = widget.signal.type == SignalType.long;
+    final signal = widget.signal;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -583,11 +672,13 @@ class SignalCard extends StatelessWidget {
                                 ),
                               ),
                               const Spacer(),
-                              Text(
-                                formatTimestamp(signal.createdAt),
-                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                              ),
+                              _buildTimeRemaining(),
                             ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            widget.formatTimestamp(signal.createdAt),
+                            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                           ),
                           if (signal.profit != null) ...[
                             const SizedBox(height: 12),
@@ -627,7 +718,7 @@ class SignalCard extends StatelessWidget {
                     ),
                     // Footer
                     InkWell(
-                      onTap: () => onCopy(signal),
+                      onTap: () => widget.onCopy(signal),
                       child: Container(
                         decoration: BoxDecoration(
                           color: isDark ? Colors.grey[800] : Colors.grey[100],

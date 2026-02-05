@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
@@ -35,20 +37,22 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
 
   late AnimationController _headerAnimController;
   late Animation<double> _headerFadeAnim;
+  late Stream<QuerySnapshot> _messagesStream;
 
   Uint8List? _selectedImageBytes;
   bool _isUploading = false;
   Map<String, dynamic>? _replyingTo;
   bool _isRecordingAudio = false;
 
-  bool _showMentionList = false;
-  String _mentionQuery = '';
+  final ValueNotifier<bool> _showMentionNotifier = ValueNotifier(false);
+  final ValueNotifier<String> _mentionQueryNotifier = ValueNotifier('');
   List<Map<String, dynamic>> _mentionableUsers = [];
   List<Map<String, dynamic>> _mentionedUsers = [];
 
   @override
   void initState() {
     super.initState();
+    _messagesStream = _chatService.getMessages();
     _headerAnimController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -64,6 +68,8 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
     _messageController.dispose();
     _scrollController.dispose();
     _headerAnimController.dispose();
+    _showMentionNotifier.dispose();
+    _mentionQueryNotifier.dispose();
     super.dispose();
   }
 
@@ -113,7 +119,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
   void _onTextChanged(String text) {
     final cursorPos = _messageController.selection.baseOffset;
     if (cursorPos < 0 || cursorPos > text.length) {
-      setState(() => _showMentionList = false);
+      _showMentionNotifier.value = false;
       return;
     }
 
@@ -123,17 +129,15 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
     if (lastAtIndex != -1) {
       final query = textBeforeCursor.substring(lastAtIndex + 1);
       if (!query.contains(' ') && query.length < 20) {
-        setState(() {
-          _showMentionList = true;
-          _mentionQuery = query.toLowerCase();
-        });
+        _showMentionNotifier.value = true;
+        _mentionQueryNotifier.value = query.toLowerCase();
         if (_mentionableUsers.isEmpty) {
           _loadMentionableUsers();
         }
         return;
       }
     }
-    setState(() => _showMentionList = false);
+    _showMentionNotifier.value = false;
   }
 
   void _insertMention(Map<String, dynamic> user) {
@@ -149,10 +153,8 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
       offset: lastAtIndex + displayName.length + 2,
     );
 
-    setState(() {
-      _showMentionList = false;
-      _mentionedUsers.add(user);
-    });
+    _showMentionNotifier.value = false;
+    _mentionedUsers.add(user);
   }
 
   Future<void> _sendAudioMessage(dynamic audioData, int durationSeconds) async {
@@ -202,7 +204,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
+            0,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOut,
           );
@@ -256,7 +258,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
+            0,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOut,
           );
@@ -281,7 +283,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
     }
   }
 
-  void _sendMessage() async {
+  Future<void> _sendMessage() async {
     final messageText = _messageController.text.trim();
     final imageToSend = _selectedImageBytes;
     final replyTo = _replyingTo;
@@ -290,12 +292,12 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
     if (messageText.isEmpty && imageToSend == null) return;
 
     _messageController.clear();
+    _showMentionNotifier.value = false;
+    _mentionedUsers.clear();
     setState(() {
       _selectedImageBytes = null;
       _replyingTo = null;
       _isUploading = true;
-      _mentionedUsers.clear();
-      _showMentionList = false;
     });
 
     try {
@@ -304,6 +306,8 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
       if (imageToSend != null) {
         imageUrl = await _chatService.uploadImage(imageToSend);
       }
+
+      debugPrint('Enviando mensagem: "$messageText", imageUrl: $imageUrl');
 
       await _chatService.sendMessage(
         message: messageText,
@@ -314,16 +318,19 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
         mentions: mentions,
       );
 
+      debugPrint('Mensagem enviada com sucesso');
+
       Future.delayed(const Duration(milliseconds: 100), () {
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
+            0,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOut,
           );
         }
       });
     } catch (e) {
+      debugPrint('Erro ao enviar mensagem: $e');
       if (mounted) {
         if (e.toString().contains('bloqueado')) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -759,7 +766,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
           _buildHeader(),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _chatService.getMessages(),
+              stream: _messagesStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return _buildLoadingSkeleton();
@@ -775,16 +782,9 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
 
                 final messages = snapshot.data!.docs;
 
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_scrollController.hasClients) {
-                    _scrollController.jumpTo(
-                      _scrollController.position.maxScrollExtent,
-                    );
-                  }
-                });
-
                 return ListView.builder(
                   controller: _scrollController,
+                  reverse: true,
                   padding: const EdgeInsets.all(16),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
@@ -1081,16 +1081,22 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
   }
 
   Widget _buildMentionList() {
-    if (!_showMentionList) return const SizedBox.shrink();
+    return ValueListenableBuilder<bool>(
+      valueListenable: _showMentionNotifier,
+      builder: (context, showMention, _) {
+        if (!showMention) return const SizedBox.shrink();
 
-    final filteredUsers = _mentionableUsers.where((user) {
-      final name = (user['displayName'] as String? ?? '').toLowerCase();
-      return name.contains(_mentionQuery);
-    }).toList();
+        return ValueListenableBuilder<String>(
+          valueListenable: _mentionQueryNotifier,
+          builder: (context, query, _) {
+            final filteredUsers = _mentionableUsers.where((user) {
+              final name = (user['displayName'] as String? ?? '').toLowerCase();
+              return name.contains(query);
+            }).toList();
 
-    if (filteredUsers.isEmpty) return const SizedBox.shrink();
+            if (filteredUsers.isEmpty) return const SizedBox.shrink();
 
-    return Container(
+            return Container(
       constraints: const BoxConstraints(maxHeight: 200),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
@@ -1167,6 +1173,10 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
           );
         },
       ),
+    );
+          },
+        );
+      },
     );
   }
 
@@ -1974,8 +1984,10 @@ class _MessageBubble extends StatelessWidget {
   }
 
   Widget _buildMessageText(String text) {
-    final mentionRegex = RegExp(r'@(\w+)');
-    final matches = mentionRegex.allMatches(text);
+    final combinedRegex = RegExp(
+      r'(https?://[^\s]+|www\.[^\s]+)|(@\w+)',
+    );
+    final matches = combinedRegex.allMatches(text);
 
     if (matches.isEmpty) {
       return Text(
@@ -1991,27 +2003,51 @@ class _MessageBubble extends StatelessWidget {
     final spans = <TextSpan>[];
     int lastEnd = 0;
 
+    const normalStyle = TextStyle(
+      color: Colors.white,
+      fontSize: 14,
+      height: 1.4,
+    );
+
     for (final match in matches) {
       if (match.start > lastEnd) {
         spans.add(TextSpan(
           text: text.substring(lastEnd, match.start),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            height: 1.4,
-          ),
+          style: normalStyle,
         ));
       }
 
-      spans.add(TextSpan(
-        text: match.group(0),
-        style: const TextStyle(
-          color: _kNeonGreen,
-          fontSize: 14,
-          height: 1.4,
-          fontWeight: FontWeight.bold,
-        ),
-      ));
+      final urlMatch = match.group(1);
+      final mentionMatch = match.group(2);
+
+      if (urlMatch != null) {
+        final url = urlMatch.startsWith('www.') ? 'https://$urlMatch' : urlMatch;
+        spans.add(TextSpan(
+          text: match.group(0),
+          style: const TextStyle(
+            color: _kNeonGreen,
+            fontSize: 14,
+            height: 1.4,
+            decoration: TextDecoration.underline,
+            decorationColor: _kNeonGreen,
+          ),
+          recognizer: TapGestureRecognizer()
+            ..onTap = () => launchUrl(
+                  Uri.parse(url),
+                  mode: LaunchMode.externalApplication,
+                ),
+        ));
+      } else if (mentionMatch != null) {
+        spans.add(TextSpan(
+          text: mentionMatch,
+          style: const TextStyle(
+            color: _kNeonGreen,
+            fontSize: 14,
+            height: 1.4,
+            fontWeight: FontWeight.bold,
+          ),
+        ));
+      }
 
       lastEnd = match.end;
     }
@@ -2019,11 +2055,7 @@ class _MessageBubble extends StatelessWidget {
     if (lastEnd < text.length) {
       spans.add(TextSpan(
         text: text.substring(lastEnd),
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          height: 1.4,
-        ),
+        style: normalStyle,
       ));
     }
 

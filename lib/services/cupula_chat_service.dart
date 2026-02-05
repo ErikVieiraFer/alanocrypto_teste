@@ -10,11 +10,10 @@ class CupulaChatService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  /// Stream de mensagens (últimas 50, ordenadas por createdAt)
   Stream<QuerySnapshot> getMessages() {
     return _firestore
         .collection('cupula_chat')
-        .orderBy('createdAt', descending: false)
+        .orderBy('createdAt', descending: true)
         .limit(50)
         .snapshots();
   }
@@ -59,7 +58,9 @@ class CupulaChatService {
     List<Map<String, dynamic>>? mentions,
   }) async {
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      throw Exception('Usuário não autenticado');
+    }
 
     final isBanned = await isUserBanned(user.uid);
     if (isBanned) {
