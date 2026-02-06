@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/signal_model.dart';
 import '../models/notification_model.dart';
@@ -29,14 +30,32 @@ class SignalService {
 
   Stream<List<Signal>> getActiveSignals({SignalType? filter, int lastMinutes = 30}) {
     final cutoffTime = DateTime.now().subtract(Duration(minutes: lastMinutes));
+    debugPrint('📊 getActiveSignals: cutoffTime=$cutoffTime, lastMinutes=$lastMinutes');
 
     Query query = _firestore
         .collection('signals')
-        .where('status', isEqualTo: 'active')
+        .where('status', whereIn: ['active', 'Active', 'Ativo', 'ativo'])
         .where('createdAt', isGreaterThan: Timestamp.fromDate(cutoffTime))
         .orderBy('createdAt', descending: true);
 
     return query.snapshots().map((snapshot) {
+      debugPrint('📊 getActiveSignals: ${snapshot.docs.length} docs encontrados');
+      for (final doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        debugPrint('📊 Signal: id=${doc.id}, status=${data['status']}, coin=${data['coin']}, createdAt=${data['createdAt']}');
+      }
+
+      if (snapshot.docs.isEmpty) {
+        debugPrint('📊 Nenhum sinal ativo encontrado. Buscando TODOS os sinais...');
+        _firestore.collection('signals').orderBy('createdAt', descending: true).limit(5).get().then((allDocs) {
+          debugPrint('📊 Últimos 5 sinais (qualquer status):');
+          for (final doc in allDocs.docs) {
+            final data = doc.data();
+            debugPrint('📊   id=${doc.id}, status=${data['status']}, coin=${data['coin']}, createdAt=${data['createdAt']}');
+          }
+        });
+      }
+
       var signals = snapshot.docs.map((doc) => Signal.fromFirestore(doc)).toList();
 
       if (filter != null) {
@@ -57,6 +76,9 @@ class SignalService {
           'Finalizado',
           'stopped',
           'Stopped',
+          'closed',
+          'Closed',
+          'Stop Loss',
         ])
         .orderBy('createdAt', descending: true);
 

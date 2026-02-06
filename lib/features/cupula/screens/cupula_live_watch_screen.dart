@@ -26,6 +26,8 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
   bool _showEmojiPanel = false;
   bool _isChatVisible = true;
   bool _isFullscreen = false;
+  bool _isLandscape = false;
+  bool _showFullscreenBar = true;
 
   late Stream<List<LiveChatMessage>> _messagesStream;
   late Stream<int> _viewersStream;
@@ -111,27 +113,26 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
   }
 
   Future<void> _enterFullscreen() async {
-    if (kIsWeb) {
-      _playerController.enterFullScreen();
-      return;
-    }
-
     setState(() => _isFullscreen = true);
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    if (!kIsWeb) {
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
   }
 
   Future<void> _exitFullscreen() async {
     if (_isFullscreen) {
       setState(() => _isFullscreen = false);
-      await SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-      ]);
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      if (!kIsWeb) {
+        await SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+          DeviceOrientation.portraitDown,
+        ]);
+        await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      }
     }
   }
 
@@ -304,40 +305,125 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
   }
 
   Widget _buildFullscreenLayout() {
+    final screenSize = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: Colors.black,
-      body: GestureDetector(
-        onTap: _exitFullscreen,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Center(
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: _cachedPlayer,
+      body: Column(
+        children: [
+          if (_showFullscreenBar)
+            Container(
+              color: const Color(0xFF111418),
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 4,
+                left: 12,
+                right: 12,
+                bottom: 4,
               ),
-            ),
-            Positioned(
-              top: 20,
-              right: 20,
-              child: GestureDetector(
-                onTap: _exitFullscreen,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _isLandscape = !_isLandscape),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22282F),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF333840)),
+                      ),
+                      child: Icon(
+                        _isLandscape ? Icons.stay_current_portrait : Icons.stay_current_landscape,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      _isLandscape = false;
+                      _exitFullscreen();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22282F),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF333840)),
+                      ),
+                      child: const Icon(
+                        Icons.fullscreen_exit,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => setState(() => _showFullscreenBar = false),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22282F),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF333840)),
+                      ),
+                      child: const Icon(
+                        Icons.visibility_off,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: () => setState(() => _showFullscreenBar = true),
+              child: Container(
+                color: Colors.black,
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 4,
+                  right: 12,
+                  bottom: 4,
+                ),
+                alignment: Alignment.centerRight,
                 child: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
-                    Icons.fullscreen_exit,
+                    Icons.more_horiz,
                     color: Colors.white,
-                    size: 28,
+                    size: 20,
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          Expanded(
+            child: _isLandscape
+                ? Center(
+                    child: RotatedBox(
+                      quarterTurns: 1,
+                      child: SizedBox(
+                        width: screenSize.height,
+                        height: screenSize.width,
+                        child: _cachedPlayer,
+                      ),
+                    ),
+                  )
+                : Center(
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: _cachedPlayer,
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -351,33 +437,9 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
           Container(
             width: double.infinity,
             color: Colors.black,
-            child: GestureDetector(
-              onTap: _enterFullscreen,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: _cachedPlayer,
-                  ),
-                  Positioned(
-                    bottom: 12,
-                    right: 12,
-                    child: Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Icon(
-                        Icons.fullscreen,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: _cachedPlayer,
             ),
           ),
           _buildControlsBar(),
@@ -586,40 +648,61 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
               );
             },
           ),
-          GestureDetector(
-            onTap: () => setState(() => _isChatVisible = !_isChatVisible),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: _isChatVisible
-                    ? _kNeonGreen.withValues(alpha: 0.15)
-                    : const Color(0xFF22282F),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _isChatVisible
-                      ? _kNeonGreen.withValues(alpha: 0.4)
-                      : const Color(0xFF333840),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _enterFullscreen,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF22282F),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: const Color(0xFF333840)),
+                  ),
+                  child: const Icon(
+                    Icons.fullscreen,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _isChatVisible ? Icons.visibility_off : Icons.chat_bubble,
-                    color: _isChatVisible ? _kNeonGreen : Colors.white,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _isChatVisible ? 'Ocultar chat' : 'Mostrar chat',
-                    style: TextStyle(
-                      color: _isChatVisible ? _kNeonGreen : Colors.white,
-                      fontSize: 13,
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => setState(() => _isChatVisible = !_isChatVisible),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _isChatVisible
+                        ? _kNeonGreen.withValues(alpha: 0.15)
+                        : const Color(0xFF22282F),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _isChatVisible
+                          ? _kNeonGreen.withValues(alpha: 0.4)
+                          : const Color(0xFF333840),
                     ),
                   ),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isChatVisible ? Icons.visibility_off : Icons.chat_bubble,
+                        color: _isChatVisible ? _kNeonGreen : Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _isChatVisible ? 'Ocultar chat' : 'Mostrar chat',
+                        style: TextStyle(
+                          color: _isChatVisible ? _kNeonGreen : Colors.white,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),

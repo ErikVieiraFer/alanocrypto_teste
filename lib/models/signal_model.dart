@@ -48,10 +48,10 @@ class Signal {
     SignalStatus parseStatus(String? statusStr) {
       if (statusStr == null) return SignalStatus.active;
       final normalized = statusStr.toLowerCase();
-      if (normalized == 'ativo') return SignalStatus.active;
-      if (normalized == 'finalizado' || normalized == 'completed')
+      if (normalized == 'ativo' || normalized == 'active') return SignalStatus.active;
+      if (normalized == 'finalizado' || normalized == 'completed' || normalized == 'closed')
         return SignalStatus.completed;
-      if (normalized == 'stopped') return SignalStatus.stopped;
+      if (normalized == 'stopped' || normalized == 'stop loss') return SignalStatus.stopped;
       return SignalStatus.active;
     }
 
