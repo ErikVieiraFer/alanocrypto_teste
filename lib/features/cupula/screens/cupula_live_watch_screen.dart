@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../../theme/app_theme.dart';
 import '../services/cupula_lives_service.dart';
 import '../services/cupula_live_chat_service.dart';
+
+const Color _kNeonGreen = Color(0xFF00FF88);
 
 class CupulaLiveWatchScreen extends StatefulWidget {
   final CupulaLive live;
@@ -15,12 +18,19 @@ class CupulaLiveWatchScreen extends StatefulWidget {
 }
 
 class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
+  final GlobalKey _playerContainerKey = GlobalKey();
   late YoutubePlayerController _playerController;
   final CupulaLiveChatService _chatService = CupulaLiveChatService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _showEmojiPanel = false;
-  bool _showChat = true;
+  bool _isChatVisible = true;
+  bool _isFullscreen = false;
+
+  late Stream<List<LiveChatMessage>> _messagesStream;
+  late Stream<int> _viewersStream;
+
+  late Widget _cachedPlayer;
 
   static const List<String> _quickEmojis = [
     '🔥', '🚀', '👏', '😂', '❤️', '💰', '📈', '📉',
@@ -33,17 +43,17 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
   void initState() {
     super.initState();
     _initPlayer();
+    _messagesStream = _chatService.getMessages(widget.live.id);
+    _viewersStream = _chatService.getViewersCount(widget.live.id);
   }
 
   void _initPlayer() {
     final videoId = widget.live.youtubeVideoId;
-    debugPrint('🎬 Inicializando player com videoId: $videoId');
-
     _playerController = YoutubePlayerController.fromVideoId(
       videoId: videoId,
       autoPlay: true,
       params: const YoutubePlayerParams(
-        showFullscreenButton: true,
+        showFullscreenButton: false,
         showControls: true,
         mute: false,
         loop: false,
@@ -51,10 +61,17 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
         playsInline: true,
       ),
     );
+
+    _cachedPlayer = YoutubePlayer(
+      key: _playerContainerKey,
+      controller: _playerController,
+      aspectRatio: 16 / 9,
+    );
   }
 
   @override
   void dispose() {
+    _exitFullscreen();
     _playerController.close();
     _messageController.dispose();
     _scrollController.dispose();
@@ -93,12 +110,37 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
     );
   }
 
+  Future<void> _enterFullscreen() async {
+    if (kIsWeb) {
+      _playerController.enterFullScreen();
+      return;
+    }
+
+    setState(() => _isFullscreen = true);
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  Future<void> _exitFullscreen() async {
+    if (_isFullscreen) {
+      setState(() => _isFullscreen = false);
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+        DeviceOrientation.portraitDown,
+      ]);
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+  }
+
   void _showReactionMenu(LiveChatMessage message) {
     final isMyMessage = message.oderId == _chatService.currentUser?.uid;
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.cardDark,
+      backgroundColor: const Color(0xFF1a1f25),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -114,7 +156,7 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 16),
@@ -138,11 +180,11 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: hasReacted
-                            ? AppTheme.primaryGreen.withValues(alpha: 0.2)
-                            : AppTheme.cardMedium,
+                            ? _kNeonGreen.withValues(alpha: 0.2)
+                            : const Color(0xFF22282F),
                         borderRadius: BorderRadius.circular(12),
                         border: hasReacted
-                            ? Border.all(color: AppTheme.primaryGreen)
+                            ? Border.all(color: _kNeonGreen)
                             : null,
                       ),
                       child: Text(
@@ -155,7 +197,7 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
               ),
               if (isMyMessage) ...[
                 const SizedBox(height: 20),
-                const Divider(color: AppTheme.borderDark),
+                const Divider(color: Color(0xFF333840)),
                 const SizedBox(height: 12),
                 GestureDetector(
                   onTap: () {
@@ -200,22 +242,22 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.cardDark,
+        backgroundColor: const Color(0xFF1a1f25),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text(
           'Excluir mensagem?',
-          style: TextStyle(color: AppTheme.textPrimary),
+          style: TextStyle(color: Colors.white),
         ),
         content: const Text(
           'Esta ação não pode ser desfeita.',
-          style: TextStyle(color: AppTheme.textSecondary),
+          style: TextStyle(color: Colors.grey),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text(
               'Cancelar',
-              style: TextStyle(color: AppTheme.textSecondary),
+              style: TextStyle(color: Colors.grey),
             ),
           ),
           TextButton(
@@ -230,7 +272,7 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
                 scaffoldMessenger.showSnackBar(
                   const SnackBar(
                     content: Text('Mensagem excluída'),
-                    backgroundColor: AppTheme.primaryGreen,
+                    backgroundColor: _kNeonGreen,
                   ),
                 );
               }
@@ -245,92 +287,102 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
     );
   }
 
-  double _getPlayerHeight(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+  @override
+  Widget build(BuildContext context) {
+    if (_isFullscreen) {
+      return _buildFullscreenLayout();
+    }
 
-    if (kIsWeb) {
-      final maxHeight = screenHeight * 0.35;
-      final calculatedHeight = screenWidth * 9 / 16;
-      return calculatedHeight > maxHeight ? maxHeight : calculatedHeight;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 900;
+
+    if (isDesktop) {
+      return _buildDesktopLayout();
     } else {
-      return screenWidth * 9 / 16 * 0.85;
+      return _buildMobileLayout();
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final playerHeight = _getPlayerHeight(context);
-
+  Widget _buildFullscreenLayout() {
     return Scaffold(
-      backgroundColor: const Color(0xFF111418),
-      appBar: AppBar(
-        backgroundColor: AppTheme.appBarColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          widget.live.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        actions: [
-          if (widget.live.isLive)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.errorRed,
-                borderRadius: BorderRadius.circular(6),
+      backgroundColor: Colors.black,
+      body: GestureDetector(
+        onTap: _exitFullscreen,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Center(
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: _cachedPlayer,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                    ),
+            ),
+            Positioned(
+              top: 20,
+              right: 20,
+              child: GestureDetector(
+                onTap: _exitFullscreen,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    'AO VIVO',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                  child: const Icon(
+                    Icons.fullscreen_exit,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0f0f0f),
+      appBar: _buildAppBar(),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            color: Colors.black,
+            child: GestureDetector(
+              onTap: _enterFullscreen,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: _cachedPlayer,
+                  ),
+                  Positioned(
+                    bottom: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Icon(
+                        Icons.fullscreen,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-        ],
-      ),
-      body: Column(
-        children: [
-          SizedBox(
-            height: playerHeight,
-            child: YoutubePlayer(
-              controller: _playerController,
-              aspectRatio: 16 / 9,
-            ),
           ),
-          _buildChatHeader(),
-          if (_showChat) ...[
-            Expanded(
-              child: _buildChatMessages(),
-            ),
-            if (_showEmojiPanel) _buildEmojiPanel(),
-            _buildMessageInput(),
+          _buildControlsBar(),
+          if (_isChatVisible) ...[
+            Expanded(child: _buildChat()),
           ] else
             Expanded(
               child: Center(
@@ -338,25 +390,36 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.chat_bubble_outline,
+                      Icons.touch_app,
                       size: 48,
-                      color: AppTheme.textSecondary.withValues(alpha: 0.3),
+                      color: Colors.grey.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      'Chat minimizado',
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 14,
-                      ),
+                      'Toque no vídeo para tela cheia',
+                      style: TextStyle(color: Colors.grey, fontSize: 14),
                     ),
-                    const SizedBox(height: 8),
-                    TextButton.icon(
-                      onPressed: () => setState(() => _showChat = true),
-                      icon: const Icon(Icons.visibility, size: 18),
-                      label: const Text('Mostrar chat'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppTheme.primaryGreen,
+                    const SizedBox(height: 24),
+                    GestureDetector(
+                      onTap: () => setState(() => _isChatVisible = true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF22282F),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: _kNeonGreen.withValues(alpha: 0.3)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.chat_bubble, color: _kNeonGreen, size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'Mostrar chat',
+                              style: TextStyle(color: Colors.white, fontSize: 14),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -368,64 +431,193 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
     );
   }
 
-  Widget _buildChatHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.cardDark,
-        border: Border(
-          bottom: BorderSide(
-            color: AppTheme.borderDark.withValues(alpha: 0.3),
+  Widget _buildDesktopLayout() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0f0f0f),
+      appBar: _buildAppBar(),
+      body: Row(
+        children: [
+          Expanded(
+            flex: _isChatVisible ? 7 : 10,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 1200),
+                      margin: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _kNeonGreen.withValues(alpha: 0.15),
+                            blurRadius: 30,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: _cachedPlayer,
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildControlButton(
+                        icon: Icons.fullscreen,
+                        label: 'Tela cheia',
+                        onTap: _enterFullscreen,
+                      ),
+                      const SizedBox(width: 12),
+                      _buildControlButton(
+                        icon: _isChatVisible ? Icons.visibility_off : Icons.chat_bubble,
+                        label: _isChatVisible ? 'Ocultar chat' : 'Mostrar chat',
+                        onTap: () => setState(() => _isChatVisible = !_isChatVisible),
+                        isActive: !_isChatVisible,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
+          if (_isChatVisible)
+            Container(
+              width: 360,
+              decoration: const BoxDecoration(
+                color: Color(0xFF1a1f25),
+                border: Border(
+                  left: BorderSide(color: Color(0xFF22282F), width: 1),
+                ),
+              ),
+              child: _buildChat(),
+            ),
+        ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: const Color(0xFF111418),
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Text(
+        widget.live.title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      actions: [
+        if (widget.live.isLive)
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'AO VIVO',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildControlsBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: const BoxDecoration(
+        color: Color(0xFF111418),
+        border: Border(
+          bottom: BorderSide(color: Color(0xFF22282F)),
         ),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Icon(Icons.chat_bubble, color: AppTheme.primaryGreen, size: 18),
-          const SizedBox(width: 8),
-          const Text(
-            'Chat ao Vivo',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const Spacer(),
           StreamBuilder<int>(
-            stream: _chatService.getViewersCount(widget.live.id),
+            stream: _viewersStream,
             builder: (context, snapshot) {
               final count = snapshot.data ?? 0;
               return Row(
                 children: [
-                  const Icon(Icons.people, color: AppTheme.textSecondary, size: 14),
-                  const SizedBox(width: 4),
+                  const Icon(Icons.people, color: Colors.grey, size: 18),
+                  const SizedBox(width: 6),
                   Text(
-                    '$count',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.textSecondary,
-                    ),
+                    '$count assistindo',
+                    style: const TextStyle(color: Colors.grey, fontSize: 13),
                   ),
                 ],
               );
             },
           ),
-          const SizedBox(width: 12),
           GestureDetector(
-            onTap: () => setState(() => _showChat = !_showChat),
+            onTap: () => setState(() => _isChatVisible = !_isChatVisible),
             child: Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: _showChat
-                    ? AppTheme.primaryGreen.withValues(alpha: 0.2)
-                    : AppTheme.cardMedium,
-                borderRadius: BorderRadius.circular(6),
+                color: _isChatVisible
+                    ? _kNeonGreen.withValues(alpha: 0.15)
+                    : const Color(0xFF22282F),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _isChatVisible
+                      ? _kNeonGreen.withValues(alpha: 0.4)
+                      : const Color(0xFF333840),
+                ),
               ),
-              child: Icon(
-                _showChat ? Icons.visibility : Icons.visibility_off,
-                color: _showChat ? AppTheme.primaryGreen : AppTheme.textSecondary,
-                size: 16,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isChatVisible ? Icons.visibility_off : Icons.chat_bubble,
+                    color: _isChatVisible ? _kNeonGreen : Colors.white,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _isChatVisible ? 'Ocultar chat' : 'Mostrar chat',
+                    style: TextStyle(
+                      color: _isChatVisible ? _kNeonGreen : Colors.white,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -434,13 +626,109 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
     );
   }
 
+  Widget _buildControlButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isActive = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: isActive
+                ? _kNeonGreen.withValues(alpha: 0.15)
+                : const Color(0xFF22282F),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isActive
+                  ? _kNeonGreen.withValues(alpha: 0.4)
+                  : const Color(0xFF333840),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                color: isActive ? _kNeonGreen : Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isActive ? _kNeonGreen : Colors.white,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChat() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: const BoxDecoration(
+            color: Color(0xFF22282F),
+            border: Border(
+              bottom: BorderSide(color: Color(0xFF333840)),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.chat_bubble, color: _kNeonGreen, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                'Chat ao Vivo',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              StreamBuilder<int>(
+                stream: _viewersStream,
+                builder: (context, snapshot) {
+                  final count = snapshot.data ?? 0;
+                  return Row(
+                    children: [
+                      const Icon(Icons.people, color: Colors.grey, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$count',
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        Expanded(child: _buildChatMessages()),
+        if (_showEmojiPanel) _buildEmojiPanel(),
+        _buildMessageInput(),
+      ],
+    );
+  }
+
   Widget _buildChatMessages() {
     return StreamBuilder<List<LiveChatMessage>>(
-      stream: _chatService.getMessages(widget.live.id),
+      stream: _messagesStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+            child: CircularProgressIndicator(color: _kNeonGreen),
           );
         }
 
@@ -448,7 +736,7 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
           return const Center(
             child: Text(
               'Erro ao carregar chat',
-              style: TextStyle(color: AppTheme.textSecondary),
+              style: TextStyle(color: Colors.grey),
             ),
           );
         }
@@ -462,35 +750,25 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
               children: [
                 Icon(
                   Icons.chat_bubble_outline,
-                  size: 40,
-                  color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                  size: 48,
+                  color: Colors.grey.withValues(alpha: 0.4),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text(
                   'Seja o primeiro a comentar!',
-                  style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
                 ),
               ],
             ),
           );
         }
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scrollController.hasClients &&
-              _scrollController.position.pixels == _scrollController.position.maxScrollExtent - 100) {
-            _scrollToBottom();
-          }
-        });
-
         return Scrollbar(
           controller: _scrollController,
           thumbVisibility: kIsWeb,
           child: ListView.builder(
             controller: _scrollController,
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             physics: const AlwaysScrollableScrollPhysics(),
             itemCount: messages.length,
             itemBuilder: (context, index) {
@@ -508,21 +786,19 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
 
   Widget _buildEmojiPanel() {
     return Container(
-      height: 100,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppTheme.cardDark,
+      height: 110,
+      padding: const EdgeInsets.all(10),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1a1f25),
         border: Border(
-          top: BorderSide(
-            color: AppTheme.borderDark.withValues(alpha: 0.3),
-          ),
+          top: BorderSide(color: Color(0xFF333840)),
         ),
       ),
       child: GridView.builder(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 8,
-          mainAxisSpacing: 6,
-          crossAxisSpacing: 6,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
         ),
         itemCount: _quickEmojis.length,
         itemBuilder: (context, index) {
@@ -530,13 +806,13 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
             onTap: () => _insertEmoji(_quickEmojis[index]),
             child: Container(
               decoration: BoxDecoration(
-                color: AppTheme.cardMedium,
-                borderRadius: BorderRadius.circular(6),
+                color: const Color(0xFF22282F),
+                borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
                 child: Text(
                   _quickEmojis[index],
-                  style: const TextStyle(fontSize: 18),
+                  style: const TextStyle(fontSize: 20),
                 ),
               ),
             ),
@@ -548,13 +824,11 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
 
   Widget _buildMessageInput() {
     return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppTheme.cardDark,
+      padding: const EdgeInsets.all(12),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1a1f25),
         border: Border(
-          top: BorderSide(
-            color: AppTheme.borderDark.withValues(alpha: 0.3),
-          ),
+          top: BorderSide(color: Color(0xFF333840)),
         ),
       ),
       child: SafeArea(
@@ -562,64 +836,77 @@ class _CupulaLiveWatchScreenState extends State<CupulaLiveWatchScreen> {
         child: Row(
           children: [
             GestureDetector(
-              onTap: () {
-                setState(() {
-                  _showEmojiPanel = !_showEmojiPanel;
-                });
-              },
+              onTap: () => setState(() => _showEmojiPanel = !_showEmojiPanel),
               child: Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _showEmojiPanel
+                      ? _kNeonGreen.withValues(alpha: 0.15)
+                      : const Color(0xFF22282F),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Icon(
                   _showEmojiPanel ? Icons.keyboard : Icons.emoji_emotions_outlined,
-                  color: AppTheme.primaryGreen,
+                  color: _showEmojiPanel ? _kNeonGreen : Colors.white,
                   size: 22,
                 ),
               ),
             ),
+            const SizedBox(width: 10),
             Expanded(
-              child: TextField(
-                controller: _messageController,
-                style: const TextStyle(color: AppTheme.textPrimary, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'Digite sua mensagem...',
-                  hintStyle: const TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-                  filled: true,
-                  fillColor: const Color(0xFF111418),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  isDense: true,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF22282F),
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendMessage(),
-                onTap: () {
-                  if (_showEmojiPanel) {
-                    setState(() {
-                      _showEmojiPanel = false;
-                    });
-                  }
-                },
+                child: TextField(
+                  controller: _messageController,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: const InputDecoration(
+                    hintText: 'Digite sua mensagem...',
+                    hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _sendMessage(),
+                  onTap: () {
+                    if (_showEmojiPanel) {
+                      setState(() => _showEmojiPanel = false);
+                    }
+                  },
+                ),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 10),
             GestureDetector(
               onTap: _sendMessage,
               child: Container(
-                width: 38,
-                height: 38,
-                decoration: const BoxDecoration(
-                  color: AppTheme.primaryGreen,
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      _kNeonGreen,
+                      _kNeonGreen.withValues(alpha: 0.8),
+                    ],
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: _kNeonGreen.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                    ),
+                  ],
                 ),
                 child: const Icon(
                   Icons.send,
-                  color: Colors.white,
-                  size: 18,
+                  color: Colors.black,
+                  size: 20,
                 ),
               ),
             ),
@@ -646,18 +933,18 @@ class _ChatMessageBubble extends StatelessWidget {
     final isMe = message.oderId == currentUserId;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
         onLongPress: onLongPress,
         child: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: isMe
-                ? AppTheme.primaryGreen.withValues(alpha: 0.15)
+                ? _kNeonGreen.withValues(alpha: 0.12)
                 : Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(12),
             border: isMe
-                ? Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.3))
+                ? Border.all(color: _kNeonGreen.withValues(alpha: 0.25))
                 : null,
           ),
           child: Column(
@@ -667,90 +954,83 @@ class _ChatMessageBubble extends StatelessWidget {
                 children: [
                   if (message.oderPhoto != null && message.oderPhoto!.isNotEmpty)
                     CircleAvatar(
-                      radius: 10,
+                      radius: 12,
                       backgroundImage: NetworkImage(message.oderPhoto!),
                     )
                   else
                     CircleAvatar(
-                      radius: 10,
-                      backgroundColor: AppTheme.primaryGreen,
+                      radius: 12,
+                      backgroundColor: _kNeonGreen,
                       child: Text(
                         message.oderName.isNotEmpty
                             ? message.oderName[0].toUpperCase()
                             : '?',
                         style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
+                          color: Colors.black,
+                          fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       message.oderName,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: isMe ? AppTheme.primaryGreen : AppTheme.accentGreen,
+                        color: isMe ? _kNeonGreen : Colors.white,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Padding(
-                padding: const EdgeInsets.only(left: 26),
+                padding: const EdgeInsets.only(left: 32),
                 child: Text(
                   message.text,
                   style: const TextStyle(
-                    fontSize: 13,
-                    color: AppTheme.textPrimary,
-                    height: 1.2,
+                    fontSize: 14,
+                    color: Colors.white,
+                    height: 1.3,
                   ),
                 ),
               ),
               if (message.reactions.isNotEmpty) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Padding(
-                  padding: const EdgeInsets.only(left: 26),
+                  padding: const EdgeInsets.only(left: 32),
                   child: Wrap(
-                    spacing: 4,
-                    runSpacing: 2,
+                    spacing: 6,
+                    runSpacing: 4,
                     children: message.reactions.entries.map((entry) {
                       if (entry.value.isEmpty) return const SizedBox.shrink();
                       final hasReacted = entry.value.contains(currentUserId);
                       return Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: 8,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: hasReacted
-                              ? AppTheme.primaryGreen.withValues(alpha: 0.2)
-                              : AppTheme.cardMedium,
-                          borderRadius: BorderRadius.circular(10),
+                              ? _kNeonGreen.withValues(alpha: 0.2)
+                              : const Color(0xFF22282F),
+                          borderRadius: BorderRadius.circular(12),
                           border: hasReacted
-                              ? Border.all(
-                                  color: AppTheme.primaryGreen.withValues(alpha: 0.5),
-                                )
+                              ? Border.all(color: _kNeonGreen.withValues(alpha: 0.4))
                               : null,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              entry.key,
-                              style: const TextStyle(fontSize: 10),
-                            ),
-                            const SizedBox(width: 2),
+                            Text(entry.key, style: const TextStyle(fontSize: 12)),
+                            const SizedBox(width: 4),
                             Text(
                               '${entry.value.length}',
                               style: TextStyle(
-                                fontSize: 9,
-                                color: hasReacted
-                                    ? AppTheme.primaryGreen
-                                    : AppTheme.textSecondary,
+                                fontSize: 11,
+                                color: hasReacted ? _kNeonGreen : Colors.grey,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
