@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../services/cupula_lives_service.dart';
@@ -16,13 +17,17 @@ class CupulaLivesPreview extends StatefulWidget {
 class _CupulaLivesPreviewState extends State<CupulaLivesPreview>
     with TickerProviderStateMixin {
   final CupulaLivesService _livesService = CupulaLivesService();
+  final PageController _pageController = PageController(viewportFraction: 0.95);
   late AnimationController _pulseController;
   late AnimationController _headerAnimController;
   late Animation<double> _headerFadeAnim;
+  int _currentPage = 0;
+  late Stream<List<CupulaLive>> _livesStream;
 
   @override
   void initState() {
     super.initState();
+    _livesStream = _livesService.getLives();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -42,6 +47,7 @@ class _CupulaLivesPreviewState extends State<CupulaLivesPreview>
   void dispose() {
     _pulseController.dispose();
     _headerAnimController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -63,7 +69,7 @@ class _CupulaLivesPreviewState extends State<CupulaLivesPreview>
           _buildHeader(),
           Expanded(
             child: StreamBuilder<List<CupulaLive>>(
-              stream: _livesService.getLives(),
+              stream: _livesStream,
               builder: (context, snapshot) {
                 debugPrint('📺 Lives StreamBuilder - state: ${snapshot.connectionState}');
 
@@ -115,24 +121,7 @@ class _CupulaLivesPreviewState extends State<CupulaLivesPreview>
                     if (recordings.isNotEmpty) ...[
                       _buildSectionTitle('Gravações'),
                       const SizedBox(height: 12),
-                      ...recordings.asMap().entries.map((entry) {
-                        return TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.0, end: 1.0),
-                          duration: Duration(milliseconds: 300 + (entry.key * 80)),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, value, child) {
-                            return Transform.translate(
-                              offset: Offset(0, 20 * (1 - value)),
-                              child: Opacity(opacity: value, child: child),
-                            );
-                          },
-                          child: _LiveCard(
-                            live: entry.value,
-                            isHighlighted: false,
-                            onTap: () => _openLiveScreen(entry.value),
-                          ),
-                        );
-                      }),
+                      _buildRecordedLivesCarousel(recordings),
                     ],
                   ],
                 );
@@ -236,7 +225,7 @@ class _CupulaLivesPreviewState extends State<CupulaLivesPreview>
 
   Widget _buildStatsChip() {
     return StreamBuilder<List<CupulaLive>>(
-      stream: _livesService.getLives(),
+      stream: _livesStream,
       builder: (context, snapshot) {
         final lives = snapshot.data ?? [];
         final liveCount = lives.where((l) => l.isLive).length;
@@ -358,6 +347,176 @@ class _CupulaLivesPreviewState extends State<CupulaLivesPreview>
         ],
       ),
     );
+  }
+
+  Widget _buildRecordedLivesCarousel(List<CupulaLive> recordedLives) {
+    final pageCount = (recordedLives.length / 2).ceil();
+
+    return SizedBox(
+      height: 200,
+      child: Column(
+        children: [
+          Expanded(
+            child: ScrollConfiguration(
+              behavior: ScrollConfiguration.of(context).copyWith(
+                dragDevices: {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.mouse,
+                  PointerDeviceKind.trackpad,
+                },
+              ),
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: pageCount,
+                onPageChanged: (index) {
+                  setState(() => _currentPage = index);
+                },
+                itemBuilder: (context, pageIndex) {
+                  final startIndex = pageIndex * 2;
+                  final endIndex = (startIndex + 2).clamp(0, recordedLives.length);
+                  final pageLives = recordedLives.sublist(startIndex, endIndex);
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      children: [
+                        ...pageLives.map((live) {
+                          return Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: _buildLiveCard(live),
+                            ),
+                          );
+                        }),
+                        if (pageLives.length < 2)
+                          const Expanded(child: SizedBox()),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          if (pageCount > 1) ...[
+            const SizedBox(height: 12),
+            _buildPageIndicator(pageCount),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLiveCard(CupulaLive live) {
+    return GestureDetector(
+      onTap: () => _openLiveScreen(live),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1a1f25),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _kNeonGreen.withValues(alpha: 0.1),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      live.effectiveThumbnailUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: const Color(0xFF22282F),
+                        child: Icon(
+                          Icons.play_circle_outline,
+                          color: Colors.white.withValues(alpha: 0.3),
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.5),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.play_arrow, color: Colors.white, size: 24),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    live.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatDate(live.createdAt),
+                    style: const TextStyle(
+                      color: Color(0xFF9ca3af),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPageIndicator(int pageCount) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(pageCount, (index) {
+        final isActive = index == _currentPage;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: isActive ? 16 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            color: isActive ? _kNeonGreen : const Color(0xFF22282F),
+          ),
+        );
+      }),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   Widget _buildLoadingSkeleton() {

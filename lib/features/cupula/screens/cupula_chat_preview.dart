@@ -794,7 +794,28 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                     final currentUserId = _chatService.currentUser?.uid ?? '';
                     final isMe = userId == currentUserId && userId.isNotEmpty;
 
-                    return TweenAnimationBuilder<double>(
+                    final currentTimestamp = data['createdAt'] as Timestamp?;
+                    bool showDateSeparator = false;
+                    if (currentTimestamp != null) {
+                      final currentDate = currentTimestamp.toDate();
+                      final currentDay = DateTime(currentDate.year, currentDate.month, currentDate.day);
+
+                      if (index == messages.length - 1) {
+                        showDateSeparator = true;
+                      } else {
+                        final nextData = messages[index + 1].data() as Map<String, dynamic>;
+                        final nextTimestamp = nextData['createdAt'] as Timestamp?;
+                        if (nextTimestamp != null) {
+                          final nextDate = nextTimestamp.toDate();
+                          final nextDay = DateTime(nextDate.year, nextDate.month, nextDate.day);
+                          showDateSeparator = currentDay != nextDay;
+                        } else {
+                          showDateSeparator = true;
+                        }
+                      }
+                    }
+
+                    final messageBubble = TweenAnimationBuilder<double>(
                       tween: Tween(begin: 0.0, end: 1.0),
                       duration: Duration(milliseconds: 300 + (index % 5) * 50),
                       curve: Curves.easeOutCubic,
@@ -813,7 +834,7 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                         userName: data['userName'] ?? 'Usuário',
                         userPhotoUrl: data['userPhotoUrl'] as String?,
                         message: data['message'] ?? '',
-                        timestamp: data['createdAt'] as Timestamp?,
+                        timestamp: currentTimestamp,
                         editedAt: data['editedAt'] as Timestamp?,
                         imageUrl: data['imageUrl'] as String?,
                         audioUrl: data['audioUrl'] as String?,
@@ -836,6 +857,17 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                         onReaction: (emoji) => _chatService.toggleReaction(doc.id, emoji),
                       ),
                     );
+
+                    if (showDateSeparator && currentTimestamp != null) {
+                      return Column(
+                        children: [
+                          _buildDateSeparator(currentTimestamp.toDate()),
+                          messageBubble,
+                        ],
+                      );
+                    }
+
+                    return messageBubble;
                   },
                 );
               },
@@ -929,51 +961,6 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
                     ),
                   ],
                 ),
-              ),
-              // Online indicator chip
-              StreamBuilder<QuerySnapshot>(
-                stream: _chatService.getMessages(),
-                builder: (context, snapshot) {
-                  final memberCount = snapshot.hasData ? snapshot.data!.docs.length : 0;
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _kNeonGreen.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _kNeonGreen.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: _kNeonGreen,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: _kNeonGreen.withValues(alpha: 0.5),
-                                blurRadius: 6,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '$memberCount msgs',
-                          style: const TextStyle(
-                            color: _kNeonGreen,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
               ),
             ],
           ),
@@ -1470,6 +1457,47 @@ class _CupulaChatPreviewState extends State<CupulaChatPreview>
     );
   }
 
+  Widget _buildDateSeparator(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final messageDate = DateTime(date.year, date.month, date.day);
+
+    String dateText;
+    if (messageDate == today) {
+      dateText = 'Hoje';
+    } else if (messageDate == yesterday) {
+      dateText = 'Ontem';
+    } else {
+      const months = [
+        '', 'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+        'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+      ];
+      dateText = '${date.day} de ${months[date.month]} de ${date.year}';
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF22282F),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            dateText,
+            style: const TextStyle(
+              color: Color(0xFF9ca3af),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildLoadingSkeleton() {
     return ListView.builder(
       padding: const EdgeInsets.all(16),
@@ -1897,48 +1925,50 @@ class _MessageBubble extends StatelessWidget {
                             ),
                           ),
                         ],
-                        // Imagem (se existir)
                         if (imageUrl != null && imageUrl!.isNotEmpty) ...[
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              imageUrl!,
-                              width: 220,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return Container(
-                                  width: 220,
-                                  height: 180,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.cardDark,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Center(
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: _kNeonGreen,
+                          GestureDetector(
+                            onTap: () => _openFullscreenImage(context, imageUrl!),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                imageUrl!,
+                                width: 220,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    width: 220,
+                                    height: 180,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.cardDark,
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  width: 220,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.cardDark,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.broken_image_rounded,
-                                      color: AppTheme.textTertiary,
-                                      size: 32,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: _kNeonGreen,
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: 220,
+                                    height: 100,
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.cardDark,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.broken_image_rounded,
+                                        color: AppTheme.textTertiary,
+                                        size: 32,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ),
                           if (message.isNotEmpty) const SizedBox(height: 10),
@@ -2061,6 +2091,65 @@ class _MessageBubble extends StatelessWidget {
 
     return RichText(
       text: TextSpan(children: spans),
+    );
+  }
+
+  void _openFullscreenImage(BuildContext context, String url) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.9),
+      builder: (context) => GestureDetector(
+        onTap: () => Navigator.of(context).pop(),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: _kNeonGreen,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 16,
+                right: 16,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
